@@ -1,17 +1,11 @@
 [build-system]
-name = "ebook2audiobook"
 requires = ["setuptools >= 64"]
 build-backend = "setuptools.build_meta"
 
-[tool.poetry]
-name = "ebook2audiobook"
-version = "0.0.0"
-
-[tool.setuptools.dynamic]
-version = {file = "VERSION.txt"}
 
 [project]
 name = "ebook2audiobook"
+version = "0.0.0"
 description = "Convert eBooks to audiobooks with chapters and metadata"
 authors = [
     { name = "Drew Thomasson" }
@@ -26,13 +20,13 @@ dependencies = [
 	"ebooklib",
 	"fastapi",
 	"fugashi",
-	"gradio>=5.42.0",
+	"gradio",
 	"hangul-romanize",
 	"indic-nlp-library",
 	"iso-639",
 	"jieba",
 	"soynlp",
-	"pythainlp">
+	"pythainlp",
 	"pydub",
 	"pyannote-audio",
 	"mutagen",
@@ -48,7 +42,7 @@ dependencies = [
 	"sudachipy",
 	"sudachidict_core",
 	"transformers==4.51.3",
-	"coqui-tts[languages]==0.26.0",
+	"coqui-tts>=0.26.2",
 	"torchvggish"
 ]
 readme = "README.md"
