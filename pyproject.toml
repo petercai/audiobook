@@ -1,8 +1,3 @@
-[build-system]
-requires = ["setuptools >= 64"]
-build-backend = "setuptools.build_meta"
-
-
 [project]
 name = "ebook2audiobook"
 version = "0.0.0"
@@ -42,11 +37,14 @@ dependencies = [
 	"sudachipy",
 	"sudachidict_core",
 	"torch",
-	"coqui-tts>=0.26.2",
-	"torchvggish"
+	# "coqui-tts>=0.26.2",
+	"torchvggish",
+	"markdown>=3.8.2",
+	"num2words>=0.5.14",
+	"soundfile>=0.13.1",
 ]
 readme = "README.md"
-requires-python = ">3.9,<3.13"
+requires-python = ">=3.10,<3.13"
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
