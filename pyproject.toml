@@ -50,3 +50,9 @@ classifiers = [
 scripts = { "ebook2audiobook" = "app:main" }
 
 [project.urls]
+"Homepage" = "https://github.com/DrewThomasson/ebook2audiobook"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.4.1",
+]
