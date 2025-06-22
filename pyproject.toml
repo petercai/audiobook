@@ -38,7 +38,7 @@ dependencies = [
 	"sudachidict_core",
 	"torch",
 	# "coqui-tts>=0.26.2",
-	"torchvggish",
+#	"torchvggish",
 	"markdown>=3.8.2",
 	"num2words>=0.5.14",
 	"soundfile>=0.13.1",
@@ -54,3 +54,8 @@ scripts = { "ebook2audiobook" = "app:main" }
 
 [project.urls]
 "Homepage" = "https://github.com/DrewThomasson/ebook2audiobook"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.4.1",
+]
