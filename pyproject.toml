@@ -1,6 +1,20 @@
-[project]
+[build-system]
+name = "ebook2audiobook"
+requires = ["setuptools >= 64"]
+build-backend = "setuptools.build_meta"
+
+[tool.poetry]
 name = "ebook2audiobook"
 version = "0.0.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.4.1"
+
+[tool.setuptools.dynamic]
+version = {file = "VERSION.txt"}
+
+[project]
+name = "ebook2audiobook"
 description = "Convert eBooks to audiobooks with chapters and metadata"
 authors = [
     { name = "Drew Thomasson" }
@@ -14,13 +28,12 @@ dependencies = [
 	"docker",
 	"ebooklib",
 	"fastapi",
+	"fugashi",
 	"gradio",
 	"hangul-romanize",
 	"indic-nlp-library",
 	"iso-639",
 	"jieba",
-	"mecab",
-	"mecab-python3",
 	"soynlp",
 	"pythainlp",
 	"pydub",
@@ -37,14 +50,12 @@ dependencies = [
 	"sudachipy",
 	"sudachidict_core",
 	"torch",
-	# "coqui-tts>=0.26.2",
-#	"torchvggish",
-	"markdown>=3.8.2",
-	"num2words>=0.5.14",
-	"soundfile>=0.13.1",
+	"coqui-tts[languages]",
+	"torchvggish",
+	"pipdeptree (>=2.26.1,<3.0.0)"
 ]
 readme = "README.md"
-requires-python = ">=3.10,<3.13"
+requires-python = ">3.9,<3.13"
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
@@ -54,8 +65,3 @@ scripts = { "ebook2audiobook" = "app:main" }
 
 [project.urls]
 "Homepage" = "https://github.com/DrewThomasson/ebook2audiobook"
-
-[dependency-groups]
-dev = [
-    "pytest>=8.4.1",
-]
