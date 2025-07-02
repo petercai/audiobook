@@ -13,10 +13,10 @@ def test_session():
         "script_mode": "native",
         "id": session_id,
         "process_id": None,
-        "device": default_device,
+        "device": 'cpu',
         "system": None,
         "client": None,
-        "language": default_language_code,
+        "language": 'eng',
         "language_iso1": "en",
         "audiobook": None,
         "audiobooks_dir": os.path.join(tmp_dir, "test_audiobooks"),
@@ -28,8 +28,8 @@ def test_session():
         "chapters_dir_sentences": os.path.join(tmp_dir, "test_process", "chapters", "sentences"),
         "epub_path": None,
         "filename_noext": None,
-        "tts_engine": default_tts_engine,
-        "fine_tuned": default_fine_tuned,
+        "tts_engine": 'xtts',
+        "fine_tuned": 'internal',
         "voice": None,
         "voice_dir": os.path.join(voices_dir, '__sessions', "test_voice"),
         "custom_model": None,
@@ -53,12 +53,12 @@ def test_session():
         "waveform_temp": default_bark_settings['waveform_temp'],
         "event": None,
         "final_name": None,
-        "output_format": default_output_format,
+        "output_format": 'm4b',
         "metadata": {
             "title": "Test Audiobook", 
             "creator": "Test Author",
             "contributor": None,
-            "language": default_language_code,
+            "language": 'eng',
             "identifier": None,
             "publisher": None,
             "date": None,
@@ -86,14 +86,14 @@ def test_session():
 
 def test_convert_chapters2audio(test_session):
     # Read test file content
-    test_file_path = "ebooks/tests/test_eng.txt"
+    test_file_path = "ebooks/UnravelMe_one_sentense.txt"
     with open(test_file_path, 'r', encoding='utf-8') as f:
         content = f.read()
     
     # Split content into chapters for testing (assuming chapters are separated by some delimiter, here using empty line for simplicity)
     chapters = content.split('\n\n')
     test_session['chapters'] = [chapter.split('. ') for chapter in chapters if chapter.strip()]
-    test_session['final_name'] = "test_output"  # Ensure final_name is set to a valid string
+    test_session['final_name'] = "test_audiobook_output"  # Ensure final_name is set to a valid string
     
     # Call the function to test
     result = convert_chapters2audio(test_session)
@@ -102,14 +102,14 @@ def test_convert_chapters2audio(test_session):
     assert result == True, "Conversion of chapters to audio failed"
     
     # Check if audio files are created in chapters_dir
-    audio_files = [f for f in os.listdir(test_session['chapters_dir']) if f.endswith('.wav')]
+    audio_files = [f for f in os.listdir(test_session['chapters_dir']) if f.endswith('.flac')]
     assert len(audio_files) > 0, "No audio files were created in chapters directory"
     
     # Clean up after test
-    shutil.rmtree(test_session['process_dir'], ignore_errors=True)
-    shutil.rmtree(test_session['audiobooks_dir'], ignore_errors=True)
-    shutil.rmtree(test_session['voice_dir'], ignore_errors=True)
-    shutil.rmtree(test_session['custom_model_dir'], ignore_errors=True)
+    # shutil.rmtree(test_session['process_dir'], ignore_errors=True)
+    # shutil.rmtree(test_session['audiobooks_dir'], ignore_errors=True)
+    # shutil.rmtree(test_session['voice_dir'], ignore_errors=True)
+    # shutil.rmtree(test_session['custom_model_dir'], ignore_errors=True)
 
 if __name__ == "__main__":
     pytest.main(["-v", __file__])
