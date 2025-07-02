@@ -1,2 +1,2 @@
-poetry install coqui-tts[server,ja]
-poetry install -e .[server,ja]
+pip install mecab-python3 unidic-lite
+python -m unidic download
