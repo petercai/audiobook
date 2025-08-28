@@ -23,7 +23,9 @@
       "args": [
         "--headless",  
         "--ebook", 
-        "ebooks/UnravelMe.epub"
+        "ebooks/UnravelMeTest.epub",
+        "--session",
+        "9c50c40d-c958-4232-be9d-0fe06a235199",
       ]
     }
   ]
