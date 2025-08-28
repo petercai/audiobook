@@ -32,6 +32,7 @@ def test_session():
         "fine_tuned": 'internal',
         "voice": None,
         "voice_dir": os.path.join(voices_dir, '__sessions', "test_voice"),
+        "speaker_wav": os.path.join(voices_dir, "eng", "adult", "female", "AlexandraHisakawa_24000.wav"),
         "custom_model": None,
         "custom_model_dir": os.path.join(models_dir, '__sessions', "test_model"),
         "toc": None,
