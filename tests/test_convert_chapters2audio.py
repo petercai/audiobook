@@ -105,12 +105,27 @@ def test_convert_chapters2audio(test_session):
     # Check if audio files are created in chapters_dir
     audio_files = [f for f in os.listdir(test_session['chapters_dir']) if f.endswith('.flac')]
     assert len(audio_files) > 0, "No audio files were created in chapters directory"
-    
-    # Clean up after test
-    # shutil.rmtree(test_session['process_dir'], ignore_errors=True)
-    # shutil.rmtree(test_session['audiobooks_dir'], ignore_errors=True)
-    # shutil.rmtree(test_session['voice_dir'], ignore_errors=True)
-    # shutil.rmtree(test_session['custom_model_dir'], ignore_errors=True)
 
-if __name__ == "__main__":
-    pytest.main(["-v", __file__])
+def test_convert_onesentense(test_session):
+    # Read test file content
+    test_file_path = "ebooks/UnravelMe_one_sentense.txt"
+    with open(test_file_path, 'r', encoding='utf-8') as f:
+        content = f.read()
+
+    # Split content into chapters for testing (assuming chapters are separated by some delimiter, here using empty line for simplicity)
+    chapters = content.split('\n\n')
+    test_session['chapters'] = [chapter.split('. ') for chapter in chapters if chapter.strip()]
+    test_session['final_name'] = "test_audiobook_output"  # Ensure final_name is set to a valid string
+
+    # Call the function to test
+    result = convert_chapters2audio(test_session)
+
+    # Assert the result
+    assert result == True, "Conversion of chapters to audio failed"
+
+    # Check if audio files are created in chapters_dir
+    audio_files = [f for f in os.listdir(test_session['chapters_dir']) if f.endswith('.flac')]
+    assert len(audio_files) > 0, "No audio files were created in chapters directory"
+
+
+
