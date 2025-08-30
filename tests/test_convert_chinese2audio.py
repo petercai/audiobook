@@ -16,8 +16,8 @@ def test_session():
         "device": 'cpu',
         "system": None,
         "client": None,
-        "language": 'eng',
-        "language_iso1": "en",
+        "language": 'zho',
+        "language_iso1": "zh-cn",
         "audiobook": None,
         "audiobooks_dir": os.path.join(tmp_dir, "test_audiobooks"),
         "process_dir": os.path.join(tmp_dir, "test_process"),
@@ -32,7 +32,7 @@ def test_session():
         "fine_tuned": 'internal',
         "voice": None,
         "voice_dir": os.path.join(voices_dir, '__sessions', "test_voice"),
-        "speaker_wav": os.path.join(voices_dir, "eng", "adult", "female", "AlexandraHisakawa_24000.wav"),
+        "speaker_wav": os.path.join(voices_dir, "zho", "adult", "male", "yunjian.mp3"),
         "custom_model": None,
         "custom_model_dir": os.path.join(models_dir, '__sessions', "test_model"),
         "toc": None,
@@ -85,9 +85,9 @@ def test_session():
     
     return session
 
-def test_convert_chapters2audio(test_session):
+def test_convert_chinese2audio(test_session):
     # Read test file content
-    test_file_path = "ebooks/UnravelMe_one_chapter.txt"
+    test_file_path = "ebooks/god-one-sentense.txt"
     with open(test_file_path, 'r', encoding='utf-8') as f:
         content = f.read()
     
