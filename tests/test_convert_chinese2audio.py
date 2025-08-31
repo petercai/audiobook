@@ -96,7 +96,12 @@ def test_convert_chinese2audio(test_session):
     
     # Split content into chapters for testing (assuming chapters are separated by some delimiter, here using empty line for simplicity)
     chapters = content.split('\n\n')
-    test_session['chapters'] = [chapter.split('. ') for chapter in chapters if chapter.strip()]
+    chapter_strip_ = chapter_strip_ = [
+            re.split(r'[。，]', chapter)   # split on either 。 or ，
+            for chapter in chapters
+            if chapter.strip()            # filter out empty/whitespace-only strings
+        ]
+    test_session['chapters'] = chapter_strip_
     test_session['final_name'] = "test_audiobook_output"  # Ensure final_name is set to a valid string
     
     # Call the function to test
@@ -117,8 +122,13 @@ def test_convert_chinese_chapter2audio(test_session):
         content = f.read()
     
     # Split content into chapters for testing (assuming chapters are separated by some delimiter, here using empty line for simplicity)
-    chapters = content.split('\n\n')
-    test_session['chapters'] = [chapter.split('。 ') for chapter in chapters if chapter.strip()]
+    chapters = content.split("\n\n")
+    chapter_strip_ = [
+        re.split(r"[。，]", chapter)  # split on either 。 or ，
+        for chapter in chapters
+        if chapter.strip()  # filter out empty/whitespace-only strings
+    ]
+    test_session['chapters'] = chapter_strip_
     test_session['final_name'] = "test_audiobook_output"  # Ensure final_name is set to a valid string
     
     # Call the function to test
