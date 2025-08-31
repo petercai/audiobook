@@ -1,7 +1,9 @@
 import os
 import shutil
 import pytest
-from lib.functions import convert_chapters2audio, context, SessionContext, recursive_proxy, default_device, default_language_code, default_tts_engine, default_fine_tuned, default_output_format, default_xtts_settings, default_bark_settings, models_dir, voices_dir, tmp_dir
+from lib.functions import *
+from lib.conf import *
+from lib.models import *
 from multiprocessing import Manager
 
 @pytest.fixture
@@ -9,71 +11,88 @@ def test_session():
     # Initialize a session context for testing
     manager = Manager()
     session_id = "test_session"
-    session = recursive_proxy({
-        "script_mode": "native",
-        "id": session_id,
-        "process_id": None,
-        "device": 'cpu',
-        "system": None,
-        "client": None,
-        "language": 'eng',
-        "language_iso1": "en",
-        "audiobook": None,
-        "audiobooks_dir": os.path.join(tmp_dir, "test_audiobooks"),
-        "process_dir": os.path.join(tmp_dir, "test_process"),
-        "ebook": None,
-        "ebook_list": None,
-        "ebook_mode": "single",
-        "chapters_dir": os.path.join(tmp_dir, "test_process", "chapters"),
-        "chapters_dir_sentences": os.path.join(tmp_dir, "test_process", "chapters", "sentences"),
-        "epub_path": None,
-        "filename_noext": None,
-        "tts_engine": 'xtts',
-        "fine_tuned": 'internal',
-        "voice": None,
-        "voice_dir": os.path.join(voices_dir, '__sessions', "test_voice"),
-        "speaker_wav": os.path.join(voices_dir, "eng", "adult", "female", "AlexandraHisakawa_24000.wav"),
-        "custom_model": None,
-        "custom_model_dir": os.path.join(models_dir, '__sessions', "test_model"),
-        "toc": None,
-        "chapters": None,
-        "cover": None,
-        "status": None,
-        "progress": 0,
-        "time": None,
-        "cancellation_requested": False,
-        "temperature": default_xtts_settings['temperature'],
-        "length_penalty": default_xtts_settings['length_penalty'],
-        "num_beams": default_xtts_settings['num_beams'],
-        "repetition_penalty": default_xtts_settings['repetition_penalty'],
-        "top_k": default_xtts_settings['top_k'],
-        "top_p": default_xtts_settings['top_p'],
-        "speed": default_xtts_settings['speed'],
-        "enable_text_splitting": default_xtts_settings['enable_text_splitting'],
-        "text_temp": default_bark_settings['text_temp'],
-        "waveform_temp": default_bark_settings['waveform_temp'],
-        "event": None,
-        "final_name": None,
-        "output_format": 'wav',
-        "metadata": {
-            "title": "Test Audiobook", 
-            "creator": "Test Author",
-            "contributor": None,
-            "language": 'eng',
-            "identifier": None,
-            "publisher": None,
-            "date": None,
-            "description": None,
-            "subject": None,
-            "rights": None,
-            "format": None,
-            "type": None,
-            "coverage": None,
-            "relation": None,
-            "Source": None,
-            "Modified": None,
-        }
-    }, manager=manager)
+    session = recursive_proxy(
+        {
+            "script_mode": "native",
+            "id": session_id,
+            "process_id": None,
+            "device": "cpu",
+            "system": None,
+            "client": None,
+            "language": "eng",
+            "language_iso1": "en",
+            "audiobook": None,
+            "audiobooks_dir": os.path.join(tmp_dir, "test_audiobooks"),
+            "process_dir": os.path.join(tmp_dir, "test_process"),
+            "ebook": None,
+            "ebook_list": None,
+            "ebook_mode": "single",
+            "chapters_dir": os.path.join(tmp_dir, "test_process", "chapters"),
+            "chapters_dir_sentences": os.path.join(
+                tmp_dir, "test_process", "chapters", "sentences"
+            ),
+            "epub_path": None,
+            "filename_noext": None,
+            "tts_engine": "xtts",
+            "fine_tuned": "internal",
+            "voice": None,
+            "voice_dir": os.path.join(voices_dir, "__sessions", "test_voice"),
+            "speaker_wav": os.path.join(
+                voices_dir, "eng", "adult", "female", "AlexandraHisakawa_24000.wav"
+            ),
+            "custom_model": None,
+            "custom_model_dir": os.path.join(models_dir, "__sessions", "test_model"),
+            "toc": None,
+            "chapters": None,
+            "cover": None,
+            "status": None,
+            "progress": 0,
+            "time": None,
+            "cancellation_requested": False,
+            "temperature": default_engine_settings[TTS_ENGINES["XTTSv2"]][
+                "temperature"
+            ],
+            "length_penalty": default_engine_settings[TTS_ENGINES["XTTSv2"]][
+                "length_penalty"
+            ],
+            "num_beams": default_engine_settings[TTS_ENGINES["XTTSv2"]]["num_beams"],
+            "repetition_penalty": default_engine_settings[TTS_ENGINES["XTTSv2"]][
+                "repetition_penalty"
+            ],
+            "top_k": default_engine_settings[TTS_ENGINES["XTTSv2"]]["top_k"],
+            "top_p": default_engine_settings[TTS_ENGINES["XTTSv2"]]["top_p"],
+            "speed": default_engine_settings[TTS_ENGINES["XTTSv2"]]["speed"],
+            "enable_text_splitting": default_engine_settings[TTS_ENGINES["XTTSv2"]][
+                "enable_text_splitting"
+            ],
+            "text_temp": default_engine_settings[TTS_ENGINES["BARK"]]["text_temp"],
+            "waveform_temp": default_engine_settings[TTS_ENGINES["BARK"]][
+                "waveform_temp"
+            ],
+            "event": None,
+            "final_name": None,
+            "output_format": "wav",
+            "metadata": {
+                "title": "Test Audiobook",
+                "creator": "Test Author",
+                "contributor": None,
+                "language": "eng",
+                "identifier": None,
+                "publisher": None,
+                "date": None,
+                "description": None,
+                "subject": None,
+                "rights": None,
+                "format": None,
+                "type": None,
+                "coverage": None,
+                "relation": None,
+                "Source": None,
+                "Modified": None,
+            },
+        },
+        manager=manager,
+    )
     
     # Create necessary directories
     os.makedirs(session['audiobooks_dir'], exist_ok=True)

@@ -1,0 +1,6 @@
+lib
+models/tts/tts_models--multilingual--multi-dataset--xtts_v2
+pytest.log
+**/__pycache__
+.idea
+**/*.wav
