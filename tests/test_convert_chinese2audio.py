@@ -105,9 +105,30 @@ def test_session():
     
     return session
 
-def test_convert_chinese2audio(test_session):
+@pytest.fixture
+def speaker_wav_yunjian():
+     return os.path.join(
+                voices_dir, "zho", "adult", "male", "yunjian_24000.wav"
+            )
+
+@pytest.fixture
+def speaker_wav_yunxi():
+   return os.path.join(
+                voices_dir, "zho", "adult", "male", "yunxi_24000.wav"
+            )
+
+@pytest.fixture
+def speaker_wav_yunyi():
+       return os.path.join(
+                voices_dir, "zho", "adult", "female", "yunyi_24000.wav"
+            )
+
+
+def test_convert_chinese2audio(test_session, speaker_wav_yunjian, speaker_wav_yunxi, speaker_wav_yunyi):
+    test_session['speaker_wav'] = speaker_wav_yunjian
+
     # Read test file content
-    test_file_path = "ebooks/god-one-sentense.txt"
+    test_file_path = "ebooks/god_one_sentense.txt"
     with open(test_file_path, 'r', encoding='utf-8') as f:
         content = f.read()
     
@@ -132,9 +153,10 @@ def test_convert_chinese2audio(test_session):
     assert len(audio_files) > 0, "No audio files were created in chapters directory"
     
 
-def test_convert_chinese_chapter2audio(test_session):
+def test_convert_chinese_chapter2audio(test_session, speaker_wav_yunjian, speaker_wav_yunxi, speaker_wav_yunyi):
+    test_session['speaker_wav'] = speaker_wav_yunxi
     # Read test file content
-    test_file_path = "ebooks/god-c12.txt"
+    test_file_path = "ebooks/god-c1.txt"
     with open(test_file_path, 'r', encoding='utf-8') as f:
         content = f.read()
     
