@@ -5,7 +5,7 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Server Debugger",
+      "name": "UI",
       "type": "debugpy",
       "request": "launch",
       "program": "app.py",
@@ -15,7 +15,7 @@
       ]
     },
     {
-      "name": "Convert Book Debugger",
+      "name": "Convert - headless",
       "type": "debugpy",
       "request": "launch",
       "program": "app.py",
@@ -23,9 +23,12 @@
       "args": [
         "--headless",  
         "--ebook", 
-        "ebooks/UnravelMeTest.epub",
-        "--session",
-        "9c50c40d-c958-4232-be9d-0fe06a235199",
+        "ebooks/god-c1.txt",
+        "--language","zh-cn",
+        "--voice",
+        "zho/adult/male/yunyang_24000.wav",
+        "--output_dir",
+        "audiobook_output" 
       ]
     }
   ]
