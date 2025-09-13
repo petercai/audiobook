@@ -52,7 +52,7 @@ default_gpu_wiki = '<a href="https://github.com/DrewThomasson/ebook2audiobook/wi
 python_env_dir = os.path.abspath(os.path.join('.','python_env'))
 requirements_file = os.path.abspath(os.path.join('.','requirements.txt'))
 
-interface_host = '0.0.0.0'
+interface_host = '127.0.0.1'
 interface_port = 7860
 interface_shared_tmp_expire = 3 # in days
 interface_concurrency_limit = 1 # or None for unlimited
