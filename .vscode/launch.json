@@ -12,7 +12,8 @@
       "console": "integratedTerminal",
       "args": [
         "--share"
-      ]
+      ],
+      "envFile": "${workspaceFolder}/.env"
     },
     {
       "name": "Convert Book Debugger",
@@ -23,9 +24,15 @@
       "args": [
         "--headless",  
         "--ebook", 
-        "ebooks/UnravelMeTest.epub",
-        "--session",
-        "9c50c40d-c958-4232-be9d-0fe06a235199",
+        "ebooks/god-c1.txt",
+        "--device",
+        "mps",
+        "--tts_engine",
+        "xtts",
+        "--language",
+        "zho",
+        "--voice",
+        "voices/zho/adult/male/yunxi_24000.wav",
       ]
     }
   ]
