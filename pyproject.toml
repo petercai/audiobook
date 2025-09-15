@@ -42,7 +42,8 @@ dependencies = [
 	"sudachidict_core",
 	"transformers==4.51.3",
 	"coqui-tts>=0.26.2",
-	"torchvggish"
+	"torchvggish",
+	"numba>=0.59",
 ]
 readme = "README.md"
 requires-python = ">=3.10,<3.13"

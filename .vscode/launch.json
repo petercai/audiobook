@@ -12,7 +12,6 @@
       "console": "integratedTerminal",
       "args": [
       ],
-      "envFile": "${workspaceFolder}/.env"
     },
     {
       "name": "Convert cn With xTTS",
@@ -33,7 +32,6 @@
         // "--voice",
         // "voices/zho/adult/male/yunxi_24000.wav",
       ],
-      "envFile": "${workspaceFolder}/.env"
     },
     {
       "name": "Convert en With xTTS",
@@ -50,7 +48,6 @@
         "--tts_engine",
         "xtts",
       ],
-      "envFile": "${workspaceFolder}/.env"
     }
   ]
 }
