@@ -9,5 +9,5 @@ python app.py --headless --ebook ebooks/god-c12.epub --language zh-cn --voice zh
 
 python app.py --headless --ebook ebooks/god-c1.txt --language zho --voice voices/zho/adult/male/yunxi_24000.wav --output_dir tmp
 
-python app.py --headless --ebook ebooks/god-c1.txt --device mps --tts_engine xtts --language zho --voice voices/zho/adult/male/yunxi_24000.wav --output_dir tmp
-python app.py --headless --ebook ebooks/god-c1.txt --device mps --tts_engine bark --language zho --voice voices/zho/adult/male/yunxi_24000.wav --output_dir tmp
+python app.py --headless --ebook ebooks/god-1.txt --device mps --tts_engine xtts --language zho --voice voices/zho/adult/male/yunxi_24000.wav --output_dir tmp 
+python app.py --headless --ebook ebooks/god-1.txt --device mps --tts_engine bark --language zho --voice voices/zho/adult/male/yunxi_24000.wav --output_dir tmp
