@@ -5,18 +5,17 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Server Debugger",
+      "name": "GUI",
       "type": "debugpy",
       "request": "launch",
       "program": "app.py",
       "console": "integratedTerminal",
       "args": [
-        "--share"
       ],
       "envFile": "${workspaceFolder}/.env"
     },
     {
-      "name": "Convert Book Debugger",
+      "name": "Convert cn With xTTS",
       "type": "debugpy",
       "request": "launch",
       "program": "app.py",
@@ -31,9 +30,27 @@
         "xtts",
         "--language",
         "zho",
-        "--voice",
-        "voices/zho/adult/male/yunxi_24000.wav",
-      ]
+        // "--voice",
+        // "voices/zho/adult/male/yunxi_24000.wav",
+      ],
+      "envFile": "${workspaceFolder}/.env"
+    },
+    {
+      "name": "Convert en With xTTS",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "app.py",
+      "console": "integratedTerminal",
+      "args": [
+        "--headless",  
+        "--ebook", 
+        "ebooks/UnravelMe_one_sentense.txt",
+        "--device",
+        "mps",
+        "--tts_engine",
+        "xtts",
+      ],
+      "envFile": "${workspaceFolder}/.env"
     }
   ]
 }
