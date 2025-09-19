@@ -1,19 +1,21 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="TTS ebook" type="PythonConfigurationType" factoryName="Python">
+  <configuration default="false" name="tts en with bark/gpu" type="PythonConfigurationType" factoryName="Python">
     <module name="audiobook_uv" />
-    <option name="ENV_FILES" value="$PROJECT_DIR$/.env" />
+    <option name="ENV_FILES" value="" />
     <option name="INTERPRETER_OPTIONS" value="" />
     <option name="PARENT_ENVS" value="true" />
     <envs>
       <env name="PYTHONUNBUFFERED" value="1" />
     </envs>
     <option name="SDK_HOME" value="" />
+    <option name="SDK_NAME" value="Python 3.12 (audiobook)" />
     <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
-    <option name="IS_MODULE_SDK" value="true" />
+    <option name="IS_MODULE_SDK" value="false" />
     <option name="ADD_CONTENT_ROOTS" value="true" />
     <option name="ADD_SOURCE_ROOTS" value="true" />
+    <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
     <option name="SCRIPT_NAME" value="app.py" />
-    <option name="PARAMETERS" value="--headless --ebook ebooks/god-c1.txt --language zho --voice voices/zho/adult/male/yunxi_24000.wav --output_dir tmp" />
+    <option name="PARAMETERS" value="--headless --ebook ebooks/UnravelMe_one_sentense.txt --device gpu --tts_engine bark --output_dir tmp" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <option name="EMULATE_TERMINAL" value="false" />
     <option name="MODULE_MODE" value="false" />
