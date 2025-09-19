@@ -1,8 +1,8 @@
 import torch
 
 def gpu_test():
+    print(torch.__version__)
     print("Checking PyTorch GPU support...")
-
     # Check if CUDA is available
     if not torch.cuda.is_available():
         print("CUDA is NOT available. Running on CPU.")
