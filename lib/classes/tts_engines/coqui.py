@@ -47,7 +47,9 @@ class Coqui:
             tts = (loaded_tts.get(self.tts_key) or {}).get('engine', False)
             if not tts:
                 if xtts_builtin_speakers_list is None:
-                    self.speakers_path = hf_hub_download(repo_id=models[TTS_ENGINES['XTTSv2']]['internal']['repo'], filename=default_engine_settings[TTS_ENGINES['XTTSv2']]['files'][4], cache_dir=self.cache_dir)
+                    _repo_Id = models[TTS_ENGINES['XTTSv2']]['internal']['repo']
+                    _filename = default_engine_settings[TTS_ENGINES['XTTSv2']]['files'][4]
+                    self.speakers_path = hf_hub_download(repo_id=_repo_Id, filename=_filename, cache_dir=self.cache_dir)
                     xtts_builtin_speakers_list = torch.load(self.speakers_path)
                 if self.session['tts_engine'] == TTS_ENGINES['XTTSv2']:
                     msg = f"Loading TTS {self.session['tts_engine']} model, it takes a while, please be patient..."
