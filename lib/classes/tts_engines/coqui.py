@@ -210,6 +210,13 @@ class Coqui:
                         eval=True
                     )
                 elif tts_engine == TTS_ENGINES['BARK']:
+                    import numpy
+                    import torch.serialization
+                    torch.serialization.add_safe_globals([
+                        (numpy._core.multiarray.scalar, 'numpy.core.multiarray.scalar'),
+                        numpy.dtype,
+                        numpy.dtypes.Float64DType
+                    ])
                     from TTS.tts.configs.bark_config import BarkConfig
                     from TTS.tts.models.bark import Bark
                     checkpoint_dir = kwargs.get('checkpoint_dir')
