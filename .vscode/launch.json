@@ -14,7 +14,7 @@
       ],
     },
     {
-      "name": "Convert cn With xTTS",
+      "name": "xTTS CN",
       "type": "debugpy",
       "request": "launch",
       "program": "app.py",
@@ -34,7 +34,7 @@
       ],
     },
     {
-      "name": "Convert cn With Bark",
+      "name": "Bark CN",
       "type": "debugpy",
       "request": "launch",
       "program": "app.py",
@@ -51,10 +51,13 @@
         "zho",
         "--voice",
         "voices/zho/adult/male/yunxi_24000.wav",
+        // "--session",
+        // "ef4644ee-b4d0-4d30-80b2-516c586bfa1b", // GPU
+        // "ead72c49-c5a2-4bf7-8e75-8c7b2c07f0ee", // CPU
       ],
     },
     {
-      "name": "Convert en With xTTS",
+      "name": "xTTS en",
       "type": "debugpy",
       "request": "launch",
       "program": "app.py",
