@@ -18,7 +18,7 @@ python app.py --headless --ebook ebooks/god-1.txt --device gpu --tts_engine bark
 python app.py --headless --ebook ebooks/UnravelMe_one_sentense.txt --device gpu --tts_engine bark --output_dir tmp
 
 uv add torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu129
-uv pip install torch torchvision --index-url https://download.pytorch.org/whl/cu129
+uv pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu129
 
 
 # For CUDA 12.8
@@ -29,3 +29,7 @@ pip install --no-cache-dir torch torchvision torchaudio --index-url https://down
 
 # For CUDA 12.1
 pip install --no-cache-dir torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+
+
+
+uv pip install --upgrade coqui-tts

@@ -36,14 +36,17 @@ dependencies = [
 	"regex",
 	"translate",
 	"tqdm",
-	"unidic",
 	"pymupdf4llm",
 	"sudachipy",
 	"sudachidict_core",
-	"transformers==4.51.3",
-	"coqui-tts>=0.26.2",
+	"transformers",
+	"coqui-tts",
 	"torchvggish",
 	"numba>=0.59",
+	"torch>=2.8.0",
+	"torchvision>=0.23.0",
+	"torchaudio>=2.8.0",
+	"unidic-lite>=1.0.8",
 ]
 readme = "README.md"
 requires-python = ">=3.10,<3.13"
