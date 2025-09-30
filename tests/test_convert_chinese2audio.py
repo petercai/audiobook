@@ -90,7 +90,7 @@ def test_session():
 
 def test_convert_chinese2audio(test_session):
     # Read test file content
-    test_file_path = "ebooks/god-one-sentense.txt"
+    test_file_path = "ebooks/god-1.txt"
     with open(test_file_path, 'r', encoding='utf-8') as f:
         content = f.read()
     
