@@ -34,7 +34,6 @@ def text_to_speech_bark(
     config = BarkConfig()
     config["audio"]["frame_length_ms"] = 50
     config["audio"]["frame_shift_ms"] = 12.5
-    config["audio"]["hop_length"] = 300
     model = Bark.init_from_config(config)
     # you need to load pretrained checkpoints (text, coarse, fine, hubert tokenizer)
     # e.g. if your bark model files are under “bark_checkpoint_dir/”
@@ -47,19 +46,8 @@ def text_to_speech_bark(
     out = model.synthesize(text, config, speaker_wav=speaker_wav, **bark_kwargs)
     wav = out["wav"]  # a torch.Tensor, shape (samples,)
     # Convert to numpy and save via AudioProcessor
-    _config = {
-        "hop_length": 300,
-        "sample_rate": 24000,
-        "win_length": 1200,
-        "fft_size": 2048, 
-        "num_mels": 80,
-        # "mel_fmin": 0,
-        # "mel_fmax": 8000,
-        "frame_length_ms": 50,
-        "frame_shift_ms": 12.5,
-    }
-    ap = AudioProcessor.init_from_config(_config)
-    ap.save_wav(wav, out_wav)
+    ap = AudioProcessor.init_from_config(config)
+    ap.save_wav(wav.cpu().numpy(), out_wav)
     print(f"Saved to {out_wav}")
 
 
@@ -79,9 +67,9 @@ def main():
         out_wav=output_wav,
         checkpoint_dir="models/tts/models--erogol--bark",
         # you can pass other gen params like top_k, top_p, temp etc
-        top_k=None,
-        top_p=1.0,
-        # text_temp=0.0,
+        top_k=50,
+        top_p=0.95,
+        # temp=0.7,
     )
 
 

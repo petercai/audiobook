@@ -57,14 +57,14 @@ def test_list_languages(tts):
   assert isinstance(languages, list)
   assert "en" in languages
 
-def test_tts_to_file(tts, tmp_path):
-  text = "The big ball of yellow might be spilling into the clouds, runny and yolky and blurring into the bluest sky, bright with cold hope and false promises about fond memories, real families, hearty breakfasts, stacks of pancakes drizzled in maple syrup sitting on a plate in a world that doesn’t exist anymore."
-  speaker_wav = "voices/eng/adult/female/AlexandraHisakawa.wav"
-  file_path = tmp_path / "Alexandra.wav"
+def test_tts_cn(tts, tmp_path):
+  text = "二愣子睁大着双眼，直直望着茅草和烂泥糊成的黑屋顶，身上盖着的旧棉被，已呈深黄色，看不出原来的本来面目，还若有若无的散发着淡淡的霉味。"
+  speaker_wav = "voices/zho/adult/male/yunjian_24000.wav"
+  file_path = "c1_xtts - yunjian.wav" 
   tts.tts_to_file(
     text=text,
     speaker_wav=speaker_wav,
-    language="en",
+    language="zh-cn",
     file_path=str(file_path),
     split_sentences=True
   )
