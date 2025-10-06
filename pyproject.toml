@@ -42,12 +42,13 @@ dependencies = [
 	"transformers",
 	"coqui-tts",
 	"torchvggish",
-	"numba>=0.59",
-	"torch>=2.8.0",
-	"torchvision>=0.23.0",
-	"torchaudio>=2.8.0",
-	"unidic-lite>=1.0.8",
-	"voxcpm>=1.0.4",
+	"numba",
+	"torch",
+	"torchvision",
+	"torchaudio",
+	"unidic-lite",
+	"voxcpm",
+	"huggingface-hub[hf-xet]",
 ]
 readme = "README.md"
 requires-python = ">=3.12,<3.13"
@@ -63,6 +64,6 @@ scripts = { "ebook2audiobook" = "app:main" }
 
 [dependency-groups]
 dev = [
-    "pytest>=8.4.1",
-    "ruff>=0.12.12",
+    "pytest",
+    "ruff",
 ]
