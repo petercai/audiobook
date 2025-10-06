@@ -47,9 +47,10 @@ dependencies = [
 	"torchvision>=0.23.0",
 	"torchaudio>=2.8.0",
 	"unidic-lite>=1.0.8",
+	"voxcpm>=1.0.4",
 ]
 readme = "README.md"
-requires-python = ">=3.10,<3.13"
+requires-python = ">=3.12,<3.13"
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
@@ -63,4 +64,5 @@ scripts = { "ebook2audiobook" = "app:main" }
 [dependency-groups]
 dev = [
     "pytest>=8.4.1",
+    "ruff>=0.12.12",
 ]
