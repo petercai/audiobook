@@ -71,6 +71,14 @@
         "--tts_engine",
         "xtts",
       ],
-    }
+    },
+    {
+      "name": "Python: Debug current file",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${file}",
+      "justMyCode": false
+}
+    
   ]
 }
