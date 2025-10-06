@@ -1,34 +1,65 @@
 import soundfile as sf
 import numpy as np
+import pytest
 from voxcpm import VoxCPM
 
-model = VoxCPM.from_pretrained("openbmb/VoxCPM-0.5B")
+@pytest.fixture
+def voxcpm_config():
+    return {
+        "text_path": "ebooks/god-1.txt",
+        "prompt_text": "无论是互联网巨头还是刚起步的创业公司都在竞相努力成为元宇宙这条充满无限可能性赛道的领先者事实确实这些平台除了产品发布发新闻稿时热度高很快就回归平静就像horizon world一样",
+        "prompt_wav_path": "voices/zho/adult/male/yunjian_24000.wav",
+        "output_wav": "yunjian_god-1.wav",
+        "sample_rate": 16000,
+    }
+    
+@pytest.fixture
+def voxcpm_config_yunxiao():
+    return {
+        "text_path": "ebooks/god-1.txt",
+        "prompt_text": "无论是互联网巨头还是刚起步的创业公司都在竞相努力成为元宇宙这条充满无限可能性赛道的领先者事实确实这些平台除了产品发布发新闻稿时热度高很快就回归平静就像horizon world一样",
+        "prompt_wav_path": "voices/zho/adult/female/yunxiao_24000.wav",
+        "output_wav": "yunxiao_god-1.wav",
+        "sample_rate": 16000,
+    }
+    
+@pytest.fixture
+def voxcpm_config_alex():
+    return {
+        "text_path": "ebooks/UnravelMe_one_sentense.txt",
+        "prompt_wav_path": "voices/eng/adult/female/AlexandraHisakawa.wav",      # optional: path to a prompt speech for voice cloning
+        "prompt_text": "Alexandra Hizakawa, an XTS Engine built-in voice, ready to speak for any kind of text. A big juicy fish jumps quickly, vexed, the dwarf whacks my zippered box.",          # optional: reference text
+        "output_wav": "alex_UnravelMe-1.wav",
+        "sample_rate": 16000,
+    }
 
-# Non-streaming
-wav = model.generate(
-    text="二愣子睁大着双眼，直直望着茅草和烂泥糊成的黑屋顶，身上盖着的旧棉被，已呈深黄色，看不出原来的本来面目，还若有若无的散发着淡淡的霉味。",
-    prompt_wav_path="voices/zho/adult/male/yunjian_24000.wav",      # optional: path to a prompt speech for voice cloning
-    prompt_text="无论是互联网巨头还是刚起步的创业公司都在竞相努力成为元宇宙这条充满无限可能性赛道的领先者事实确实这些平台除了产品发布发新闻稿时热度高很快就回归平静就像horizon world一样",          # optional: reference text
-    cfg_value=2.0,             # LM guidance on LocDiT, higher for better adherence to the prompt, but maybe worse
-    inference_timesteps=10,   # LocDiT inference timesteps, higher for better result, lower for fast speed
-    normalize=True,           # enable external TN tool
-    denoise=True,             # enable external Denoise tool
-    retry_badcase=True,        # enable retrying mode for some bad cases (unstoppable)
-    retry_badcase_max_times=3,  # maximum retrying times
-    retry_badcase_ratio_threshold=6.0, # maximum length restriction for bad case detection (simple but effective), it could be adjusted for slow pace speech
-)
+@pytest.fixture
+def voxcpm_model():
+    return VoxCPM.from_pretrained("openbmb/VoxCPM-0.5B")
 
-sf.write("god-1.wav", wav, 16000)
-print("saved: god-1.wav")
+def test_voxcpm_generate(voxcpm_model, voxcpm_config_alex):
+    
+    tts_model = voxcpm_model
+    tts_config = voxcpm_config_alex
+    # Read text from file
+    with open(tts_config["text_path"], "r", encoding="utf-8") as f:
+        text = f.read()
 
-# Streaming
-# chunks = []
-# for chunk in model.generate_streaming(
-#     text = "Streaming text to speech is easy with VoxCPM!",
-#     # supports same args as above
-# ):
-#     chunks.append(chunk)
-# wav = np.concatenate(chunks)
+        wav = tts_model.generate(
+            text=text,
+            prompt_wav_path=tts_config["prompt_wav_path"],
+            prompt_text=tts_config["prompt_text"],
+            cfg_value=2.0,
+            inference_timesteps=10,
+            normalize=True,
+            denoise=True,
+            retry_badcase=True,
+            retry_badcase_max_times=3,
+            retry_badcase_ratio_threshold=6.0,
+        )
 
-# sf.write("output_streaming.wav", wav, 16000)
-# print("saved: output_streaming.wav")
+        sf.write(tts_config["output_wav"], wav, tts_config["sample_rate"])
+        assert isinstance(wav, np.ndarray)
+        assert wav.size > 0
+        print(f"saved: {tts_config['output_wav']}")
+
