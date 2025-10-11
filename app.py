@@ -249,15 +249,15 @@ Tip: to add of silence (1.4 seconds) into your text just use "###" or "[pause]".
 
         print(f"v{prog_version} {args['script_mode']} mode")
 
-        if args['script_mode'] == NATIVE:
-            check_pkg = check_and_install_requirements(requirements_file)
-            if check_pkg:
-                if not check_dictionary():
-                    sys.exit(1)
-            else:
-                error = 'Some packages could not be installed'
-                print(error)
-                sys.exit(1)
+        # if args['script_mode'] == NATIVE:
+        #     check_pkg = check_and_install_requirements(requirements_file)
+        #     if check_pkg:
+        #         if not check_dictionary():
+        #             sys.exit(1)
+        #     else:
+        #         error = 'Some packages could not be installed'
+        #         print(error)
+        #         sys.exit(1)
 
         from lib.functions import SessionContext, convert_ebook_batch, convert_ebook, web_interface
         ctx = SessionContext()

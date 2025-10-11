@@ -136,6 +136,14 @@ class SessionContext:
                 "enable_text_splitting": default_engine_settings[TTS_ENGINES['XTTSv2']]['enable_text_splitting'],
                 "text_temp": default_engine_settings[TTS_ENGINES['BARK']]['text_temp'],
                 "waveform_temp": default_engine_settings[TTS_ENGINES['BARK']]['waveform_temp'],
+                "cfg_value": default_engine_settings[TTS_ENGINES['VOXCPM']]['cfg_value'],
+                "inference_timesteps": default_engine_settings[TTS_ENGINES['VOXCPM']]['inference_timesteps'],
+                "normalize": default_engine_settings[TTS_ENGINES['VOXCPM']]['normalize'],
+                "denoise": default_engine_settings[TTS_ENGINES['VOXCPM']]['denoise'],
+                "retry_badcase": default_engine_settings[TTS_ENGINES['VOXCPM']]['retry_badcase'],
+                "retry_badcase_max_times": default_engine_settings[TTS_ENGINES['VOXCPM']]['retry_badcase_max_times'],
+                "retry_badcase_ratio_threshold": default_engine_settings[TTS_ENGINES['VOXCPM']]['retry_badcase_ratio_threshold'],
+                "prompt_text": "Default prompt text",
                 "final_name": None,
                 "output_format": default_output_format,
                 "output_split": default_output_split,
@@ -1994,6 +2002,13 @@ def convert_ebook(args, ctx=None):
             session['enable_text_splitting'] = args['enable_text_splitting']
             session['text_temp'] =  args['text_temp']
             session['waveform_temp'] =  args['waveform_temp']
+            session['cfg_value'] = args['cfg_value']
+            session['inference_timesteps'] = args['inference_timesteps']
+            session['normalize'] = args['normalize']
+            session['denoise'] = args['denoise']
+            session['retry_badcase'] = args['retry_badcase']
+            session['retry_badcase_max_times'] = args['retry_badcase_max_times']
+            session['retry_badcase_ratio_threshold'] = args['retry_badcase_ratio_threshold']
             session['audiobooks_dir'] = args['audiobooks_dir']
             session['output_format'] = args['output_format']
             session['output_split'] = args['output_split']    
@@ -2622,6 +2637,75 @@ def web_interface(args, ctx):
                     elem_id='gr_bark_waveform_temp',
                     info='Higher values lead to more creative, unpredictable outputs. Lower values make it more conservative.'
                 )
+            gr_tab_voxcpm_params = gr.TabItem('VOXCPM fine Tuned Parameters', elem_id='gr_tab_voxcpm_params', elem_classes='tab_item', visible=False)
+            with gr_tab_voxcpm_params:
+                gr.Markdown(
+                    elem_id='gr_markdown_tab_voxcpm_params',
+                    value='''
+                    ### Customize VOXCPM Parameters
+                    Adjust the settings below to influence how the audio is generated.
+                    '''
+                )
+                gr_voxcpm_cfg_value = gr.Slider(
+                    label='CFG Value',
+                    minimum=0.0,
+                    maximum=10.0,
+                    step=0.1,
+                    value=float(default_engine_settings[TTS_ENGINES['VOXCPM']]['cfg_value']),
+                    elem_id='gr_voxcpm_cfg_value',
+                    info='Higher for better adherence to the prompt, but maybe worse.'
+                )
+                gr_voxcpm_inference_timesteps = gr.Slider(
+                    label='Inference Timesteps',
+                    minimum=1,
+                    maximum=100,
+                    step=1,
+                    value=int(default_engine_settings[TTS_ENGINES['VOXCPM']]['inference_timesteps']),
+                    elem_id='gr_voxcpm_inference_timesteps',
+                    info='Higher for better result, lower for fast speed.'
+                )
+                gr_voxcpm_normalize = gr.Checkbox(
+                    label='Normalize',
+                    value=default_engine_settings[TTS_ENGINES['VOXCPM']]['normalize'],
+                    elem_id='gr_voxcpm_normalize',
+                    info='Enable external TN tool.'
+                )
+                gr_voxcpm_denoise = gr.Checkbox(
+                    label='Denoise',
+                    value=default_engine_settings[TTS_ENGINES['VOXCPM']]['denoise'],
+                    elem_id='gr_voxcpm_denoise',
+                    info='Enable external Denoise tool.'
+                )
+                gr_voxcpm_retry_badcase = gr.Checkbox(
+                    label='Retry Badcase',
+                    value=default_engine_settings[TTS_ENGINES['VOXCPM']]['retry_badcase'],
+                    elem_id='gr_voxcpm_retry_badcase',
+                    info='Enable retrying mode for some bad cases (unstoppable).'
+                )
+                gr_voxcpm_retry_badcase_max_times = gr.Slider(
+                    label='Retry Badcase Max Times',
+                    minimum=1,
+                    maximum=10,
+                    step=1,
+                    value=int(default_engine_settings[TTS_ENGINES['VOXCPM']]['retry_badcase_max_times']),
+                    elem_id='gr_voxcpm_retry_badcase_max_times',
+                    info='Maximum retrying times.'
+                )
+                gr_voxcpm_retry_badcase_ratio_threshold = gr.Slider(
+                    label='Retry Badcase Ratio Threshold',
+                    minimum=0.0,
+                    maximum=10.0,
+                    step=0.1,
+                    value=float(default_engine_settings[TTS_ENGINES['VOXCPM']]['retry_badcase_ratio_threshold']),
+                    elem_id='gr_voxcpm_retry_badcase_ratio_threshold',
+                    info='Maximum length restriction for bad case detection.'
+                )
+                gr_voxcpm_prompt_text = gr.Textbox(
+                    label='Prompt Text',
+                    value="Default prompt text",
+                    elem_id='gr_voxcpm_prompt_text',
+                    info='Reference text for the prompt speech.'
+                )
         gr_state_update = gr.State(value={"hash": None})
         gr_read_data = gr.JSON(visible=False, elem_id='gr_read_data')
         gr_write_data = gr.JSON(visible=False, elem_id='gr_write_data')
@@ -2810,13 +2894,25 @@ def web_interface(args, ctx):
                 ### BARK Params
                 session['text_temp'] = session['text_temp'] if session['text_temp'] else default_engine_settings[TTS_ENGINES['BARK']]['text_temp']
                 session['waveform_temp'] = session['waveform_temp'] if session['waveform_temp'] else default_engine_settings[TTS_ENGINES['BARK']]['waveform_temp']
+                ### VOXCPM Params
+                session['cfg_value'] = session['cfg_value'] if session['cfg_value'] else default_engine_settings[TTS_ENGINES['VOXCPM']]['cfg_value']
+                session['inference_timesteps'] = session['inference_timesteps'] if session['inference_timesteps'] else default_engine_settings[TTS_ENGINES['VOXCPM']]['inference_timesteps']
+                session['normalize'] = session['normalize'] if session['normalize'] else default_engine_settings[TTS_ENGINES['VOXCPM']]['normalize']
+                session['denoise'] = session['denoise'] if session['denoise'] else default_engine_settings[TTS_ENGINES['VOXCPM']]['denoise']
+                session['retry_badcase'] = session['retry_badcase'] if session['retry_badcase'] else default_engine_settings[TTS_ENGINES['VOXCPM']]['retry_badcase']
+                session['retry_badcase_max_times'] = session['retry_badcase_max_times'] if session['retry_badcase_max_times'] else default_engine_settings[TTS_ENGINES['VOXCPM']]['retry_badcase_max_times']
+                session['retry_badcase_ratio_threshold'] = session['retry_badcase_ratio_threshold'] if session['retry_badcase_ratio_threshold'] else default_engine_settings[TTS_ENGINES['VOXCPM']]['retry_badcase_ratio_threshold']
                 return (
                     gr.update(value=ebook_data), gr.update(value=session['ebook_mode']), gr.update(value=session['device']),
                     gr.update(value=session['language']), update_gr_tts_engine_list(id), update_gr_custom_model_list(id),
                     update_gr_fine_tuned_list(id), gr.update(value=session['output_format']), update_gr_audiobook_list(id), gr.update(value=load_vtt_data(session['audiobook'])),
                     gr.update(value=float(session['temperature'])), gr.update(value=float(session['length_penalty'])), gr.update(value=int(session['num_beams'])),
                     gr.update(value=float(session['repetition_penalty'])), gr.update(value=int(session['top_k'])), gr.update(value=float(session['top_p'])), gr.update(value=float(session['speed'])), 
-                    gr.update(value=bool(session['enable_text_splitting'])), gr.update(value=float(session['text_temp'])), gr.update(value=float(session['waveform_temp'])), update_gr_voice_list(id),
+                    gr.update(value=bool(session['enable_text_splitting'])), gr.update(value=float(session['text_temp'])), gr.update(value=float(session['waveform_temp'])),
+                    gr.update(value=float(session['cfg_value'])), gr.update(value=int(session['inference_timesteps'])), gr.update(value=bool(session['normalize'])),
+                    gr.update(value=bool(session['denoise'])), gr.update(value=bool(session['retry_badcase'])), gr.update(value=int(session['retry_badcase_max_times'])),
+                    gr.update(value=float(session['retry_badcase_ratio_threshold'])),
+                    update_gr_voice_list(id),
                     gr.update(value=session['output_split']), gr.update(value=session['output_split_hours']), gr.update(active=True)
                 )
             except Exception as e:
@@ -3241,22 +3337,29 @@ def web_interface(args, ctx):
             default_voice_path = models[session['tts_engine']][session['fine_tuned']]['voice']
             if default_voice_path is None:
                 session['voice'] = default_voice_path
+            xtts_visible = False
             bark_visible = False
+            voxcpm_visible = False
             if session['tts_engine'] == TTS_ENGINES['XTTSv2']:
+                xtts_visible = True
                 visible_custom_model = True
                 if session['fine_tuned'] != 'internal':
                     visible_custom_model = False
                 return (
                        gr.update(value=show_rating(session['tts_engine'])), 
-                       gr.update(visible=visible_gr_tab_xtts_params), gr.update(visible=False), gr.update(visible=visible_custom_model), update_gr_fine_tuned_list(id),
+                       gr.update(visible=xtts_visible), gr.update(visible=bark_visible), gr.update(visible=voxcpm_visible),
+                       gr.update(visible=visible_custom_model), update_gr_fine_tuned_list(id),
                        gr.update(label=f"*Upload {session['tts_engine']} Model (Should be a ZIP file with {', '.join(models[session['tts_engine']][default_fine_tuned]['files'])})"),
                        gr.update(label=f"My {session['tts_engine']} custom models")
                 )
             else:
                 if session['tts_engine'] == TTS_ENGINES['BARK']:
-                    bark_visible = visible_gr_tab_bark_params
+                    bark_visible = True
+                elif session['tts_engine'] == TTS_ENGINES['VOXCPM']:
+                    voxcpm_visible = True
                 return (
-                        gr.update(value=show_rating(session['tts_engine'])), gr.update(visible=False), gr.update(visible=bark_visible), 
+                        gr.update(value=show_rating(session['tts_engine'])), gr.update(visible=xtts_visible), gr.update(visible=bark_visible),
+                        gr.update(visible=voxcpm_visible),
                         gr.update(visible=False), update_gr_fine_tuned_list(id), gr.update(label=f"*Upload Fine Tuned Model not available for {session['tts_engine']}"), gr.update(label='')
                 )
                 
@@ -3320,6 +3423,8 @@ def web_interface(args, ctx):
         def submit_convert_btn(
                 id, device, ebook_file, tts_engine, language, voice, custom_model, fine_tuned, output_format, temperature, 
                 length_penalty, num_beams, repetition_penalty, top_k, top_p, speed, enable_text_splitting, text_temp, waveform_temp,
+                cfg_value, inference_timesteps, normalize, denoise, retry_badcase, retry_badcase_max_times, retry_badcase_ratio_threshold,
+                prompt_text,
                 output_split, output_split_hours
             ):
             try:
@@ -3348,6 +3453,14 @@ def web_interface(args, ctx):
                     "enable_text_splitting": enable_text_splitting,
                     "text_temp": float(text_temp),
                     "waveform_temp": float(waveform_temp),
+                    "cfg_value": float(cfg_value),
+                    "inference_timesteps": int(inference_timesteps),
+                    "normalize": normalize,
+                    "denoise": denoise,
+                    "retry_badcase": retry_badcase,
+                    "retry_badcase_max_times": int(retry_badcase_max_times),
+                    "retry_badcase_ratio_threshold": float(retry_badcase_ratio_threshold),
+                    "prompt_text": prompt_text,
                     "output_split": output_split,
                     "output_split_hours": output_split_hours
                 }
@@ -3585,7 +3698,7 @@ def web_interface(args, ctx):
         gr_tts_engine_list.change(
             fn=change_gr_tts_engine_list,
             inputs=[gr_tts_engine_list, gr_session],
-            outputs=[gr_tts_rating, gr_tab_xtts_params, gr_tab_bark_params, gr_group_custom_model, gr_fine_tuned_list, gr_custom_model_file, gr_custom_model_list] 
+            outputs=[gr_tts_rating, gr_tab_xtts_params, gr_tab_bark_params, gr_tab_voxcpm_params, gr_group_custom_model, gr_fine_tuned_list, gr_custom_model_file, gr_custom_model_list] 
         ).then(
             fn=update_gr_voice_list,
             inputs=[gr_session],
@@ -3722,6 +3835,42 @@ def web_interface(args, ctx):
             inputs=[gr_bark_waveform_temp, gr_session],
             outputs=None
         )
+        ########### VOXCPM Params
+        gr_voxcpm_cfg_value.change(
+            fn=lambda val, id: change_param('cfg_value', val, id),
+            inputs=[gr_voxcpm_cfg_value, gr_session],
+            outputs=None
+        )
+        gr_voxcpm_inference_timesteps.change(
+            fn=lambda val, id: change_param('inference_timesteps', val, id),
+            inputs=[gr_voxcpm_inference_timesteps, gr_session],
+            outputs=None
+        )
+        gr_voxcpm_normalize.change(
+            fn=lambda val, id: change_param('normalize', val, id),
+            inputs=[gr_voxcpm_normalize, gr_session],
+            outputs=None
+        )
+        gr_voxcpm_denoise.change(
+            fn=lambda val, id: change_param('denoise', val, id),
+            inputs=[gr_voxcpm_denoise, gr_session],
+            outputs=None
+        )
+        gr_voxcpm_retry_badcase.change(
+            fn=lambda val, id: change_param('retry_badcase', val, id),
+            inputs=[gr_voxcpm_retry_badcase, gr_session],
+            outputs=None
+        )
+        gr_voxcpm_retry_badcase_max_times.change(
+            fn=lambda val, id: change_param('retry_badcase_max_times', val, id),
+            inputs=[gr_voxcpm_retry_badcase_max_times, gr_session],
+            outputs=None
+        )
+        gr_voxcpm_retry_badcase_ratio_threshold.change(
+            fn=lambda val, id: change_param('retry_badcase_ratio_threshold', val, id),
+            inputs=[gr_voxcpm_retry_badcase_ratio_threshold, gr_session],
+            outputs=None
+        )
         ############ Timer to save session to localStorage
         gr_timer = gr.Timer(9, active=False)
         gr_timer.tick(
@@ -3747,7 +3896,10 @@ def web_interface(args, ctx):
                 gr_session, gr_device, gr_ebook_file, gr_tts_engine_list, gr_language, gr_voice_list,
                 gr_custom_model_list, gr_fine_tuned_list, gr_output_format_list,
                 gr_xtts_temperature, gr_xtts_length_penalty, gr_xtts_num_beams, gr_xtts_repetition_penalty, gr_xtts_top_k, gr_xtts_top_p, gr_xtts_speed, gr_xtts_enable_text_splitting,
-                gr_bark_text_temp, gr_bark_waveform_temp, gr_output_split, gr_output_split_hours
+                gr_bark_text_temp, gr_bark_waveform_temp,
+                gr_voxcpm_cfg_value, gr_voxcpm_inference_timesteps, gr_voxcpm_normalize, gr_voxcpm_denoise, gr_voxcpm_retry_badcase, gr_voxcpm_retry_badcase_max_times, gr_voxcpm_retry_badcase_ratio_threshold,
+                gr_voxcpm_prompt_text,
+                gr_output_split, gr_output_split_hours
             ],
             outputs=[gr_tab_progress]
         ).then(
@@ -3791,7 +3943,10 @@ def web_interface(args, ctx):
                 gr_output_format_list, gr_audiobook_list, gr_audiobook_vtt,
                 gr_xtts_temperature, gr_xtts_length_penalty, gr_xtts_num_beams, gr_xtts_repetition_penalty,
                 gr_xtts_top_k, gr_xtts_top_p, gr_xtts_speed, gr_xtts_enable_text_splitting, gr_bark_text_temp,
-                gr_bark_waveform_temp, gr_voice_list, gr_output_split, gr_output_split_hours, gr_timer
+                gr_bark_waveform_temp, 
+                gr_voxcpm_cfg_value, gr_voxcpm_inference_timesteps, gr_voxcpm_normalize, gr_voxcpm_denoise,
+                gr_voxcpm_retry_badcase, gr_voxcpm_retry_badcase_max_times, gr_voxcpm_retry_badcase_ratio_threshold,
+                gr_voice_list, gr_output_split, gr_output_split_hours, gr_timer
             ]
         ).then(
             fn=lambda session: update_gr_glass_mask(attr='class="hide"') if session else gr.update(),

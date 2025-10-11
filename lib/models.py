@@ -9,7 +9,8 @@ TTS_ENGINES = {
     "VITS": "vits", 
     "FAIRSEQ": "fairseq", 
     "TACOTRON2": "tacotron", 
-    "YOURTTS": "yourtts"
+    "YOURTTS": "yourtts",
+    "VOXCPM": "voxcpm"
 }
 
 TTS_VOICE_CONVERSION = {
@@ -153,6 +154,19 @@ default_engine_settings = {
         "files": ['config.json', 'model_file.pth'],
         "voices": {"Machinella-5": "female-en-5", "ElectroMale-2": "male-en-2", 'Machinella-4': 'female-pt-4\n', 'ElectroMale-3': 'male-pt-3\n'},
         "rating": {"GPU VRAM": 1, "CPU": 5, "RAM": 4, "Realism": 1}
+    },
+    TTS_ENGINES['VOXCPM']: {
+        "samplerate": 16000,
+        "cfg_value": 2.0,
+        "inference_timesteps": 10,
+        "normalize": True,
+        "denoise": True,
+        "retry_badcase": True,
+        "retry_badcase_max_times": 3,
+        "retry_badcase_ratio_threshold": 6.0,
+        "files": [],
+        "voices": {},
+        "rating": {"GPU VRAM": 4, "CPU": 3, "RAM": 8, "Realism": 4}
     }
 }
 models = {
@@ -496,6 +510,16 @@ models = {
             "voice": None,
             "files": default_engine_settings[TTS_ENGINES['YOURTTS']]['files'],
             "samplerate": default_engine_settings[TTS_ENGINES['YOURTTS']]['samplerate']
+        }
+    },
+    TTS_ENGINES['VOXCPM']: {
+        "internal": {
+            "lang": "multi",
+            "repo": "openbmb/VoxCPM-0.5B",
+            "sub": "",
+            "voice": os.path.join(voices_dir, 'eng', 'adult', 'female', 'AlexandraHisakawa.wav'),
+            "files": default_engine_settings[TTS_ENGINES['VOXCPM']]['files'],
+            "samplerate": default_engine_settings[TTS_ENGINES['VOXCPM']]['samplerate']
         }
     }
 }
