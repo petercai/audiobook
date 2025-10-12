@@ -11,7 +11,7 @@ class TTSVoxCPM:
 
     def load_model(self):
         try:
-            self.model = VoxCPM.from_pretrained(self.session['fine_tuned'])
+            self.model = VoxCPM.from_pretrained("openbmb/VoxCPM-0.5B")
             return True
         except Exception as e:
             print(f"Error loading VoxCPM model: {e}")
@@ -35,6 +35,7 @@ class TTSVoxCPM:
                 retry_badcase_max_times=self.session['retry_badcase_max_times'],
                 retry_badcase_ratio_threshold=self.session['retry_badcase_ratio_threshold'],
             )
+            # shoue return ture or false
             return wav
         except Exception as e:
             print(f"Error generating audio with VoxCPM: {e}")
