@@ -34,7 +34,7 @@ class TTSManager:
                 if self.session['tts_engine'] == TTS_ENGINES['VOXCPM']:
                     # Assuming you have a way to get the prompt_wav_path and prompt_text
                     prompt_wav_path = self.session.get('voice')
-                    prompt_text = "Default prompt text"  # You might want to make this configurable
+                    prompt_text = "无论是互联网巨头还是刚起步的创业公司都在竞相努力成为元宇宙这条充满无限可能性赛道的领先者事实确实这些平台除了产品发布发新闻稿时热度高很快就回归平静就像horizon world一样"  # You might want to make this configurable
                     return self.tts.generate_audio(sentence, prompt_wav_path, prompt_text)
                 else:
                     return self.tts.convert(sentence_number, sentence)
