@@ -1,0 +1,5 @@
+complete refactor operations in lib/functions.py step by step, the purpose is to break the large file to small pieces of codeq:
+1. extract function web_interface() to new file web_ui.py
+2. extract functions convert_ebook() and convert_ebook_batch() to new file headless_processor.py
+3. all the shared dependencies still need to stay in functions.py
+4. update all impacted python files when required

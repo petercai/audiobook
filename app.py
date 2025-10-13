@@ -193,9 +193,14 @@ def main():
             print(error)
             sys.exit(1)
 
-        args['script_mode'] = args['script_mode'] if args['script_mode'] else NATIVE
-        args['session'] = 'ba800d22-ee51-11ef-ac34-d4ae52cfd9ce' if args['workflow'] else args['session'] if args['session'] else None
-        args['share'] =  args['share'] if args['share'] else False
+        args['script_mode'] = args.get('script_mode', NATIVE)
+        # Set session ID to default if workflow mode is enabled
+        if args['workflow']:
+            args['session'] = 'ba800d22-ee51-11ef-ac34-d4ae52cfd9ce'
+        # Set session ID to None if not provided
+        elif not args['session']:
+            args['session'] = None
+        args['share'] = bool(args['share'])
         args['ebook_list'] = None
 
         print(f"v{prog_version} {args['script_mode']} mode")
