@@ -1494,7 +1494,7 @@ def convert_chapters2audio(id):
                         sentence_number += 1
                     t.update(1)  # advance for every iteration, including SML
                 end = sentence_number - 1 if sentence_number > 1 else sentence_number
-                msg = f"End of Block {chapter_num}"
+                msg = f"End of chapter {chapter_num}"
                 print(msg)
                 if chapter_num in missing_chapters or sentence_number > resume_sentence:
                     if chapter_num <= resume_chapter:
