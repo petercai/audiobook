@@ -31,6 +31,8 @@
         "zho",
         "--voice",
         "voices/zho/adult/male/yunxi_24000.wav",
+        "--session",
+        "21ce9315-cf16-4b12-921b-fcf52c680809", 
       ],
     },
     {
@@ -52,8 +54,29 @@
         "--voice",
         "voices/zho/adult/male/yunxi_24000.wav",
         // "--session",
-        // "ef4644ee-b4d0-4d30-80b2-516c586bfa1b", // GPU
         // "ead72c49-c5a2-4bf7-8e75-8c7b2c07f0ee", // CPU
+      ],
+    },
+    {
+      "name": "VoxCPM CN",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "app.py",
+      "console": "integratedTerminal",
+      "args": [
+        "--headless",  
+        "--ebook", 
+        "ebooks/god-1.txt",
+        "--device",
+        "cpu",
+        "--tts_engine",
+        "voxcpm",
+        "--language",
+        "zho",
+        "--voice",
+        "voices/zho/adult/male/yunxi_24000.wav",
+        "--session",
+        "72491125-07fd-4bc4-b837-ec5187d9e2a1", 
       ],
     },
     {
