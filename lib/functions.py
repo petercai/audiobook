@@ -1423,7 +1423,7 @@ def convert_chapters2audio(id):
         )
         if existing_chapters:
             resume_chapter = max(int(re.search(r'\d+', f).group()) for f in existing_chapters) 
-            msg = f'Resuming from block {resume_chapter}'
+            msg = f'Resuming from chapter {resume_chapter}'
             print(msg)
             existing_chapter_numbers = {int(re.search(r'\d+', f).group()) for f in existing_chapters}
             missing_chapters = [
@@ -1457,7 +1457,7 @@ def convert_chapters2audio(id):
             print(error)
             return False           
         sentence_number = 0
-        msg = f"--------------------------------------------------\nA total of {total_chapters} {'block' if total_chapters <= 1 else 'blocks'} and {total_sentences} {'sentence' if total_sentences <= 1 else 'sentences'}.\n--------------------------------------------------"
+        msg = f"--------------------------------------------------\nA total of {total_chapters} {'chapter' if total_chapters <= 1 else 'blocks'} and {total_sentences} {'sentence' if total_sentences <= 1 else 'sentences'}.\n--------------------------------------------------"
         print(msg)
         progress_bar = gr.Progress(track_tqdm=False)
         with tqdm(total=total_iterations, desc='0.00%', bar_format='{desc}: {n_fmt}/{total_fmt} ', unit='step', initial=0) as t:
@@ -1467,7 +1467,7 @@ def convert_chapters2audio(id):
                 sentences = session['chapters'][x]
                 sentences_count = sum(1 for row in sentences if row.strip() not in TTS_SML.values())
                 start = sentence_number
-                msg = f'Block {chapter_num} containing {sentences_count} sentences...'
+                msg = f'Chapter {chapter_num} containing {sentences_count} sentences...'
                 print(msg)
                 for i, sentence in enumerate(sentences):
                     if session['cancellation_requested']:
@@ -1498,10 +1498,10 @@ def convert_chapters2audio(id):
                 print(msg)
                 if chapter_num in missing_chapters or sentence_number > resume_sentence:
                     if chapter_num <= resume_chapter:
-                        msg = f'**Recovering missing file block {chapter_num}'
+                        msg = f'**Recovering missing file chapter {chapter_num}'
                         print(msg)
                     if combine_audio_sentences(chapter_audio_file, start, end, session):
-                        msg = f'Combining block {chapter_num} to audio, sentence {start} to {end}'
+                        msg = f'Combining chapter {chapter_num} to audio, sentence {start} to {end}'
                         print(msg)
                     else:
                         msg = 'combine_audio_sentences() failed!'
@@ -1591,7 +1591,7 @@ def combine_audio_sentences(chapter_audio_file, start, end, session):
                 for _, chunk_path in chunk_list:
                     f.write(f"file '{chunk_path.replace(os.sep, '/')}'\n")
             if assemble_chunks(final_list, chapter_audio_file):
-                msg = f'********* Combined block audio file saved in {chapter_audio_file}'
+                msg = f'********* Combined chapter audio file saved in {chapter_audio_file}'
                 print(msg)
                 return True
             else:
@@ -1767,11 +1767,12 @@ def combine_audio_chapters(id):
 
     try:
         session = context.get_session(id)
-        chapter_files = [f for f in os.listdir(session['chapters_dir']) if f.endswith(f'.{default_audio_proc_format}')]
+        _cdir = session['chapters_dir']
+        chapter_files = [f for f in os.listdir(_cdir) if f.endswith(f'.{default_audio_proc_format}')]
         chapter_files = sorted(chapter_files, key=lambda x: int(re.search(r'\d+', x).group()))
         chapter_titles = [c[0] for c in session['chapters']]
         if len(chapter_files) == 0:
-            print('No block files exists!')
+            print('No chapter files exists!')
             return None
         # Calculate total duration
         durations = []
