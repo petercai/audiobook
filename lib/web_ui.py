@@ -24,7 +24,6 @@ from lib.functions import (
     delete_unused_tmp_dirs,
     get_compatible_tts_engines,
     reset_ebook_session,
-    convert_ebook,
     language_mapping,
     models,
     default_language_code,
@@ -56,6 +55,7 @@ from lib.functions import (
     interface_port,
     max_upload_size
 )
+from lib.headless_processor import convert_ebook
 
 # context = None
 # is_gui_process = False

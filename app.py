@@ -7,10 +7,9 @@ import tempfile
 
 from lib import *
 from lib.functions import (
-    convert_ebook,
-    convert_ebook_batch,
     SessionContext,
 )
+from lib.headless_processor import convert_ebook, convert_ebook_batch
 from lib.web_ui import web_interface
 
 
