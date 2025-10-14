@@ -7,11 +7,11 @@ import tempfile
 
 from lib import *
 from lib.functions import (
-    web_interface,
     convert_ebook,
     convert_ebook_batch,
     SessionContext,
 )
+from lib.web_ui import web_interface
 
 
 def check_virtual_env(script_mode):
