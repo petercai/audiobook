@@ -18,7 +18,6 @@ from .functions import (
     analyze_uploaded_file,
     check_programs,
     combine_audio_chapters,
-    convert2epub,
     convert_chapters2audio,
     default_engine_settings,
     default_gpu_wiki,
@@ -41,6 +40,7 @@ from .functions import (
     voices_dir,
     context,
 )
+from lib.epub import convert2epub
 
 
 def convert_ebook_batch(args, ctx=None):
