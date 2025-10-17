@@ -11,14 +11,13 @@ import torch
 from ebooklib import epub
 from iso639 import languages
 
+from lib.ebook_audio import combine_audio_chapters, get_sanitized
 from .functions import (
     NATIVE,
     TTS_ENGINES,
     VoiceExtractor,
     analyze_uploaded_file,
     check_programs,
-    combine_audio_chapters,
-    convert_chapters2audio,
     default_engine_settings,
     default_gpu_wiki,
     default_output_split_hours,
@@ -27,7 +26,6 @@ from .functions import (
     get_chapters,
     get_compatible_tts_engines,
     get_cover,
-    get_sanitized,
     get_vram,
     is_gui_process,
     language_mapping,
@@ -40,7 +38,7 @@ from .functions import (
     voices_dir,
     context,
 )
-from lib.epub import convert2epub
+from lib.epub import convert2epub, convert_chapters2audio
 
 
 def convert_ebook_batch(args, ctx=None):

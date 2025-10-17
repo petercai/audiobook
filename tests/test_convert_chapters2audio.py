@@ -1,7 +1,8 @@
 import os
 import shutil
 import pytest
-from lib.functions import convert_chapters2audio, context, SessionContext, recursive_proxy, default_device, default_language_code, default_tts_engine, default_fine_tuned, default_output_format, default_xtts_settings, default_bark_settings, models_dir, voices_dir, tmp_dir
+from lib.epub import convert_chapters2audio
+from lib.functions import context, SessionContext, recursive_proxy, default_device, default_language_code, default_tts_engine, default_fine_tuned, default_output_format, default_xtts_settings, default_bark_settings, models_dir, voices_dir, tmp_dir
 from multiprocessing import Manager
 
 @pytest.fixture
@@ -126,6 +127,3 @@ def test_convert_onesentense(test_session):
     # Check if audio files are created in chapters_dir
     audio_files = [f for f in os.listdir(test_session['chapters_dir']) if f.endswith('.flac')]
     assert len(audio_files) > 0, "No audio files were created in chapters directory"
-
-
-

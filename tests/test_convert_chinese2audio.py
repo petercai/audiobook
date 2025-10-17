@@ -1,6 +1,7 @@
 import os
 import shutil
 import pytest
+from lib.epub import convert_chapters2audio
 from lib.functions import *
 from lib.conf import *
 from lib.models import *
