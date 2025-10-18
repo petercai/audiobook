@@ -173,24 +173,43 @@ def show_alert(state):
             elif state['type'] == 'success':
                 gr.Success(state['msg'])
 def recursive_proxy(data, manager=None):
+    """
+    Recursively convert plain Python data structures into multiprocessing.Manager
+    proxy objects so they can be shared across processes.
+
+    - dict -> manager.dict() with values recursively proxied
+    - list -> manager.list() with items recursively proxied
+    - primitives (str, int, float, bool, None) -> returned unchanged
+    - unsupported types -> prints an error and returns None
+    """
+    # Create a Manager if one wasn't provided (needed to create proxy containers)
     if manager is None:
         manager = Manager()
+
+    # Convert dictionaries to a proxy dict and recursively proxy values
     if isinstance(data, dict):
         proxy_dict = manager.dict()
         for key, value in data.items():
+            # Recursively convert nested structures; simple types are returned as-is
             proxy_dict[key] = recursive_proxy(value, manager)
         return proxy_dict
+
+    # Convert lists to a proxy list and recursively proxy items
     elif isinstance(data, list):
         proxy_list = manager.list()
         for item in data:
             proxy_list.append(recursive_proxy(item, manager))
         return proxy_list
+
+    # Return primitive scalar values unchanged (safe to share)
     elif isinstance(data, (str, int, float, bool, type(None))):
         return data
+
+    # Any other type is not supported for automatic proxying here
     else:
         error = f"Unsupported data type: {type(data)}"
         print(error)
-        return
+        return None
 
 def prepare_dirs(src, session):
     try:
