@@ -65,7 +65,6 @@ class EBookProcessor:
             global is_gui_process, context
             error = None
             id = None
-            info_session = None
             if args["language"] is not None:
                 if not os.path.splitext(args["ebook"])[1]:
                     error = f"{args['ebook']} needs a format extension."
@@ -294,99 +293,8 @@ class EBookProcessor:
                                 session["process_dir"],
                                 "__" + session["filename_noext"] + ".epub",
                             )
-                            def processEPubChapters(epubBook, id, ctx):
-                                try:
-                                    metadata = dict(session["metadata"])
-                                    for key, value in metadata.items():
-                                        data = epubBook.get_metadata("DC", key)
-                                        if data:
-                                            for value, attributes in data:
-                                                metadata[key] = value
-                                    metadata["language"] = session["language"]
-                                    metadata["title"] = metadata["title"] = (
-                                        metadata["title"] or Path(session["ebook"]).stem.replace("_", " ")
-                                    )
-                                    metadata["creator"] = (
-                                        False
-                                        if not metadata["creator"]
-                                        or metadata["creator"] == "Unknown"
-                                        else metadata["creator"]
-                                    )
-                                    session["metadata"] = metadata
-                                    try:
-                                        if len(session["metadata"]["language"]) == 2:
-                                            lang_array = languages.get(part1=session["language"])
-                                            if lang_array:
-                                                session["metadata"]["language"] = lang_array.part3
-                                    except Exception:
-                                        pass
-                                    if session["metadata"]["language"] != session["language"]:
-                                        err = f"WARNING!!! language selected {session['language']} differs from the EPUB file language {session['metadata']['language']}"
-                                        print(err)
-                                    session["cover"] = get_cover(epubBook, session)
-                                    if not session["cover"]:
-                                        return "get_cover() failed!", False
-                                    session["toc"], session["chapters"] = get_chapters(epubBook, session)
-                                    session["final_name"] = get_sanitized(
-                                        session["metadata"]["title"] + "." + session["output_format"]
-                                    )
-                                    if session["chapters"] is None:
-                                        return "get_chapters() failed!", False
-                            
-                                    if not convert_chapters2audio(id, ctx):
-                                        return "convert_chapters2audio() failed!", False
-                                    msg = "Conversion successful. Combining sentences and chapters..."
-                                    show_alert({"type": "info", "msg": msg})
-                                    exported_files = combine_audio_chapters(id, ctx)
-                                    if exported_files is None:
-                                        return "combine_audio_chapters() error: exported_files not created!", False
-                            
-                                    chapters_dirs = [
-                                        dir_name
-                                        for dir_name in os.listdir(session["process_dir"])
-                                        if fnmatch.fnmatch(dir_name, "chapters_*")
-                                        and os.path.isdir(os.path.join(session["process_dir"], dir_name))
-                                    ]
-                                    shutil.rmtree(os.path.join(session["voice_dir"], "proc"), ignore_errors=True)
-                                    if is_gui_process:
-                                        if len(chapters_dirs) > 1:
-                                            if os.path.exists(session["chapters_dir"]):
-                                                shutil.rmtree(session["chapters_dir"], ignore_errors=True)
-                                            if os.path.exists(session["epub_path"]):
-                                                os.remove(session["epub_path"])
-                                            if os.path.exists(session["cover"]):
-                                                os.remove(session["cover"])
-                                        else:
-                                            if os.path.exists(session["process_dir"]):
-                                                shutil.rmtree(session["process_dir"], ignore_errors=True)
-                                    else:
-                                        if os.path.exists(session["voice_dir"]):
-                                            if not any(os.scandir(session["voice_dir"])):
-                                                shutil.rmtree(session["voice_dir"], ignore_errors=True)
-                                        if os.path.exists(session["custom_model_dir"]):
-                                            if not any(os.scandir(session["custom_model_dir"])):
-                                                shutil.rmtree(session["custom_model_dir"], ignore_errors=True)
-                                        if os.path.exists(session["session_dir"]):
-                                            shutil.rmtree(session["session_dir"], ignore_errors=True)
-                                    progress_status = f'Audiobook(s) {", ".join(os.path.basename(f) for f in exported_files)} created!'
-                                    session["audiobook"] = exported_files[-1]
-                                    print(info_session)
-                                    return progress_status, True
-                                except Exception as e:
-                                    print(f"processEPubChapters() Exception: {e}")
-                                    return str(e), False
-                            
-                            
-                            def processEPub(id, ctx):
-                                try:
-                                    epubBook = epub.read_epub(session["epub_path"], {"ignore_ncx": True})
-                                    return processEPubChapters(epubBook, id, ctx)
-                                except Exception as e:
-                                    print(f"processEPub() Exception: {e}")
-                                    return str(e), False
-                            
                             if convert2epub(id, ctx):
-                                progress_status, passed = processEPub(id, ctx)
+                                progress_status, passed = self.processEPub(id, ctx)
                                 if passed:
                                     return progress_status, True
                                 else:
@@ -399,10 +307,103 @@ class EBookProcessor:
             if session["cancellation_requested"]:
                 error = "Cancelled"
             else:
-                if not is_gui_process and id is not None:
-                    error += info_session
+                    if not is_gui_process and id is not None:
+                        error += f"\n*********** Session: {id} **************\nStore it in case of interruption, crash, reuse of custom model or custom voice,\nyou can resume the conversion with --session option"
             print(error)
             return error, False
         except Exception as e:
             print(f"convert_ebook() Exception: {e}")
             return e, False
+
+    def processEPubChapters(self, epubBook, id, ctx):
+        try:
+            session = context.get_session(id)
+            metadata = dict(session["metadata"])
+            for key, value in metadata.items():
+                data = epubBook.get_metadata("DC", key)
+                if data:
+                    for value, attributes in data:
+                        metadata[key] = value
+            metadata["language"] = session["language"]
+            metadata["title"] = metadata["title"] = (
+                metadata["title"] or Path(session["ebook"]).stem.replace("_", " ")
+            )
+            metadata["creator"] = (
+                False
+                if not metadata["creator"]
+                or metadata["creator"] == "Unknown"
+                else metadata["creator"]
+            )
+            session["metadata"] = metadata
+            try:
+                if len(session["metadata"]["language"]) == 2:
+                    lang_array = languages.get(part1=session["language"])
+                    if lang_array:
+                        session["metadata"]["language"] = lang_array.part3
+            except Exception:
+                pass
+            if session["metadata"]["language"] != session["language"]:
+                err = f"WARNING!!! language selected {session['language']} differs from the EPUB file language {session['metadata']['language']}"
+                print(err)
+            session["cover"] = get_cover(epubBook, session)
+            if not session["cover"]:
+                return "get_cover() failed!", False
+            session["toc"], session["chapters"] = get_chapters(epubBook, session)
+            session["final_name"] = get_sanitized(
+                session["metadata"]["title"] + "." + session["output_format"]
+            )
+            if session["chapters"] is None:
+                return "get_chapters() failed!", False
+
+            if not convert_chapters2audio(id, ctx):
+                return "convert_chapters2audio() failed!", False
+            msg = "Conversion successful. Combining sentences and chapters..."
+            show_alert({"type": "info", "msg": msg})
+            exported_files = combine_audio_chapters(id, ctx)
+            if exported_files is None:
+                return "combine_audio_chapters() error: exported_files not created!", False
+
+            chapters_dirs = [
+                dir_name
+                for dir_name in os.listdir(session["process_dir"])
+                if fnmatch.fnmatch(dir_name, "chapters_*")
+                and os.path.isdir(os.path.join(session["process_dir"], dir_name))
+            ]
+            shutil.rmtree(os.path.join(session["voice_dir"], "proc"), ignore_errors=True)
+            if is_gui_process:
+                if len(chapters_dirs) > 1:
+                    if os.path.exists(session["chapters_dir"]):
+                        shutil.rmtree(session["chapters_dir"], ignore_errors=True)
+                    if os.path.exists(session["epub_path"]):
+                        os.remove(session["epub_path"])
+                    if os.path.exists(session["cover"]):
+                        os.remove(session["cover"])
+                else:
+                    if os.path.exists(session["process_dir"]):
+                        shutil.rmtree(session["process_dir"], ignore_errors=True)
+            else:
+                if os.path.exists(session["voice_dir"]):
+                    if not any(os.scandir(session["voice_dir"])):
+                        shutil.rmtree(session["voice_dir"], ignore_errors=True)
+                if os.path.exists(session["custom_model_dir"]):
+                    if not any(os.scandir(session["custom_model_dir"])):
+                        shutil.rmtree(session["custom_model_dir"], ignore_errors=True)
+                if os.path.exists(session["session_dir"]):
+                    shutil.rmtree(session["session_dir"], ignore_errors=True)
+            progress_status = f'Audiobook(s) {", ".join(os.path.basename(f) for f in exported_files)} created!'
+            session["audiobook"] = exported_files[-1]
+            print(f"\n*********** Session: {id} **************\nStore it in case of interruption, crash, reuse of custom model or custom voice,\nyou can resume the conversion with --session option")
+            return progress_status, True
+        except Exception as e:
+            print(f"processEPubChapters() Exception: {e}")
+            return str(e), False
+
+
+    def processEPub(self, id, ctx):
+        try:
+            session = context.get_session(id)
+            epubBook = epub.read_epub(session["epub_path"], {"ignore_ncx": True})
+            return self.processEPubChapters(epubBook, id, ctx)
+        except Exception as e:
+            print(f"processEPub() Exception: {e}")
+            return str(e), False

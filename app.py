@@ -9,7 +9,7 @@ from lib import *
 from lib.functions import (
     SessionContext,
 )
-from lib.headless_processor import convert_ebook, convert_ebook_batch
+from lib.headless_processor import EBookProcessor
 from lib.web_ui import web_interface
 
 
@@ -256,7 +256,8 @@ def start_headless(args, ctx):
             if any(file.endswith(ext) for ext in ebook_formats):
                 full_path = os.path.abspath(os.path.join(args['ebooks_dir'], file))
                 args['ebook_list'].append(full_path)
-        progress_status, passed = convert_ebook_batch(args, ctx)
+        ebook_processor = EBookProcessor()
+        progress_status, passed = ebook_processor.convert_ebook_batch(args, ctx)
         if passed is False:
             error = f'Conversion failed: {progress_status}'
             print(error)
@@ -267,7 +268,8 @@ def start_headless(args, ctx):
             error = f'Error: The provided --ebook "{args["ebook"]}" does not exist.'
             print(error)
             sys.exit(1)
-        progress_status, passed = convert_ebook(args, ctx)
+        ebook_processor = EBookProcessor()
+        progress_status, passed = ebook_processor.convert_ebook(args, ctx)
         if passed is False:
             error = f'Conversion failed: {progress_status}'
             print(error)
