@@ -55,7 +55,7 @@ from lib.functions import (
     interface_port,
     max_upload_size
 )
-from lib.headless_processor import convert_ebook
+from lib.headless_processor import EBookProcessor
 
 # context = None
 # is_gui_process = False
@@ -1317,7 +1317,8 @@ def web_interface(args, ctx):
                             if any(file.endswith(ext) for ext in ebook_formats):
                                 print(f'Processing eBook file: {os.path.basename(file)}')
                                 args['ebook'] = file
-                                progress_status, passed = convert_ebook(args)
+                                ebook_processor = EBookProcessor()
+                                progress_status, passed = ebook_processor.convert_ebook(args)
                                 if passed is False:
                                     if session['status'] == 'converting':
                                         error = 'Conversion cancelled.'
@@ -1338,7 +1339,8 @@ def web_interface(args, ctx):
                         session['status'] = 'ready'
                     else:
                         print(f"Processing eBook file: {os.path.basename(args['ebook'])}")
-                        progress_status, passed = convert_ebook(args)
+                        ebook_processor = EBookProcessor()
+                        progress_status, passed = ebook_processor.convert_ebook(args)
                         if passed is False:
                             if session['status'] == 'converting':
                                 error = 'Conversion cancelled.'

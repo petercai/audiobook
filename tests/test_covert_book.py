@@ -1,4 +1,4 @@
-from lib.functions import convert_ebook
+from lib.headless_processor import EBookProcessor
 
 
 class TestConvertBook:
@@ -34,4 +34,5 @@ class TestConvertBook:
         "workflow": False
     }
     def test_convert_book(self):
-        convert_ebook(self.args)
+        ebook_processor = EBookProcessor()
+        ebook_processor.convert_ebook(self.args)
