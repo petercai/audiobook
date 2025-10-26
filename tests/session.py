@@ -1,5 +1,6 @@
 
 import json
+import uuid
 from types import SimpleNamespace
 
 def to_object(data):
@@ -10,6 +11,14 @@ def to_object(data):
     else:
         return data
 
+class SessionContextMock:
+    def __init__(self, args):
+        self.sessions = dict
+        id = args["session"] if args["session"] is not None else str(uuid.uuid4())
+        self.sessions[id] = args
+
+    def get_session(self, id):
+        return self.sessions[id]
 
 class Session(SimpleNamespace):
     """Recursively converts dicts/lists to objects with dot access."""

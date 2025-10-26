@@ -38,7 +38,7 @@ from .functions import (
     voices_dir,
     context,
 )
-from lib.epub import convert2epub, convert_chapters2audio
+from lib.epub import EPubProcessor, convert_chapters2audio
 
 
 class EBookProcessor:
@@ -125,8 +125,11 @@ class EBookProcessor:
                         if self.prepare_session_cache(args, session):
                             self.gpu_check(is_gui_process, session)
 
-                            if convert2epub(id, ctx):
-                                progress_status, passed = self.process_epub(id, ctx)
+                            self.gpu_check(self.is_gui_process, session)
+
+                            epub_processor = EPubProcessor()
+                            if epub_processor.convert2epub(id, self.context):
+                                progress_status, passed = self.process_epub(id, self.context)
                                 if passed:
                                     return progress_status, True
                                 else:

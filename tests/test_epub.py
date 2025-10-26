@@ -1,0 +1,234 @@
+import os
+import pytest
+from ebooklib import epub
+from lib.epub import EPubProcessor
+from lib.functions import SessionContext, TTS_ENGINES, recursive_proxy
+from lib.headless_processor import EBookProcessor
+
+@pytest.fixture
+def tmp_path():
+    return os.path.abspath('tmp')
+
+@pytest.fixture
+def ebook_path():
+    return os.path.abspath('ebooks')
+
+@pytest.fixture
+def session_context(tmp_path):
+    """Fixture to create a temporary session context for tests."""
+    session_id = "test-session"
+    context = SessionContext({"session": session_id})
+    session = context.get_session(session_id)
+
+    # Create necessary directories
+    process_dir = os.path.join(tmp_path,  "test_process")
+    os.makedirs(process_dir, exist_ok=True)
+    session['process_dir'] = str(process_dir)
+
+    return context, session_id, session
+
+def test_convert2epub(session_context, ebook_path, tmp_path):
+    """Test successful conversion of a .txt file to .epub."""
+    context, session_id, session = session_context
+    session = context.get_session(session_id)
+
+    input_file = os.path.join(ebook_path, "god-c12-short.epub")
+
+    session['ebook'] = str(input_file)
+    session['epub_path'] = tmp_path+  "/book_gen.epub"
+
+    processor = EPubProcessor(session_id, context)
+    result = processor.convert2epub()
+
+def test_process_epub(session_context, ebook_path, tmp_path):
+    """Test successful processing of an EPUB file."""
+    context, session_id, session = session_context
+    # session = context.get_session(session_id)
+
+    # Setup arguments for EBookProcessor
+    args = {
+        "session": session_id,
+        "ebook": os.path.join(ebook_path, "god-c12.epub"),
+        "ebook_list": None,
+        "device": "cpu",
+        "language": "eng",
+        "tts_engine": TTS_ENGINES['XTTSv2'],
+        "custom_model": None,
+        "fine_tuned": "internal",
+        "voice": None,
+        "temperature": 0.75,
+        "length_penalty": 1.0,
+        "num_beams": 5,
+        "repetition_penalty": 1.0,
+        "top_k": 50,
+        "top_p": 0.95,
+        "speed": 1.0,
+        "enable_text_splitting": True,
+        "text_temp": 0.7,
+        "waveform_temp": 0.7,
+        "audiobooks_dir": tmp_path,
+        "output_format": "mp3",
+        "output_split": "by-chapter",
+        "output_split_hours": 1,
+        "is_gui_process": False,
+        "script_mode": "native"
+    }
+
+    # Instantiate EBookProcessor
+    ebook_processor = EBookProcessor(args, context)
+    session['epub_path'] = session['ebook']
+    
+    # Process the EPUB
+    status, success = ebook_processor.process_epub(session_id, context)
+
+    # Assertions
+    assert success is True
+    assert "Audiobook(s)" in status
+    assert os.path.exists(session['audiobook'])
+    
+def test_process_epub_chapters(session_context, ebook_path, tmp_path):
+    """Test successful processing of an EPUB file."""
+    context, session_id, session = session_context
+    # session = context.get_session(session_id)
+
+    # Setup arguments for EBookProcessor
+    args = {
+        "session": session_id,
+        "ebook": os.path.join(ebook_path, "god-c12.epub"),
+        "ebook_list": None,
+        "device": "cpu",
+        "language": "eng",
+        "tts_engine": TTS_ENGINES['XTTSv2'],
+        "custom_model": None,
+        "fine_tuned": "internal",
+        "voice": None,
+        "temperature": 0.75,
+        "length_penalty": 1.0,
+        "num_beams": 5,
+        "repetition_penalty": 1.0,
+        "top_k": 50,
+        "top_p": 0.95,
+        "speed": 1.0,
+        "enable_text_splitting": True,
+        "text_temp": 0.7,
+        "waveform_temp": 0.7,
+        "audiobooks_dir": tmp_path,
+        "output_format": "mp3",
+        "output_split": "by-chapter",
+        "output_split_hours": 1,
+        "is_gui_process": False,
+        "script_mode": "native"
+    }
+    session = recursive_proxy(args, context.manager)
+
+    # Instantiate EBookProcessor
+    ebook_processor = EBookProcessor(args, context)
+    session["epub_path"] = session["ebook"]
+    epubBook = epub.read_epub(session["ebook"], {"ignore_ncx": True})
+    basename = os.path.basename(session["ebook"])
+    name_splits = os.path.splitext(basename)
+    session["filename_noext"] = name_splits[0]
+
+    # Process the EPUB
+    status, success = ebook_processor.process_epub_chapters(epubBook, session_id, context)
+
+    # Assertions
+    assert success is True
+    assert "Audiobook(s)" in status
+    assert os.path.exists(session['audiobook'])
+    
+def test_process_epub_metadata(session_context, ebook_path, tmp_path):
+    """Test successful processing of an EPUB file."""
+    context, session_id, session = session_context
+    # session = context.get_session(session_id)
+
+    # Setup arguments for EBookProcessor
+    args = {
+        "session": session_id,
+        "ebook": os.path.join(ebook_path, "god-c12.epub"),
+        "ebook_list": None,
+        "device": "cpu",
+        "language": "zh-CN",
+        "tts_engine": TTS_ENGINES['XTTSv2'],
+        "custom_model": None,
+        "fine_tuned": "internal",
+        "voice": None,
+        "temperature": 0.75,
+        "length_penalty": 1.0,
+        "num_beams": 5,
+        "repetition_penalty": 1.0,
+        "top_k": 50,
+        "top_p": 0.95,
+        "speed": 1.0,
+        "enable_text_splitting": True,
+        "text_temp": 0.7,
+        "waveform_temp": 0.7,
+        "audiobooks_dir": tmp_path,
+        "output_format": "mp3",
+        "output_split": "by-chapter",
+        "output_split_hours": 1,
+        "is_gui_process": False,
+        "script_mode": "native"
+    }
+
+    # Instantiate EBookProcessor
+    ebook_processor = EBookProcessor(args, context)
+    session['epub_path'] = session['ebook']
+    epubBook = epub.read_epub(session["epub_path"], {"ignore_ncx": True})
+    basename = os.path.basename(session["ebook"])
+    name_splits = os.path.splitext(basename)
+    session["filename_noext"] = name_splits[0]
+
+    # Process the EPUB
+    status, success = ebook_processor.prepare_epub_metadata(session, epubBook)
+
+    # Assertions
+    assert success is True
+    assert "Audiobook(s)" in status
+    assert os.path.exists(session['audiobook'])
+
+def test_get_chapters(session_context, ebook_path, tmp_path):
+    """Test successful processing of an EPUB file."""
+    context, session_id, session = session_context
+    # session = context.get_session(session_id)
+
+    # Setup arguments for EBookProcessor
+    args = {
+        "session": session_id,
+        "ebook": os.path.join(ebook_path, "god-c12.epub"),
+        "device": "cpu",
+        "language": "eng",
+        "tts_engine": TTS_ENGINES['XTTSv2'],
+        "fine_tuned": "internal",
+        "temperature": 0.75,
+        "length_penalty": 1.0,
+        "num_beams": 5,
+        "repetition_penalty": 1.0,
+        "top_k": 50,
+        "top_p": 0.95,
+        "speed": 1.0,
+        "enable_text_splitting": True,
+        "text_temp": 0.7,
+        "waveform_temp": 0.7,
+        "audiobooks_dir": tmp_path,
+        "output_format": "mp3",
+        "output_split": "by-chapter",
+        "output_split_hours": 1,
+        "is_gui_process": False,
+        "script_mode": "native"
+    }
+
+    # update session with args
+    session.update(args)
+
+    ebook_ = session["ebook"]
+    epubBook = epub.read_epub(ebook_, {"ignore_ncx": True})
+
+
+
+    processor = EPubProcessor()
+    toc, chapters = processor.get_chapters(epubBook)
+    
+    # Assertions
+    assert toc
+    assert chapters
