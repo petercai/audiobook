@@ -98,7 +98,7 @@ class EBookProcessor:
 
     def convert_ebook(self, args, ctx=None):
         try:
-            global is_gui_process, context
+            # global is_gui_process, context
             error = None
             id = None
             if args["language"] is not None:
@@ -229,7 +229,7 @@ class EBookProcessor:
         return prepare_dirs(args["ebook"], session)
 
     def init_session(self, args, ctx):
-        global is_gui_process, context
+        # global is_gui_process, context
         if ctx is not None:
             context = ctx
 
@@ -275,7 +275,7 @@ class EBookProcessor:
             if args["output_split_hours"] is not None
             else default_output_split_hours
         )
-        return session, id
+        return dict(session), id
 
     def process_epub_chapters(self, epubBook, id, context):
         try:
