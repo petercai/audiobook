@@ -1,20 +1,29 @@
+import io
+import math
 import os
 import shutil
 import subprocess
 import sys
 import traceback
+import unicodedata
 
 import ebooklib
 import gradio as gr
 import pymupdf4llm
 import regex as re
 import stanza
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, NavigableString, Tag
+from num2words import num2words
+from PIL import Image
 from tqdm import tqdm
 
-from lib import TTS_SML, default_audio_proc_format, ebook_formats, abbreviations_mapping, emojis_list, \
-    punctuation_switch, punctuation_split_hard_set, specialchars_mapping, default_language_code, \
-    year_to_decades_languages, punctuation_split_soft_set
+from lib import (TTS_SML, abbreviations_mapping, default_audio_proc_format,
+                 default_language_code, ebook_formats, emojis_list,
+                 language_clock, language_mapping, language_math_phonemes,
+                 punctuation_list_set, punctuation_split_hard_set,
+                 punctuation_split_soft_set, punctuation_switch,
+                 roman_numbers_tuples, specialchars_mapping,
+                 specialchars_remove, year_to_decades_languages)
 from lib.classes.tts_manager import TTSManager
 from lib.ebook_audio import combine_audio_sentences
 
@@ -38,6 +47,16 @@ class DependencyError(Exception):
             sys.exit(1)
 
 class EPubProcessor:
+
+    def __init__(self):
+        self.heading_tags = {"h1", "h2", "h3", "h4", "h5", "h6"}
+        self.break_tags = {"p", "div", "li", "br", "hr"}
+        self.pause_tags = {"ol", "ul"}
+        self.proc_tags = {
+            "p", "div", "span", "a", "li", "ol", "ul", "i", "b", "em",
+            "strong", "blockquote", "q", "cite", "code", "pre", "br", "hr"
+        } | self.heading_tags | self.break_tags | self.pause_tags
+        self.sml_tokens = set(TTS_SML.values())
 
     def convert2epub(self, id, context):
         session = context.get_session(id)
@@ -309,19 +328,24 @@ class EPubProcessor:
         """
         try:
             # Decode the HTML content of the chapter from the ebook document.
-            raw_html = doc.get_body_content().decode("utf-8")
+            raw_html = doc.get_content().decode("utf-8")
             # Parse the HTML using BeautifulSoup to create a navigable structure.
             soup = BeautifulSoup(raw_html, 'html.parser')
-            body = soup.body
+            # Determine the root element for content extraction.
+            # If a `body` tag exists, use it. Otherwise, use the whole document (`soup`).
+            # This handles cases where the EPUB page is a fragment without a `body` tag.
+            content_root = soup.body if soup.body else soup
             # If the chapter body is empty or contains no text, skip it by returning an empty list.
-            if not body or not body.get_text(strip=True):
+            if not content_root or not content_root.get_text(strip=True):
                 return []
             # Check the EPUB type to exclude non-content sections like TOC, frontmatter, etc.
             # This helps filter out pages that shouldn't be read aloud (like table of contents).
-            epub_type = body.get("epub:type", "").lower()
+            epub_type = ""
+            if soup.body:
+                epub_type = soup.body.get("epub:type", "").lower()
             # If epub:type is not specified on body, check for section tag with epub:type
             if not epub_type:
-                section_tag = soup.find("section")
+                section_tag = content_root.find("section")
                 if section_tag:
                     epub_type = section_tag.get("epub:type", "").lower()
             # Define a set of excluded content types that shouldn't be processed
@@ -334,13 +358,13 @@ class EPubProcessor:
             if any(part in epub_type for part in excluded):
                 return []
             # Remove script and style tags as they don't contain readable content for TTS.
-            for tag in soup(["script", "style"]):
+            for tag in content_root.find_all(["script", "style"]):
                 tag.decompose()
             # Recursively traverse the HTML body to extract content into a structured list of tuples.
             # Each tuple contains a type identifier and the corresponding content.
-            tuples_list = list(self._tuple_row(body))
+            tuples_list = list(self._tuple_row(content_root))
             if not tuples_list:
-                error = 'No tuples_list from body created!'
+                error = 'No tuples_list from content_root created!'
                 print(error)
                 return None
             # Process the structured list to build a flat list of text elements.
@@ -553,13 +577,16 @@ class EPubProcessor:
                         import jieba
                         result.extend([t for t in jieba.cut(segment) if t.strip()])
                     elif lang == 'jpn':
+                        from sudachipy import dictionary, tokenizer
                         sudachi = dictionary.Dictionary().create()
                         mode = tokenizer.Tokenizer.SplitMode.C
                         result.extend([m.surface() for m in sudachi.tokenize(segment, mode) if m.surface().strip()])
                     elif lang == 'kor':
+                        from korean_tokenizer import LTokenizer
                         ltokenizer = LTokenizer()
                         result.extend([t for t in ltokenizer.tokenize(segment) if t.strip()])
                     elif lang in ['tha', 'lao', 'mya', 'khm']:
+                        from pythainlp import word_tokenize
                         result.extend([t for t in word_tokenize(segment, engine='newmm') if t.strip()])
                     else:
                         result.append(segment.strip())
