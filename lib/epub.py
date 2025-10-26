@@ -203,7 +203,7 @@ class EPubProcessor:
             DependencyError(error)
             return None, None
 
-    def get_epub_chapters(self, epubBook, language_, language_iso_, tts_engine_):
+    def get_epub_chapters(self, epubBook, language_):
         try:
             toc = epubBook.toc  # Extract TOC
             toc_list = []
@@ -403,11 +403,11 @@ class EPubProcessor:
             while i < len(text_list):
                 current = text_list[i]
                 # Check if the current item is a break token
-                if current == "�break�":
+                if current == "‡break‡":
                     if clean_list:
                         prev = clean_list[-1]
                         # Skip consecutive break or pause tokens
-                        if prev in ("�break�", "�pause�"):
+                        if prev in ("‡break‡", "‡pause‡"):
                             i += 1
                             continue
                         # If the previous text ends with alphanumeric or space, try to merge with next sentence
