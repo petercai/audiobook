@@ -4,12 +4,17 @@ import subprocess
 import sys
 import traceback
 
+import ebooklib
 import gradio as gr
 import pymupdf4llm
 import regex as re
+import stanza
+from bs4 import BeautifulSoup
 from tqdm import tqdm
 
-from lib import TTS_SML, default_audio_proc_format, ebook_formats
+from lib import TTS_SML, default_audio_proc_format, ebook_formats, abbreviations_mapping, emojis_list, \
+    punctuation_switch, punctuation_split_hard_set, specialchars_mapping, default_language_code, \
+    year_to_decades_languages, punctuation_split_soft_set
 from lib.classes.tts_manager import TTSManager
 from lib.ebook_audio import combine_audio_sentences
 
@@ -133,9 +138,8 @@ class EPubProcessor:
                     return alt
         return None
 
-    def get_cover(self, epubBook):
+    def get_cover(self, epubBook, session):
         try:
-            session = self.context.get_session(self.session_id)
             if session['cancellation_requested']:
                 msg = 'Cancel requested'
                 print(msg)
@@ -163,47 +167,16 @@ class EPubProcessor:
             DependencyError(e)
             return False
 
-    def get_chapters(self, epubBook):
+    def get_chapters(self, epubBook, session):
         try:
-            msg = r'''
-*******************************************************************************
-NOTE:
-The warning "Character xx not found in the vocabulary."
-MEANS THE MODEL CANNOT INTERPRET THE CHARACTER AND WILL MAYBE GENERATE
-(AS WELL AS WRONG PUNCTUATION POSITION) AN HALLUCINATION TO IMPROVE THIS MODEL,
-IT NEEDS TO ADD THIS CHARACTER INTO A NEW TRAINING MODEL.
-YOU CAN IMPROVE IT OR ASK TO A TRAINING MODEL EXPERT.
-*******************************************************************************
-            '''
-            print(msg)
-            session = self.context.get_session(self.session_id)
             if session['cancellation_requested']:
                 print('Cancel requested')
                 return False
             # Step 1: Extract TOC (Table of Contents)
             language_iso_ = session['language_iso1']
             language_ = session['language']
-            try:
-                toc = epubBook.toc  # Extract TOC
-                toc_list = [
-                        nt for item in toc if hasattr(item, 'title')
-                        if (nt := self.normalize_text(
-                            str(item.title),
-                        language_,
-                            language_iso_,
-                            session['tts_engine']
-                    )) is not None
-                ]
-            except Exception as toc_error:
-                error = f"Error extracting TOC: {toc_error}"
-                print(error)
-            # Get spine item IDs
-            spine_ids = [item[0] for item in epubBook.spine]
-            # Filter only spine documents (i.e., reading order)
-            all_docs = [
-                item for item in epubBook.get_items_of_type(ebooklib.ITEM_DOCUMENT)
-                if item.id in spine_ids
-            ]
+            tts_engine_ = session['tts_engine']
+            all_docs, toc = self.get_epub_chapters(epubBook, language_)
             if not all_docs:
                 return [], []
             title = self.get_ebook_title(epubBook, all_docs)
@@ -216,7 +189,7 @@ YOU CAN IMPROVE IT OR ASK TO A TRAINING MODEL EXPERT.
             msg = 'Analyzing numbers, maths signs, dates and time to convert in words...'
             print(msg)
             for doc in all_docs:
-                sentences_list = self.filter_chapter(doc, language_, language_iso_, session['tts_engine'], stanza_nlp, is_num2words_compat)
+                sentences_list = self.filter_chapter(doc, language_, language_iso_, tts_engine_, stanza_nlp, is_num2words_compat)
                 if sentences_list is None:
                     break
                 elif len(sentences_list) > 0:
@@ -229,6 +202,30 @@ YOU CAN IMPROVE IT OR ASK TO A TRAINING MODEL EXPERT.
             error = f'Error extracting main content pages: {e}'
             DependencyError(error)
             return None, None
+
+    def get_epub_chapters(self, epubBook, language_, language_iso_, tts_engine_):
+        try:
+            toc = epubBook.toc  # Extract TOC
+            toc_list = []
+            for item in toc:
+                if hasattr(item, 'title'):
+                    normalized_title = self.normalize_text(
+                        str(item.title),
+                        language_,
+                    )
+                    if normalized_title is not None:
+                        toc_list.append(normalized_title)
+        except Exception as toc_error:
+            error = f"Error extracting TOC: {toc_error}"
+            print(error)
+        # Get spine item IDs
+        spine_ids = [item[0] for item in epubBook.spine]
+        # Filter only spine documents (i.e., reading order)
+        all_docs = [
+            item for item in epubBook.get_items_of_type(ebooklib.ITEM_DOCUMENT)
+            if item.id in spine_ids
+        ]
+        return all_docs, toc
 
     def _num_repl(self, m, lang, lang_iso1, is_num2words_compat):
         s = m.group(0)
@@ -385,10 +382,10 @@ YOU CAN IMPROVE IT OR ASK TO A TRAINING MODEL EXPERT.
                             continue
                         # Format the row data - if headers exist and match cell count, use labeled format
                         if len(cells) == len(headers) and headers:
-                            line = " — ".join(f"{h}: {c}" for h, c in zip(headers, cells))
+                            line = " â€” ".join(f"{h}: {c}" for h, c in zip(headers, cells))
                         else:
                             # Otherwise, just join the cells with separators
-                            line = " — ".join(cells)
+                            line = " â€” ".join(cells)
                         if line:
                             text_list.append(line.strip())
                 else:
@@ -406,11 +403,11 @@ YOU CAN IMPROVE IT OR ASK TO A TRAINING MODEL EXPERT.
             while i < len(text_list):
                 current = text_list[i]
                 # Check if the current item is a break token
-                if current == "‡break‡":
+                if current == "ï¿½breakï¿½":
                     if clean_list:
                         prev = clean_list[-1]
                         # Skip consecutive break or pause tokens
-                        if prev in ("‡break‡", "‡pause‡"):
+                        if prev in ("ï¿½breakï¿½", "ï¿½pauseï¿½"):
                             i += 1
                             continue
                         # If the previous text ends with alphanumeric or space, try to merge with next sentence
@@ -514,7 +511,7 @@ YOU CAN IMPROVE IT OR ASK TO A TRAINING MODEL EXPERT.
             specialchars_remove_table = str.maketrans({ch: ' ' for ch in specialchars_remove})
             text = text.translate(specialchars_remove_table)
             # Perform final text normalization (e.g., handling abbreviations, punctuation) for better TTS quality
-            text = self.normalize_text(text, lang, lang_iso1, tts_engine)
+            text = self.normalize_text(text, lang)
             # Split the fully processed text into sentences for TTS based on language-specific rules
             sentences = self.get_sentences(text, lang, tts_engine)
             if len(sentences) == 0:
@@ -907,12 +904,12 @@ YOU CAN IMPROVE IT OR ASK TO A TRAINING MODEL EXPERT.
             return False
 
     def _set_formatted_number(self, text: str, lang, lang_iso1: str, is_num2words_compat: bool, max_single_value: int = 999_999_999_999_999_999):
-        # match up to 18 digits, optional “,…” groups (allowing spaces or NBSP after comma), optional decimal of up to 12 digits
+        # match up to 18 digits, optional ï¿½,ï¿½ï¿½ groups (allowing spaces or NBSP after comma), optional decimal of up to 12 digits
         # handle optional range with dash/en dash/em dash between numbers, and allow trailing punctuation
         number_re = re.compile(
             r'(?<!\w)'
             r'(\d{1,18}(?:,\s*\d{1,18})*(?:\.\d{1,12})?)'      # first number
-            r'(?:\s*([-–—])\s*'                                # dash type
+            r'(?:\s*([-ï¿½ï¿½])\s*'                                # dash type
             r'(\d{1,18}(?:,\s*\d{1,18})*(?:\.\d{1,12})?))?'    # optional second number
             r'([^\w\s]*)',                                     # optional trailing punctuation
             re.UNICODE
@@ -981,7 +978,7 @@ YOU CAN IMPROVE IT OR ASK TO A TRAINING MODEL EXPERT.
         text = re.sub(r'^(?:\s*)([IVXLCDM]+)([.-])(?:\s*)$', self._repl_roman_standalone, text, flags=re.MULTILINE)
 
         # NEW: only convert whitespace-delimited tokens of length >= 2
-        # This avoids: 19C, 19°C, °C, AC/DC, CD-ROM, single-letter "I"
+        # This avoids: 19C, 19ï¿½C, ï¿½C, AC/DC, CD-ROM, single-letter "I"
         text = re.sub(r'(?<!\S)([IVXLCDM]{2,})(?!\S)', self._repl_roman_word, text)
 
         return text
@@ -992,7 +989,7 @@ YOU CAN IMPROVE IT OR ASK TO A TRAINING MODEL EXPERT.
             text = re.sub(pattern, f" {value} ", text)
         return text
 
-    def normalize_text(self, text, lang, lang_iso1, tts_engine):
+    def normalize_text(self, text, lang):
         # Remove emojis
         emoji_pattern = re.compile(f"[{''.join(emojis_list)}]+", flags=re.UNICODE)
         emoji_pattern.sub('', text)
@@ -1000,7 +997,7 @@ YOU CAN IMPROVE IT OR ASK TO A TRAINING MODEL EXPERT.
             mapping = abbreviations_mapping[lang]
             # Sort keys by descending length so longer ones match first
             keys = sorted(mapping.keys(), key=len, reverse=True)
-            # Build a regex that only matches whole “words” (tokens) exactly
+            # Build a regex that only matches whole ï¿½wordsï¿½ (tokens) exactly
             pattern = re.compile(
                 r'(?<!\w)(' + '|'.join(re.escape(k) for k in keys) + r')(?!\w)',
                 flags=re.IGNORECASE
@@ -1012,7 +1009,7 @@ YOU CAN IMPROVE IT OR ASK TO A TRAINING MODEL EXPERT.
         text = re.sub(r'\b(?:[a-zA-Z]\.){1,}[a-zA-Z]?\b\.?', lambda m: m.group().replace('.', '').upper(), text)
         # Prepare SML tags
         text = self._filter_sml(text)
-        # Replace multiple newlines ("\n\n", "\r\r", "\n\r", etc.) with a ‡pause‡ 1.4sec
+        # Replace multiple newlines ("\n\n", "\r\r", "\n\r", etc.) with a ï¿½pauseï¿½ 1.4sec
         pattern = r'(?:\r\n|\r|\n){2,}'
         text = re.sub(pattern, f" {TTS_SML['pause']} ", text)
         # Replace single newlines ("\n" or "\r") with spaces

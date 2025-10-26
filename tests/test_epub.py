@@ -1,9 +1,12 @@
 import os
 import pytest
 from ebooklib import epub
+
+from lib import TTS_ENGINES
 from lib.epub import EPubProcessor
-from lib.functions import SessionContext, TTS_ENGINES, recursive_proxy
 from lib.headless_processor import EBookProcessor
+from lib.session import SessionContextMock
+
 
 @pytest.fixture
 def tmp_path():
@@ -17,7 +20,7 @@ def ebook_path():
 def session_context(tmp_path):
     """Fixture to create a temporary session context for tests."""
     session_id = "test-session"
-    context = SessionContext({"session": session_id})
+    context = SessionContextMock({"session": session_id})
     session = context.get_session(session_id)
 
     # Create necessary directories
@@ -48,10 +51,12 @@ def test_process_epub(session_context, ebook_path, tmp_path):
     # Setup arguments for EBookProcessor
     args = {
         "session": session_id,
+        'cancellation_requested': False,
         "ebook": os.path.join(ebook_path, "god-c12.epub"),
         "ebook_list": None,
         "device": "cpu",
-        "language": "eng",
+        "language": "zho",
+        "language-iso1": "zh",
         "tts_engine": TTS_ENGINES['XTTSv2'],
         "custom_model": None,
         "fine_tuned": "internal",
@@ -73,9 +78,11 @@ def test_process_epub(session_context, ebook_path, tmp_path):
         "is_gui_process": False,
         "script_mode": "native"
     }
+    # update session with args
+    session.update(args)
 
     # Instantiate EBookProcessor
-    ebook_processor = EBookProcessor(args, context)
+    ebook_processor = EBookProcessor()
     session['epub_path'] = session['ebook']
     
     # Process the EPUB
@@ -195,9 +202,11 @@ def test_get_chapters(session_context, ebook_path, tmp_path):
     # Setup arguments for EBookProcessor
     args = {
         "session": session_id,
+        'cancellation_requested': False,
         "ebook": os.path.join(ebook_path, "god-c12.epub"),
         "device": "cpu",
-        "language": "eng",
+        "language": "zho",
+        "language_iso1": 'zh',
         "tts_engine": TTS_ENGINES['XTTSv2'],
         "fine_tuned": "internal",
         "temperature": 0.75,
@@ -227,8 +236,35 @@ def test_get_chapters(session_context, ebook_path, tmp_path):
 
 
     processor = EPubProcessor()
-    toc, chapters = processor.get_chapters(epubBook)
+    toc, chapters = processor.get_chapters(epubBook, session)
     
     # Assertions
     assert toc
     assert chapters
+
+def test_filter_chapter(session_context):
+    """Test the filter_chapter method."""
+    context, session_id, session = session_context
+    processor = EPubProcessor()
+
+    # Create a mock ebooklib document
+    doc = epub.EpubHtml(title='Test Chapter', file_name='test_chapter.xhtml', lang='en')
+    doc.content = b'<html><body><h1>Chapter 1</h1><p>This is a sentence.</p><p>This is another sentence.</p></body></html>'
+
+    # Call the filter_chapter method
+    sentences = processor.filter_chapter(
+        doc,
+        lang='eng',
+        lang_iso1='en',
+        tts_engine='XTTSv2',
+        stanza_nlp=None,
+        is_num2words_compat=True
+    )
+
+    # Assertions
+    assert sentences is not None
+    assert isinstance(sentences, list)
+    assert len(sentences) > 0
+    assert "Chapter 1" in sentences[0]
+    assert "This is a sentence." in sentences[1]
+    assert "This is another sentence." in sentences[2]
