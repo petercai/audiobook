@@ -23,9 +23,7 @@ from .functions import (
     default_output_split_hours,
     ebook_formats,
     extract_custom_model,
-    get_chapters,
     get_compatible_tts_engines,
-    get_cover,
     get_vram,
     is_gui_process,
     language_mapping,
@@ -336,13 +334,16 @@ class EBookProcessor:
 
     def prepare_epub_metadata(self, session, epubBook):
         try:
-            metadata = dict(session["metadata"])
+            epub_processor = EPubProcessor()
+            metadata = dict(session["metadata"]) if "metadata"in session else {}
             for key, value in list(metadata.items()):
                 data = epubBook.get_metadata("DC", key)
                 if data:
                     for val, attributes in data:
                         metadata[key] = val
-            metadata["language"] = session["language"]
+            # Set the language in metadata to the session's language if not already present
+            if "language" not in metadata:
+                metadata["language"] = session["language"]
             metadata["title"] = (
                 metadata.get("title") or Path(session["ebook"]).stem.replace("_", " ")
             )
@@ -357,14 +358,15 @@ class EBookProcessor:
                     if lang_array:
                         session["metadata"]["language"] = lang_array.part3
             except Exception:
-                pass
+                traceback.print_exc()
+                
             if session["metadata"].get("language") != session["language"]:
                 err = f"WARNING!!! language selected {session['language']} differs from the EPUB file language {session['metadata']['language']}"
                 print(err)
-            session["cover"] = get_cover(epubBook, session)
+            session["cover"] = epub_processor.get_cover(epubBook, session)
             if not session["cover"]:
                 return "get_cover() failed!", False
-            session["toc"], session["chapters"] = get_chapters(epubBook, session)
+            session["toc"], session["chapters"] = epub_processor.get_chapters(epubBook, session)
             session["final_name"] = get_sanitized(
                 session["metadata"]["title"] + "." + session["output_format"]
             )
@@ -372,6 +374,7 @@ class EBookProcessor:
                 return "get_chapters() failed!", False
             return None, True
         except Exception as e:
+            traceback.print_exc()
             return str(e), False
 
     def process_epub(self, id, context):

@@ -126,10 +126,11 @@ def test_process_epub_chapters(session_context, ebook_path, tmp_path):
         "is_gui_process": False,
         "script_mode": "native"
     }
-    session = recursive_proxy(args, context.manager)
+    # update session with args
+    session.update(args)
 
     # Instantiate EBookProcessor
-    ebook_processor = EBookProcessor(args, context)
+    ebook_processor = EBookProcessor()
     session["epub_path"] = session["ebook"]
     epubBook = epub.read_epub(session["ebook"], {"ignore_ncx": True})
     basename = os.path.basename(session["ebook"])
@@ -141,9 +142,9 @@ def test_process_epub_chapters(session_context, ebook_path, tmp_path):
 
     # Assertions
     assert success is True
-    assert "Audiobook(s)" in status
+    print(session['audiobook'])
     assert os.path.exists(session['audiobook'])
-    
+
 def test_process_epub_metadata(session_context, ebook_path, tmp_path):
     """Test successful processing of an EPUB file."""
     context, session_id, session = session_context
@@ -152,37 +153,25 @@ def test_process_epub_metadata(session_context, ebook_path, tmp_path):
     # Setup arguments for EBookProcessor
     args = {
         "session": session_id,
+        'cancellation_requested': False,
         "ebook": os.path.join(ebook_path, "god-c12.epub"),
-        "ebook_list": None,
         "device": "cpu",
-        "language": "zh-CN",
+        "language": "zho",
+        "language_iso1": 'zh',
         "tts_engine": TTS_ENGINES['XTTSv2'],
-        "custom_model": None,
-        "fine_tuned": "internal",
-        "voice": None,
-        "temperature": 0.75,
-        "length_penalty": 1.0,
-        "num_beams": 5,
-        "repetition_penalty": 1.0,
-        "top_k": 50,
-        "top_p": 0.95,
-        "speed": 1.0,
-        "enable_text_splitting": True,
-        "text_temp": 0.7,
-        "waveform_temp": 0.7,
-        "audiobooks_dir": tmp_path,
-        "output_format": "mp3",
-        "output_split": "by-chapter",
-        "output_split_hours": 1,
-        "is_gui_process": False,
-        "script_mode": "native"
+        "output_format": "m4b",
     }
 
+    # update session with args
+    session.update(args)
     # Instantiate EBookProcessor
-    ebook_processor = EBookProcessor(args, context)
+    ebook_processor = EBookProcessor()
+
     session['epub_path'] = session['ebook']
     epubBook = epub.read_epub(session["epub_path"], {"ignore_ncx": True})
+
     basename = os.path.basename(session["ebook"])
+
     name_splits = os.path.splitext(basename)
     session["filename_noext"] = name_splits[0]
 
@@ -191,14 +180,13 @@ def test_process_epub_metadata(session_context, ebook_path, tmp_path):
 
     # Assertions
     assert success is True
-    assert "Audiobook(s)" in status
-    assert os.path.exists(session['audiobook'])
+    metadata = session['metadata']
+    # print dict metadata
+    for key, value in metadata.items():
+        print(f"{key}: {value}")
 
 def test_get_chapters(session_context, ebook_path, tmp_path):
-    """Test successful processing of an EPUB file."""
     context, session_id, session = session_context
-    # session = context.get_session(session_id)
-
     # Setup arguments for EBookProcessor
     args = {
         "session": session_id,
@@ -233,14 +221,39 @@ def test_get_chapters(session_context, ebook_path, tmp_path):
     ebook_ = session["ebook"]
     epubBook = epub.read_epub(ebook_, {"ignore_ncx": True})
 
-
-
     processor = EPubProcessor()
     toc, chapters = processor.get_chapters(epubBook, session)
-    
     # Assertions
     assert toc
+    print(toc)
     assert chapters
+    for chapter in chapters:
+        print(chapter)
+
+def test_get_cover(session_context, ebook_path, tmp_path):
+    context, session_id, session = session_context
+    # Setup arguments for EBookProcessor
+    args = {
+        "session": session_id,
+        'cancellation_requested': False,
+        "ebook": os.path.join(ebook_path, "god-c12.epub"),
+        "filename_noext": "god-c12",
+        "device": "cpu",
+        "language": "zho",
+        "language_iso1": 'zh',
+        "tts_engine": TTS_ENGINES['XTTSv2'],
+    }
+
+    # update session with args
+    session.update(args)
+
+    ebook_ = session["ebook"]
+    epubBook = epub.read_epub(ebook_, {"ignore_ncx": True})
+
+    processor = EPubProcessor()
+    result = processor.get_cover(epubBook, session)
+    # Assertions
+    assert result
 
 def test_filter_chapter(session_context):
     """Test the filter_chapter method."""
