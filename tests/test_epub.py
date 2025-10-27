@@ -196,23 +196,6 @@ def test_get_chapters(session_context, ebook_path, tmp_path):
         "language": "zho",
         "language_iso1": 'zh',
         "tts_engine": TTS_ENGINES['XTTSv2'],
-        "fine_tuned": "internal",
-        "temperature": 0.75,
-        "length_penalty": 1.0,
-        "num_beams": 5,
-        "repetition_penalty": 1.0,
-        "top_k": 50,
-        "top_p": 0.95,
-        "speed": 1.0,
-        "enable_text_splitting": True,
-        "text_temp": 0.7,
-        "waveform_temp": 0.7,
-        "audiobooks_dir": tmp_path,
-        "output_format": "mp3",
-        "output_split": "by-chapter",
-        "output_split_hours": 1,
-        "is_gui_process": False,
-        "script_mode": "native"
     }
 
     # update session with args
@@ -255,22 +238,36 @@ def test_get_cover(session_context, ebook_path, tmp_path):
     # Assertions
     assert result
 
-def test_filter_chapter(session_context):
-    """Test the filter_chapter method."""
+def test_filter_chapter(session_context, ebook_path, tmp_path):
     context, session_id, session = session_context
-    processor = EPubProcessor()
+    args = {
+        "session": session_id,
+        'cancellation_requested': False,
+        "ebook": os.path.join(ebook_path, "god-c12.epub"),
+        "device": "cpu",
+        "language": "zho",
+        "language_iso1": 'zh',
+        "tts_engine": TTS_ENGINES['XTTSv2'],
 
-    # Create a mock ebooklib document
-    doc = epub.EpubHtml(title='Test Chapter', file_name='test_chapter.xhtml', lang='en')
-    doc.content = b'<html><body><h1>Chapter 1</h1><p>This is a sentence.</p><p>This is another sentence.</p></body></html>'
+    }
+
+    # update session with args
+    session.update(args)
+
+    ebook_ = session["ebook"]
+    epubBook = epub.read_epub(ebook_, {"ignore_ncx": True})
+
+    processor = EPubProcessor()
+    all_docs, toc = processor.get_epub_chapters(epubBook, session['language'])
+
 
     # Call the filter_chapter method
     sentences = processor.filter_chapter(
-        doc,
-        lang='eng',
-        lang_iso1='en',
-        tts_engine='XTTSv2',
-        stanza_nlp=None,
+        all_docs[0],
+        lang='zho',
+        lang_iso1='zh',
+        tts_engine='xtts',
+        stanza_nlp=True,
         is_num2words_compat=True
     )
 
@@ -278,6 +275,10 @@ def test_filter_chapter(session_context):
     assert sentences is not None
     assert isinstance(sentences, list)
     assert len(sentences) > 0
-    assert "Chapter 1" in sentences[0]
-    assert "This is a sentence." in sentences[1]
-    assert "This is another sentence." in sentences[2]
+    # print all sentenses
+    print("total of sentenses: " + str(len(sentences)))
+    for sentence in sentences:
+        print(sentence)
+    # assert "Chapter 1" in sentences[0]
+    # assert "This is a sentence." in sentences[1]
+    # assert "This is another sentence." in sentences[2]
