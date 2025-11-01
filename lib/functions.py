@@ -34,7 +34,7 @@ from starlette.requests import ClientDisconnect
 from lib import *
 from lib.classes.voice_extractor import VoiceExtractor
 from lib.classes.tts_manager import TTSManager
-from lib.ebook_audio import get_sanitized
+from lib.ebook_audio import EbookAudio
 
 # from .headless_processor import convert_ebook, convert_ebook_batch
 #from lib.classes.redirect_console import RedirectConsole
@@ -289,11 +289,12 @@ def analyze_uploaded_file(zip_path, required_files):
 
 def extract_custom_model(file_src, session, required_files=None):
     try:
+        ebook_audio = EbookAudio()
         model_path = None
         if required_files is None:
             required_files = models[session['tts_engine']][default_fine_tuned]['files']
         model_name = re.sub('.zip', '', os.path.basename(file_src), flags=re.IGNORECASE)
-        model_name = get_sanitized(model_name)
+        model_name = ebook_audio.get_sanitized(model_name)
         with zipfile.ZipFile(file_src, 'r') as zip_ref:
             files = zip_ref.namelist()
             files_length = len(files)

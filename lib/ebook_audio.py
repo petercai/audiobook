@@ -13,38 +13,20 @@ from pathlib import Path
 from pydub import AudioSegment
 
 from lib import TTS_SML, default_audio_proc_format
+from lib.functions import DependencyError
 
-is_gui_process = False
+class EbookAudio:
+    is_gui_process = False
 
-class DependencyError(Exception):
-    def __init__(self, message=None):
-        super().__init__(message)
-        print(message)
-        # Automatically handle the exception when it's raised
-        self.handle_exception()
+    def get_sanitized(self, str, replacement="_"):
+        str = str.replace('&', 'And')
+        forbidden_chars = r'[<>:"/\\|?*\x00-\x1F ()]'
+        sanitized = re.sub(r'\s+', replacement, str)
+        sanitized = re.sub(forbidden_chars, replacement, sanitized)
+        sanitized = sanitized.strip("_")
+        return sanitized
 
-    def handle_exception(self):
-        # Print the full traceback of the exception
-        traceback.print_exc()      
-        # Print the exception message
-        error = f'Caught DependencyError: {self}'
-        print(error)    
-        # Exit the script if it's not a web process
-        if not is_gui_process:
-            sys.exit(1)
-
-def get_sanitized(str, replacement="_"):
-    str = str.replace('&', 'And')
-    forbidden_chars = r'[<>:"/\\|?*\x00-\x1F ()]'
-    sanitized = re.sub(r'\s+', replacement, str)
-    sanitized = re.sub(forbidden_chars, replacement, sanitized)
-    sanitized = sanitized.strip("_")
-    return sanitized
-
-
-def combine_audio_chapters(id, context):
-
-    def get_audio_duration(filepath):
+    def _get_audio_duration(self, filepath):
         try:
             ffprobe_cmd = [
                 shutil.which('ffprobe'),
@@ -66,7 +48,7 @@ def combine_audio_chapters(id, context):
             print(error)
             return 0
 
-    def generate_ffmpeg_metadata(part_chapters, session, output_metadata_path, default_audio_proc_format):
+    def _generate_ffmpeg_metadata(self, part_chapters, session, output_metadata_path, default_audio_proc_format):
         try:
             out_fmt = session['output_format']
             is_mp4_like = out_fmt in ['mp4', 'm4a', 'm4b', 'mov']
@@ -124,7 +106,7 @@ def combine_audio_chapters(id, context):
             print(error)
             return False
 
-    def export_audio(ffmpeg_combined_audio, ffmpeg_metadata_file, ffmpeg_final_file):
+    def _export_audio(self, ffmpeg_combined_audio, ffmpeg_metadata_file, ffmpeg_final_file, session):
         try:
             if session['cancellation_requested']:
                 print('Cancel requested')
@@ -205,204 +187,204 @@ def combine_audio_chapters(id, context):
             DependencyError(e)
             return False
 
-    try:
-        session = context.get_session(id)
-        _cdir = session['chapters_dir']
-        chapter_files = [f for f in os.listdir(_cdir) if f.endswith(f'.{default_audio_proc_format}')]
-        chapter_files = sorted(chapter_files, key=lambda x: int(re.search(r'\d+', x).group()))
-        chapter_titles = [c[0] for c in session['chapters']]
-        if len(chapter_files) == 0:
-            print('No chapter files exists!')
-            return None
-        # Calculate total duration
-        durations = []
-        for file in chapter_files:
-            filepath = os.path.join(session['chapters_dir'], file)
-            durations.append(get_audio_duration(filepath))
-        total_duration = sum(durations)
-        exported_files = []
-        if session.get('output_split'):
-            part_files = []
-            part_chapter_indices = []
-            cur_part = []
-            cur_indices = []
-            cur_duration = 0
-            max_part_duration = session['output_split_hours'] * 3600
-            needs_split = total_duration > (int(session['output_split_hours']) * 2) * 3600
-            for idx, (file, dur) in enumerate(zip(chapter_files, durations)):
-                if cur_part and (cur_duration + dur > max_part_duration):
+    def combine_audio_chapters(self, id, context):
+        try:
+            session = context.get_session(id)
+            _cdir = session['chapters_dir']
+            chapter_files = [f for f in os.listdir(_cdir) if f.endswith(f'.{default_audio_proc_format}')]
+            chapter_files = sorted(chapter_files, key=lambda x: int(re.search(r'\d+', x).group()))
+            chapter_titles = [c[0] for c in session['chapters']]
+            if len(chapter_files) == 0:
+                print('No chapter files exists!')
+                return None
+            # Calculate total duration
+            durations = []
+            for file in chapter_files:
+                filepath = os.path.join(session['chapters_dir'], file)
+                durations.append(self._get_audio_duration(filepath))
+            total_duration = sum(durations)
+            exported_files = []
+            if session.get('output_split'):
+                part_files = []
+                part_chapter_indices = []
+                cur_part = []
+                cur_indices = []
+                cur_duration = 0
+                max_part_duration = session['output_split_hours'] * 3600
+                needs_split = total_duration > (int(session['output_split_hours']) * 2) * 3600
+                for idx, (file, dur) in enumerate(zip(chapter_files, durations)):
+                    if cur_part and (cur_duration + dur > max_part_duration):
+                        part_files.append(cur_part)
+                        part_chapter_indices.append(cur_indices)
+                        cur_part = []
+                        cur_indices = []
+                        cur_duration = 0
+                    cur_part.append(file)
+                    cur_indices.append(idx)
+                    cur_duration += dur
+                if cur_part:
                     part_files.append(cur_part)
                     part_chapter_indices.append(cur_indices)
-                    cur_part = []
-                    cur_indices = []
-                    cur_duration = 0
-                cur_part.append(file)
-                cur_indices.append(idx)
-                cur_duration += dur
-            if cur_part:
-                part_files.append(cur_part)
-                part_chapter_indices.append(cur_indices)
 
-            for part_idx, (part_file_list, indices) in enumerate(zip(part_files, part_chapter_indices)):
+                for part_idx, (part_file_list, indices) in enumerate(zip(part_files, part_chapter_indices)):
+                    with tempfile.TemporaryDirectory() as tmpdir:
+                        batch_size = 1024
+                        chunk_list = []
+                        for i in range(0, len(part_file_list), batch_size):
+                            batch = part_file_list[i:i + batch_size]
+                            txt = os.path.join(tmpdir, f'chunk_{i:04d}.txt')
+                            out = os.path.join(tmpdir, f'chunk_{i:04d}.{default_audio_proc_format}')
+                            with open(txt, 'w') as f:
+                                for file in batch:
+                                    path = os.path.join(session['chapters_dir'], file).replace("\\", "/")
+                                    f.write(f"file '{path}'\n")
+                            chunk_list.append((txt, out))
+                        with Pool(cpu_count()) as pool:
+                            results = pool.starmap(self.assemble_chunks, chunk_list)
+                        if not all(results):
+                            print(f"assemble_segments() One or more chunks failed for part {part_idx+1}.")
+                            return None
+                        # Final merge for this part
+                        combined_chapters_file = os.path.join(
+                            session['process_dir'],
+                            f"{self.get_sanitized(session['metadata']['title'])}_part{part_idx+1}.{default_audio_proc_format}" if needs_split else f"{self.get_sanitized(session['metadata']['title'])}.{default_audio_proc_format}"
+                        )
+                        final_list = os.path.join(tmpdir, f'part_{part_idx+1:02d}_final.txt')
+                        with open(final_list, 'w') as f:
+                            for _, chunk_path in chunk_list:
+                                f.write(f"file '{chunk_path.replace(os.sep, '/')}'\n")
+                        if not self.assemble_chunks(final_list, combined_chapters_file):
+                            print(f"assemble_segments() Final merge failed for part {part_idx+1}.")
+                            return None
+
+                        metadata_file = os.path.join(session['process_dir'], f'metadata_part{part_idx+1}.txt')
+                        part_chapters = [(chapter_files[i], chapter_titles[i]) for i in indices]
+                        self._generate_ffmpeg_metadata(part_chapters, session, metadata_file, default_audio_proc_format)
+
+                        final_file = os.path.join(
+                            session['audiobooks_dir'],
+                            f"{session['final_name'].rsplit('.', 1)[0]}_part{part_idx+1}.{session['output_format']}" if needs_split else session['final_.name']
+                        )
+                        if self._export_audio(combined_chapters_file, metadata_file, final_file, session):
+                            exported_files.append(final_file)
+            else:
                 with tempfile.TemporaryDirectory() as tmpdir:
-                    batch_size = 1024
-                    chunk_list = []
-                    for i in range(0, len(part_file_list), batch_size):
-                        batch = part_file_list[i:i + batch_size]
-                        txt = os.path.join(tmpdir, f'chunk_{i:04d}.txt')
-                        out = os.path.join(tmpdir, f'chunk_{i:04d}.{default_audio_proc_format}')
-                        with open(txt, 'w') as f:
-                            for file in batch:
-                                path = os.path.join(session['chapters_dir'], file).replace("\\", "/")
-                                f.write(f"file '{path}'\n")
-                        chunk_list.append((txt, out))
-                    with Pool(cpu_count()) as pool:
-                        results = pool.starmap(assemble_chunks, chunk_list)
-                    if not all(results):
-                        print(f"assemble_segments() One or more chunks failed for part {part_idx+1}.")
-                        return None
-                    # Final merge for this part
-                    combined_chapters_file = os.path.join(
-                        session['process_dir'],
-                        f"{get_sanitized(session['metadata']['title'])}_part{part_idx+1}.{default_audio_proc_format}" if needs_split else f"{get_sanitized(session['metadata']['title'])}.{default_audio_proc_format}"
-                    )
-                    final_list = os.path.join(tmpdir, f'part_{part_idx+1:02d}_final.txt')
-                    with open(final_list, 'w') as f:
-                        for _, chunk_path in chunk_list:
-                            f.write(f"file '{chunk_path.replace(os.sep, '/')}'\n")
-                    if not assemble_chunks(final_list, combined_chapters_file):
-                        print(f"assemble_segments() Final merge failed for part {part_idx+1}.")
+                    # 1) build a single ffmpeg file list
+                    txt = os.path.join(tmpdir, 'all_chapters.txt')
+                    merged_tmp = os.path.join(tmpdir, f'all.{default_audio_proc_format}')
+                    with open(txt, 'w') as f:
+                        for file in chapter_files:
+                            path = os.path.join(session['chapters_dir'], file).replace("\\", "/")
+                            f.write(f"file '{path}'\n")
+
+                    # 2) merge into one temp file
+                    if not self.assemble_chunks(txt, merged_tmp):
+                        print("assemble_segments() Final merge failed.")
                         return None
 
-                    metadata_file = os.path.join(session['process_dir'], f'metadata_part{part_idx+1}.txt')
-                    part_chapters = [(chapter_files[i], chapter_titles[i]) for i in indices]
-                    generate_ffmpeg_metadata(part_chapters, session, metadata_file, default_audio_proc_format)
+                    # 3) generate metadata for entire book
+                    metadata_file = os.path.join(session['process_dir'], 'metadata.txt')
+                    all_chapters = list(zip(chapter_files, chapter_titles))
+                    self._generate_ffmpeg_metadata(all_chapters, session, metadata_file, default_audio_proc_format)
 
+                    # 4) export in one go
                     final_file = os.path.join(
                         session['audiobooks_dir'],
-                        f"{session['final_name'].rsplit('.', 1)[0]}_part{part_idx+1}.{session['output_format']}" if needs_split else session['final_name']
+                        session['final_name']
                     )
-                    if export_audio(combined_chapters_file, metadata_file, final_file):
+                    if self._export_audio(merged_tmp, metadata_file, final_file, session):
                         exported_files.append(final_file)
-        else:
-            with tempfile.TemporaryDirectory() as tmpdir:
-                # 1) build a single ffmpeg file list
-                txt = os.path.join(tmpdir, 'all_chapters.txt')
-                merged_tmp = os.path.join(tmpdir, f'all.{default_audio_proc_format}')
-                with open(txt, 'w') as f:
-                    for file in chapter_files:
-                        path = os.path.join(session['chapters_dir'], file).replace("\\", "/")
-                        f.write(f"file '{path}'\n")
-
-                # 2) merge into one temp file
-                if not assemble_chunks(txt, merged_tmp):
-                    print("assemble_segments() Final merge failed.")
-                    return None
-
-                # 3) generate metadata for entire book
-                metadata_file = os.path.join(session['process_dir'], 'metadata.txt')
-                all_chapters = list(zip(chapter_files, chapter_titles))
-                generate_ffmpeg_metadata(all_chapters, session, metadata_file, default_audio_proc_format)
-
-                # 4) export in one go
-                final_file = os.path.join(
-                    session['audiobooks_dir'],
-                    session['final_name']
-                )
-                if export_audio(merged_tmp, metadata_file, final_file):
-                    exported_files.append(final_file)
-        return exported_files if exported_files else None
-    except Exception as e:
-        DependencyError(e)
-        return False
-
-
-def assemble_chunks(txt_file, out_file):
-    try:
-        ffmpeg_cmd = [
-            shutil.which('ffmpeg'), '-hide_banner', '-nostats', '-y',
-            '-safe', '0', '-f', 'concat', '-i', txt_file,
-            '-c:a', default_audio_proc_format, '-map_metadata', '-1', '-threads', '1', out_file
-        ]
-        process = subprocess.Popen(
-            ffmpeg_cmd,
-            env={},
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            encoding='utf-8',
-            errors='ignore'
-        )
-        for line in process.stdout:
-            print(line, end='')  # Print each line of stdout
-        process.wait()
-        if process.returncode == 0:
-            return True
-        else:
-            error = process.returncode
-            print(error, ffmpeg_cmd)
+            return exported_files if exported_files else None
+        except Exception as e:
+            DependencyError(e)
             return False
-    except subprocess.CalledProcessError as e:
-        DependencyError(e)
-        return False
-    except Exception as e:
-        error = f"assemble_chanks() Error: Failed to process {txt_file} → {out_file}: {e}"
-        print(error)
-        return False
 
-def combine_audio_sentences(chapter_audio_file, start, end, session):
-    try:
-        chapter_audio_file = os.path.join(session['chapters_dir'], chapter_audio_file)
-        chapters_dir_sentences = session['chapters_dir_sentences']
-        batch_size = 1024
-        sentence_files = [
-            f for f in os.listdir(chapters_dir_sentences)
-            if f.endswith(f'.{default_audio_proc_format}')
-        ]
-        sentences_ordered = sorted(
-            sentence_files, key=lambda x: int(os.path.splitext(x)[0])
-        )
-        selected_files = [
-            os.path.join(chapters_dir_sentences, f)
-            for f in sentences_ordered
-            if start <= int(os.path.splitext(f)[0]) <= end
-        ]
-        if not selected_files:
-            print('No audio files found in the specified range.')
-            return False
-        with tempfile.TemporaryDirectory() as tmpdir:
-            chunk_list = []
-            for i in range(0, len(selected_files), batch_size):
-                batch = selected_files[i:i + batch_size]
-                txt = os.path.join(tmpdir, f'chunk_{i:04d}.txt')
-                out = os.path.join(tmpdir, f'chunk_{i:04d}.{default_audio_proc_format}')
-                with open(txt, 'w') as f:
-                    for file in batch:
-                        f.write(f"file '{file.replace(os.sep, '/')}'\n")
-                chunk_list.append((txt, out))
-            try:
-                with Pool(cpu_count()) as pool:
-                    results = pool.starmap(assemble_chunks, chunk_list)
-            except Exception as e:
-                error = f"combine_audio_sentences() multiprocessing error: {e}"
-                print(error)
-                return False
-            if not all(results):
-                error = "combine_audio_sentences() One or more chunks failed."
-                print(error)
-                return False
-            # Final merge
-            final_list = os.path.join(tmpdir, 'sentences_final.txt')
-            with open(final_list, 'w') as f:
-                for _, chunk_path in chunk_list:
-                    f.write(f"file '{chunk_path.replace(os.sep, '/')}'\n")
-            if assemble_chunks(final_list, chapter_audio_file):
-                msg = f'********* Combined chapter audio file saved in {chapter_audio_file}'
-                print(msg)
+    def assemble_chunks(self, txt_file, out_file):
+        try:
+            ffmpeg_cmd = [
+                shutil.which('ffmpeg'), '-hide_banner', '-nostats', '-y',
+                '-safe', '0', '-f', 'concat', '-i', txt_file,
+                '-c:a', default_audio_proc_format, '-map_metadata', '-1', '-threads', '1', out_file
+            ]
+            process = subprocess.Popen(
+                ffmpeg_cmd,
+                env={},
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                encoding='utf-8',
+                errors='ignore'
+            )
+            for line in process.stdout:
+                print(line, end='')  # Print each line of stdout
+            process.wait()
+            if process.returncode == 0:
                 return True
             else:
-                error = "combine_audio_sentences() Final merge failed."
-                print(error)
+                error = process.returncode
+                print(error, ffmpeg_cmd)
                 return False
-    except Exception as e:
-        DependencyError(e)
-        return False
+        except subprocess.CalledProcessError as e:
+            DependencyError(e)
+            return False
+        except Exception as e:
+            error = f"assemble_chanks() Error: Failed to process {txt_file} → {out_file}: {e}"
+            print(error)
+            return False
+
+    def combine_audio_sentences(self, chapter_audio_file, start, end, session):
+        try:
+            chapter_audio_file = os.path.join(session['chapters_dir'], chapter_audio_file)
+            chapters_dir_sentences = session['chapters_dir_sentences']
+            batch_size = 1024
+            sentence_files = [
+                f for f in os.listdir(chapters_dir_sentences)
+                if f.endswith(f'.{default_audio_proc_format}')
+            ]
+            sentences_ordered = sorted(
+                sentence_files, key=lambda x: int(os.path.splitext(x)[0])
+            )
+            selected_files = [
+                os.path.join(chapters_dir_sentences, f)
+                for f in sentences_ordered
+                if start <= int(os.path.splitext(f)[0]) <= end
+            ]
+            if not selected_files:
+                print('No audio files found in the specified range.')
+                return False
+            with tempfile.TemporaryDirectory() as tmpdir:
+                chunk_list = []
+                for i in range(0, len(selected_files), batch_size):
+                    batch = selected_files[i:i + batch_size]
+                    txt = os.path.join(tmpdir, f'chunk_{i:04d}.txt')
+                    out = os.path.join(tmpdir, f'chunk_{i:04d}.{default_audio_proc_format}')
+                    with open(txt, 'w') as f:
+                        for file in batch:
+                            f.write(f"file '{file.replace(os.sep, '/')}'\n")
+                    chunk_list.append((txt, out))
+                try:
+                    with Pool(cpu_count()) as pool:
+                        results = pool.starmap(self.assemble_chunks, chunk_list)
+                except Exception as e:
+                    error = f"combine_audio_sentences() multiprocessing error: {e}"
+                    print(error)
+                    return False
+                if not all(results):
+                    error = "combine_audio_sentences() One or more chunks failed."
+                    print(error)
+                    return False
+                # Final merge
+                final_list = os.path.join(tmpdir, 'sentences_final.txt')
+                with open(final_list, 'w') as f:
+                    for _, chunk_path in chunk_list:
+                        f.write(f"file '{chunk_path.replace(os.sep, '/')}'\n")
+                if self.assemble_chunks(final_list, chapter_audio_file):
+                    msg = f'********* Combined chapter audio file saved in {chapter_audio_file}'
+                    print(msg)
+                    return True
+                else:
+                    error = "combine_audio_sentences() Final merge failed."
+                    print(error)
+                    return False
+        except Exception as e:
+            DependencyError(e)
+            return False

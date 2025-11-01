@@ -25,30 +25,15 @@ from lib import (TTS_SML, abbreviations_mapping, default_audio_proc_format,
                  roman_numbers_tuples, specialchars_mapping,
                  specialchars_remove, year_to_decades_languages)
 from lib.classes.tts_manager import TTSManager
-from lib.ebook_audio import combine_audio_sentences
+from lib.ebook_audio import EbookAudio
+from lib.functions import DependencyError
 
 is_gui_process = False
-
-class DependencyError(Exception):
-    def __init__(self, message=None):
-        super().__init__(message)
-        print(message)
-        # Automatically handle the exception when it's raised
-        self.handle_exception()
-
-    def handle_exception(self):
-        # Print the full traceback of the exception
-        traceback.print_exc()      
-        # Print the exception message
-        error = f'Caught DependencyError: {self}'
-        print(error)    
-        # Exit the script if it's not a web process
-        if not is_gui_process:
-            sys.exit(1)
 
 class EPubProcessor:
 
     def __init__(self):
+        self.ebook_audio = EbookAudio()
         self.heading_tags = {"h1", "h2", "h3", "h4", "h5", "h6"}
         self.break_tags = {"p", "div", "li", "br", "hr"}
         self.pause_tags = {"ol", "ul"}
@@ -1222,6 +1207,7 @@ class EPubProcessor:
 
 def convert_chapters2audio(id, context):
     session = context.get_session(id)
+    ebook_audio = EbookAudio()
     try:
         if session['cancellation_requested']:
             print('Cancel requested')
@@ -1318,7 +1304,7 @@ def convert_chapters2audio(id, context):
                     if chapter_num <= resume_chapter:
                         msg = f'**Recovering missing file chapter {chapter_num}'
                         print(msg)
-                    if combine_audio_sentences(chapter_audio_file, start, end, session):
+                    if ebook_audio.combine_audio_sentences(chapter_audio_file, start, end, session):
                         msg = f'Combining chapter {chapter_num} to audio, sentence {start} to {end}'
                         print(msg)
                     else:
