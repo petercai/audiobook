@@ -49,14 +49,38 @@ class EbookAudio:
             return 0
 
     def _generate_ffmpeg_metadata(self, part_chapters, session, output_metadata_path, default_audio_proc_format):
+        """
+        Generates an ffmpeg metadata file with chapter markers.
+
+        This method creates a metadata file that includes book details (title, author, etc.)
+        and chapter information with start and end times. This file is then used by ffmpeg
+        to embed chapters into the final audiobook file.
+
+        Args:
+            part_chapters (list): A list of tuples, where each tuple contains the
+                                  filename and title of a chapter.
+            session (dict): The session object containing metadata and output settings.
+            output_metadata_path (str): The path to write the generated metadata file.
+            default_audio_proc_format (str): The audio format of the chapter files.
+
+        Returns:
+            str or bool: The path to the metadata file if successful, False otherwise.
+        """
         try:
+            # Determine output format characteristics for correct tagging
             out_fmt = session['output_format']
             is_mp4_like = out_fmt in ['mp4', 'm4a', 'm4b', 'mov']
-            is_vorbis = out_fmt in ['ogg', 'webm']
+            is_vorbis = out_fmt in ['ogg', 'webm']  # Vorbis comments use uppercase tags
             is_mp3 = out_fmt == 'mp3'
+
+            # Helper function to format tag keys based on container
             def tag(key):
                 return key.upper() if is_vorbis else key
+
+            # Start with the ffmpeg metadata file header
             ffmpeg_metadata = ';FFMETADATA1\n'
+
+            # Add global metadata from the session
             if session['metadata'].get('title'):
                 ffmpeg_metadata += f"{tag('title')}={session['metadata']['title']}\n"
             if session['metadata'].get('creator'):
@@ -67,20 +91,27 @@ class EbookAudio:
                 ffmpeg_metadata += f"{tag('description')}={session['metadata']['description']}\n"
             if session['metadata'].get('publisher') and (is_mp4_like or is_mp3):
                 ffmpeg_metadata += f"{tag('publisher')}={session['metadata']['publisher']}\n"
+
+            # Extract and format the publication year
             if session['metadata'].get('published'):
                 try:
+                    # Handle different timestamp formats
                     if '.' in session['metadata']['published']:
                         year = datetime.strptime(session['metadata']['published'], '%Y-%m-%dT%H:%M:%S.%f%z').year
                     else:
                         year = datetime.strptime(session['metadata']['published'], '%Y-%m-%dT%H:%M:%S%z').year
                 except Exception:
-                    year = datetime.now().year
+                    year = datetime.now().year  # Fallback to current year
             else:
                 year = datetime.now().year
+            
+            # Add year/date tag based on format
             if is_vorbis:
                 ffmpeg_metadata += f"{tag('date')}={year}\n"
             else:
                 ffmpeg_metadata += f"{tag('year')}={year}\n"
+
+            # Add identifiers like ISBN and ASIN if available and supported
             if session['metadata'].get('identifiers') and isinstance(session['metadata']['identifiers'], dict):
                 if is_mp3 or is_mp4_like:
                     isbn = session['metadata']['identifiers'].get('isbn')
@@ -89,15 +120,26 @@ class EbookAudio:
                     asin = session['metadata']['identifiers'].get('mobi-asin')
                     if asin:
                         ffmpeg_metadata += f"{tag('asin')}={asin}\n"
+
+            # Initialize chapter start time
             start_time = 0
+            # Iterate through chapters to add their metadata
             for filename, chapter_title in part_chapters:
                 filepath = os.path.join(session['chapters_dir'], filename)
+                # Get chapter duration in milliseconds from the audio file
                 duration_ms = len(AudioSegment.from_file(filepath, format=default_audio_proc_format))
+                # Sanitize chapter title for metadata file (escape special characters)
                 clean_title = re.sub(r'(^#)|[=\\]|(-$)', lambda m: '\\' + (m.group(1) or m.group(0)), chapter_title.replace(TTS_SML['pause'], ''))
+                
+                # Add chapter marker with timebase, start, and end times
                 ffmpeg_metadata += '[CHAPTER]\nTIMEBASE=1/1000\n'
                 ffmpeg_metadata += f'START={start_time}\nEND={start_time + duration_ms}\n'
                 ffmpeg_metadata += f"{tag('title')}={clean_title}\n"
+                
+                # Update start time for the next chapter
                 start_time += duration_ms
+
+            # Write the complete metadata string to the output file
             with open(output_metadata_path, 'w', encoding='utf-8') as f:
                 f.write(ffmpeg_metadata)
             return output_metadata_path
