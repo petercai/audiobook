@@ -187,37 +187,101 @@ class EPubProcessor:
             return False
 
     def get_chapters(self, epubBook, session):
+        """
+        Extract and process chapters from an EPUB book for text-to-speech conversion.
+        
+        This method orchestrates the extraction and processing of chapters from an EPUB file.
+        It handles language-specific processing, downloads required NLP models, converts
+        numerical content to words, and prepares text for TTS generation.
+        
+        Args:
+            epubBook: An ebooklib.epub.EpubBook object representing the EPUB file
+            session (dict): A dictionary containing session information including:
+                - 'cancellation_requested' (bool): Whether cancellation was requested
+                - 'language_iso1' (str): ISO 639-1 language code (e.g., 'en', 'fr')
+                - 'language' (str): Full language code (e.g., 'eng', 'fra')
+                - 'tts_engine' (str): Text-to-speech engine identifier
+                - Other session-specific data
+                
+        Returns:
+            tuple: A tuple containing:
+                - toc (list): Table of contents entries as strings
+                - chapters (list): List of processed chapters, where each chapter is a list of sentences
+                
+        Returns (None, None) if an error occurs or no chapters are found.
+        """
         try:
+            # Check if the operation has been cancelled before starting
             if session['cancellation_requested']:
                 print('Cancel requested')
                 return False
-            # Step 1: Extract TOC (Table of Contents)
-            language_iso_ = session['language_iso1']
-            language_ = session['language']
+                
+            # Extract language information from session for processing
+            language_iso_ = session['language_iso1']  # e.g., 'en'
+            language_ = session['language']            # e.g., 'eng'
             tts_engine_ = session['tts_engine']
+            
+            # Step 1: Extract TOC (Table of Contents) and document list
+            # Get all documents in reading order and the table of contents
             all_docs, toc = self.get_epub_chapters(epubBook, language_)
             if not all_docs:
                 return [], []
+                
+            # Attempt to extract the book title for metadata
             title = self.get_ebook_title(epubBook, all_docs)
+            
+            # Initialize the chapters list to store processed content
+            # todo: toc and chapter should be a list of dicts
             chapters = []
+            
+            # Initialize Stanza NLP pipeline for languages that require advanced processing
+            # This is used for date recognition and other NLP tasks
             stanza_nlp = False
             if language_ in year_to_decades_languages:
+                # Download the required language model if not already present
                 stanza.download(language_iso_)
+                # Create a processing pipeline for tokenization and named entity recognition
                 stanza_nlp = stanza.Pipeline(language_iso_, processors='tokenize,ner')
+                
+            # Check if the num2words library supports the current language
+            # This determines how numbers will be converted to words
             is_num2words_compat = self._get_num2words_compat(language_iso_)
+            
+            # Inform user that numerical and mathematical content analysis is beginning
             msg = 'Analyzing numbers, maths signs, dates and time to convert in words...'
             print(msg)
+            
+            # Process each document (chapter) in the EPUB
             for doc in all_docs:
-                sentences_list = self.filter_chapter(doc, language_, language_iso_, tts_engine_, stanza_nlp, is_num2words_compat)
+                # Process the chapter content with various text transformations
+                # This includes number conversion, punctuation handling, and sentence segmentation
+                sentences_list = self.filter_chapter(
+                    doc, 
+                    language_, 
+                    language_iso_, 
+                    tts_engine_, 
+                    stanza_nlp, 
+                    is_num2words_compat
+                )
+                
+                # Handle the result of chapter processing
                 if sentences_list is None:
+                    # If processing failed, stop further processing
                     break
                 elif len(sentences_list) > 0:
+                    # If successfully processed and contains content, add to chapters
                     chapters.append(sentences_list)
+                    
+            # Verify that at least one chapter was successfully processed
             if len(chapters) == 0:
                 error = 'No chapters found!'
                 return None, None
+                
+            # Return the table of contents and processed chapters
             return toc, chapters
+            
         except Exception as e:
+            # Handle any unexpected errors during processing
             error = f'Error extracting main content pages: {e}'
             DependencyError(error)
             return None, None

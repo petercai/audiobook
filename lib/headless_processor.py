@@ -3,6 +3,7 @@ import hashlib
 import os
 import shutil
 import sys
+import traceback
 import uuid
 from glob import glob
 from pathlib import Path
@@ -333,45 +334,83 @@ class EBookProcessor:
 
 
     def prepare_epub_metadata(self, session, epubBook):
+        """
+        Prepares the metadata for the EPUB file.
+        
+        This method extracts and processes metadata from the EPUB book and stores it in the session.
+        It also extracts the cover image, table of contents, and chapters from the EPUB book.
+        
+        The following items are stored in the session:
+        - metadata: Dictionary containing book metadata like title, creator, language, etc.
+        - cover: Path to the extracted cover image
+        - toc: Table of contents of the book
+        - chapters: List of book chapters
+        - final_name: Sanitized filename for the output audiobook file
+
+        Args:
+            session (dict): The session dictionary containing processing information and state.
+            epubBook (EpubBook): The EPUB book object to extract metadata from.
+
+        Returns:
+            tuple: A tuple containing an error message (if any) and a boolean indicating success.
+                  Returns (None, True) on success, (error_message, False) on failure.
+        """
         try:
+            # Create an instance of the EPubProcessor
             epub_processor = EPubProcessor()
-            metadata = dict(session["metadata"]) if "metadata"in session else {}
+            # Get the metadata from the session, or create an empty dictionary if it doesn't exist
+            metadata = dict(session["metadata"]) if "metadata" in session else {}
+            # Iterate over the metadata items
             for key, value in list(metadata.items()):
+                # Get the metadata from the EPUB book
                 data = epubBook.get_metadata("DC", key)
+                # If the metadata exists, update the metadata dictionary
                 if data:
                     for val, attributes in data:
                         metadata[key] = val
             # Set the language in metadata to the session's language if not already present
             if "language" not in metadata:
                 metadata["language"] = session["language"]
+            # Set the title in metadata to the title from the EPUB book, or the filename if it doesn't exist
             metadata["title"] = (
                 metadata.get("title") or Path(session["ebook"]).stem.replace("_", " ")
             )
+            # Get the creator from the metadata
             creator = metadata.get("creator")
+            # Set the creator in metadata to False if it doesn't exist or is "Unknown"
             metadata["creator"] = (
                 False if not creator or creator == "Unknown" else creator
             )
+            # Update the session's metadata
             session["metadata"] = metadata
             try:
+                # If the language in the metadata is 2 characters long, convert it to 3 characters
                 if len(session["metadata"]["language"]) == 2:
                     lang_array = languages.get(part1=session["language"])
                     if lang_array:
                         session["metadata"]["language"] = lang_array.part3
             except Exception:
                 traceback.print_exc()
-                
+
+            # If the language in the metadata is different from the session's language, print a warning
             if session["metadata"].get("language") != session["language"]:
                 err = f"WARNING!!! language selected {session['language']} differs from the EPUB file language {session['metadata']['language']}"
                 print(err)
+            # Get the cover from the EPUB book
             session["cover"] = epub_processor.get_cover(epubBook, session)
+            # If the cover doesn't exist, return an error
             if not session["cover"]:
                 return "get_cover() failed!", False
+            # Get the table of contents and chapters from the EPUB book
             session["toc"], session["chapters"] = epub_processor.get_chapters(epubBook, session)
+            # Set the final name of the output file
             session["final_name"] = get_sanitized(
                 session["metadata"]["title"] + "." + session["output_format"]
             )
+            # If the chapters don't exist, return an error
             if session["chapters"] is None:
                 return "get_chapters() failed!", False
+            # Return None for the error message and True for success
             return None, True
         except Exception as e:
             traceback.print_exc()
