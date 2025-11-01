@@ -1,7 +1,7 @@
 import os
 import shutil
 import pytest
-from lib.epub import convert_chapters2audio
+from lib.epub import EPubProcessor
 from lib.functions import *
 from lib.conf import *
 from lib.models import *
@@ -106,7 +106,8 @@ def test_convert_chinese2audio(test_session):
     test_session['final_name'] = "test_audiobook_output"  # Ensure final_name is set to a valid string
     
     # Call the function to test
-    result = convert_chapters2audio(test_session)
+    epub_processor = EPubProcessor()
+    result = epub_processor.convert_chapters2audio("test_session", context)
     
     # Assert the result
     assert result == True, "Conversion of chapters to audio failed"
@@ -133,7 +134,8 @@ def test_convert_chinese_chapter2audio(test_session):
     test_session['final_name'] = "test_audiobook_output"  # Ensure final_name is set to a valid string
     
     # Call the function to test
-    result = convert_chapters2audio(test_session)
+    epub_processor = EPubProcessor()
+    result = epub_processor.convert_chapters2audio("test_session", context)
     
     # Assert the result
     assert result == True, "Conversion of chapters to audio failed"

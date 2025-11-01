@@ -1,7 +1,7 @@
 import os
 import shutil
 import pytest
-from lib.epub import convert_chapters2audio
+from lib.epub import EPubProcessor
 from lib.functions import context, SessionContext, recursive_proxy, default_device, default_language_code, default_tts_engine, default_fine_tuned, default_output_format, default_xtts_settings, default_bark_settings, models_dir, voices_dir, tmp_dir
 from multiprocessing import Manager
 
@@ -98,7 +98,8 @@ def test_convert_chapters2audio(test_session):
     test_session['final_name'] = "test_audiobook_output"  # Ensure final_name is set to a valid string
     
     # Call the function to test
-    result = convert_chapters2audio(test_session)
+    epub_processor = EPubProcessor()
+    result = epub_processor.convert_chapters2audio("test_session", context)
     
     # Assert the result
     assert result == True, "Conversion of chapters to audio failed"
@@ -119,7 +120,8 @@ def test_convert_onesentense(test_session):
     test_session['final_name'] = "test_audiobook_output"  # Ensure final_name is set to a valid string
 
     # Call the function to test
-    result = convert_chapters2audio(test_session)
+    epub_processor = EPubProcessor()
+    result = epub_processor.convert_chapters2audio("test_session", context)
 
     # Assert the result
     assert result == True, "Conversion of chapters to audio failed"

@@ -37,7 +37,7 @@ from .functions import (
     voices_dir,
     context,
 )
-from lib.epub import EPubProcessor, convert_chapters2audio
+from lib.epub import EPubProcessor
 
 
 class EBookProcessor:
@@ -318,7 +318,8 @@ class EBookProcessor:
                 return err, False
 
             # Convert all chapters in the EPUB to audio files
-            if not convert_chapters2audio(id, context):
+            epub_processor = EPubProcessor()
+            if not epub_processor.convert_chapters2audio(id, context):
                 return "convert_chapters2audio() failed!", False
                 
             # Notify user that conversion is complete and combining process is starting
