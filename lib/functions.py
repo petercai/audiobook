@@ -34,7 +34,7 @@ from starlette.requests import ClientDisconnect
 from lib import *
 from lib.classes.voice_extractor import VoiceExtractor
 from lib.classes.tts_manager import TTSManager
-from lib.ebook_audio import EbookAudio
+# from lib.ebook_audio import EbookAudio
 
 # from .headless_processor import convert_ebook, convert_ebook_batch
 #from lib.classes.redirect_console import RedirectConsole

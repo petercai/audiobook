@@ -517,7 +517,7 @@ models = {
             "lang": "multi",
             "repo": "openbmb/VoxCPM-0.5B",
             "sub": "",
-            "voice": os.path.join(voices_dir, 'eng', 'adult', 'female', 'AlexandraHisakawa.wav'),
+            "voice": os.path.join(voices_dir, "zho", "adult", "male", "yunjian_24000.wav"),
             "files": default_engine_settings[TTS_ENGINES['VOXCPM']]['files'],
             "samplerate": default_engine_settings[TTS_ENGINES['VOXCPM']]['samplerate']
         }

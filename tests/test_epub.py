@@ -2,7 +2,7 @@ import os
 import pytest
 from ebooklib import epub
 
-from lib import TTS_ENGINES
+from lib import TTS_ENGINES, tmp_dir, voices_dir
 from lib.epub import EPubProcessor
 from lib.headless_processor import EBookProcessor
 from lib.session import SessionContextMock
@@ -56,7 +56,7 @@ def test_process_epub(session_context, ebook_path, tmp_path):
         "ebook_list": None,
         "device": "cpu",
         "language": "zho",
-        "language-iso1": "zh",
+        "language_iso1": "zh",
         "tts_engine": TTS_ENGINES['XTTSv2'],
         "custom_model": None,
         "fine_tuned": "internal",
@@ -101,14 +101,21 @@ def test_process_epub_chapters(session_context, ebook_path, tmp_path):
     # Setup arguments for EBookProcessor
     args = {
         "session": session_id,
+        'cancellation_requested': False,
         "ebook": os.path.join(ebook_path, "god-c12.epub"),
+        "chapters_dir": os.path.join(session['process_dir'], "chapters"),
+        "chapters_dir_sentences": os.path.join(session['process_dir'], "chapters", "sentences"),
         "ebook_list": None,
         "device": "cpu",
-        "language": "eng",
+        "language": "zho",
+        "language_iso1": "zh",
         "tts_engine": TTS_ENGINES['XTTSv2'],
+        "output_format": "m4b",
         "custom_model": None,
         "fine_tuned": "internal",
         "voice": None,
+        "voice_dir": os.path.join(voices_dir, '__sessions', "test_voice"),
+        "speaker_wav": os.path.join(voices_dir, "zho", "adult", "male", "yunjian_24000.wav"),
         "temperature": 0.75,
         "length_penalty": 1.0,
         "num_beams": 5,
@@ -120,7 +127,6 @@ def test_process_epub_chapters(session_context, ebook_path, tmp_path):
         "text_temp": 0.7,
         "waveform_temp": 0.7,
         "audiobooks_dir": tmp_path,
-        "output_format": "mp3",
         "output_split": "by-chapter",
         "output_split_hours": 1,
         "is_gui_process": False,
@@ -128,6 +134,8 @@ def test_process_epub_chapters(session_context, ebook_path, tmp_path):
     }
     # update session with args
     session.update(args)
+    os.makedirs(session['chapters_dir'], exist_ok=True)
+    os.makedirs(session['chapters_dir_sentences'], exist_ok=True)
 
     # Instantiate EBookProcessor
     ebook_processor = EBookProcessor()
@@ -138,7 +146,7 @@ def test_process_epub_chapters(session_context, ebook_path, tmp_path):
     session["filename_noext"] = name_splits[0]
 
     # Process the EPUB
-    status, success = ebook_processor.process_epub_chapters(epubBook, session_id, context)
+    status, success = ebook_processor.process_epub_chapters(epubBook, session)
 
     # Assertions
     assert success is True

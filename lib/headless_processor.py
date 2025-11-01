@@ -282,7 +282,7 @@ class EBookProcessor:
         )
         return dict(session), id
 
-    def process_epub_chapters(self, epubBook, id, context):
+    def process_epub_chapters(self, epubBook, session):
         """
         Process the EPUB chapters and convert them to audio.
         
@@ -310,7 +310,7 @@ class EBookProcessor:
         """
         try:
             # Retrieve the session data associated with this conversion process
-            session = context.get_session(id)
+            # session = context.get_session(id)
             
             # Prepare and validate EPUB metadata (title, author, cover image, etc.)
             err, ok = self.prepare_epub_metadata(session, epubBook)
@@ -319,7 +319,7 @@ class EBookProcessor:
 
             # Convert all chapters in the EPUB to audio files
             epub_processor = EPubProcessor()
-            if not epub_processor.convert_chapters2audio(id, context):
+            if not epub_processor.convert_chapters2audio(session):
                 return "convert_chapters2audio() failed!", False
                 
             # Notify user that conversion is complete and combining process is starting
@@ -466,7 +466,7 @@ class EBookProcessor:
         try:
             session = context.get_session(id)
             epubBook = epub.read_epub(session["epub_path"], {"ignore_ncx": True})
-            return self.process_epub_chapters(epubBook, id, context)
+            return self.process_epub_chapters(epubBook, session)
         except Exception as e:
             print(f"processEPub() Exception: {e}")
             return str(e), False

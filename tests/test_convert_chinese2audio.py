@@ -21,7 +21,7 @@ def test_session():
         "system": None,
         "client": None,
         "language": 'zho',
-        "language_iso1": "zh-cn",
+        "language_iso1": "zh",
         "audiobook": None,
         "audiobooks_dir": os.path.join(tmp_dir, "test_audiobooks"),
         "process_dir": os.path.join(tmp_dir, "test_process"),
