@@ -326,7 +326,7 @@ class EBookProcessor:
             show_alert({"type": "info", "msg": msg})
             
             # Combine individual chapter audio files into final audiobook file(s)
-            exported_files = self.ebook_audio.combine_audio_chapters(id, context)
+            exported_files = self.ebook_audio.combine_audio_chapters(session)
             if exported_files is None:
                 return "combine_audio_chapters() error: exported_files not created!", False
 
