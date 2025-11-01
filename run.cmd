@@ -34,3 +34,7 @@ pip install --no-cache-dir torch torchvision torchaudio --index-url https://down
 
 
 uv pip install --upgrade coqui-tts
+
+
+
+pytest tests/test_epub.py::test_filter_chapter
