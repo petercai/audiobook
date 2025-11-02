@@ -35,3 +35,6 @@ move functions below in functions.py into class EPubProcessor
 
 
 add document for this method with detailed inline comments
+
+1. add document for this class and constructor
+2. list all session values required in the class

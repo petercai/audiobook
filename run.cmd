@@ -38,3 +38,5 @@ uv pip install --upgrade coqui-tts
 
 
 pytest tests/test_epub.py::test_filter_chapter
+pytest tests/test_epub.py::test_process_epub_chapters_en
+pytest tests/test_epub.py::test_process_epub_chapters_zh
