@@ -1,5 +1,37 @@
-complete refactor operations in lib/functions.py step by step, the purpose is to break the large file to small pieces of codeq:
+complete refactor operations in lib/functions.py step by step, the purpose is to break the large file to small pieces of code:
 1. extract function web_interface() to new file web_ui.py
 2. extract functions convert_ebook() and convert_ebook_batch() to new file headless_processor.py
 3. all the shared dependencies still need to stay in functions.py
 4. update all impacted python files when required
+
+
+
+complete refactor operations in lib/functions.py step by step, the purpose is to break the large file to small pieces of code:
+1. extract function convert_chapters2audio() to file epub.py
+2. move sole deps to the same file, but the shared dependencies still need to stay in functions.py
+3. update all impacted python files when required
+
+move combine_audio_chapters() in functions.py to file ebook_audio.py with refactoring:
+- move sole deps to the same file
+- update all impacted python files when required
+
+refactor headless_processor.py to a class EBookProcessor 
+- convert_ebook() and convert_ebook_batch() are 2 class methods
+- update all impacted python files when required
+
+refactor epub.py to a class EPubProcessor 
+- convert2epub() is class method
+- update all impacted python files when required
+
+move convert_chapters2audio() into class EPubProcessor in   epub.py
+- update all impacted python files when required
+
+move functions below in functions.py into class EPubProcessor
+- filter_chapter
+- get_sentences
+- get_chapters
+- get_cover
+- get_ebook_title
+
+
+add document for this method with detailed inline comments
