@@ -17,8 +17,45 @@ lock = threading.Lock()
 xtts_builtin_speakers_list = None
 
 class Coqui:
+    """
+    Coqui TTS engine implementation.
+
+    This class handles the initialization, model loading, and speech synthesis using various Coqui TTS engines
+    such as XTTSv2, Bark, VITS, FAIRSEQ, TACOTRON2, and YOURTTS. It manages voice cloning, audio processing,
+    and conversion of text sentences to audio segments.
+
+    Required session values:
+    - tts_engine: The TTS engine to use (e.g., 'XTTSv2', 'Bark').
+    - fine_tuned: Specifies if fine-tuned models are used.
+    - device: Device for computation ('cuda' or 'cpu').
+    - custom_model: Name of the custom model if applicable.
+    - custom_model_dir: Directory for custom models.
+    - language: Language code for synthesis.
+    - voice: Path to the voice file or speaker name.
+    - process_dir: Directory for processing output.
+    - final_name: Name of the final output file.
+    - language_iso1: ISO-1 language code.
+    - temperature: (optional) Temperature for sampling.
+    - length_penalty: (optional) Penalty for output length.
+    - num_beams: (optional) Number of beams for beam search.
+    - repetition_penalty: (optional) Penalty for repetition.
+    - top_k: (optional) Top-k sampling parameter.
+    - top_p: (optional) Top-p sampling parameter.
+    - speed: (optional) Speaking speed.
+    - enable_text_splitting: (optional) Enable text splitting.
+    - text_temp: (optional) Text temperature for Bark.
+    - waveform_temp: (optional) Waveform temperature for Bark.
+    """
 
     def __init__(self, session):
+        """
+        Initializes the Coqui TTS engine with the provided session configuration.
+
+        This constructor sets up internal parameters, caches, and builds the TTS model based on the session settings.
+
+        Args:
+            session (dict): A dictionary containing configuration settings for the TTS engine.
+        """
         try:
             self.session = session
             self.cache_dir = tts_dir

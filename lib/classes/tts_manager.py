@@ -3,7 +3,45 @@ import os
 from lib.models import TTS_ENGINES
 
 class TTSManager:
-    def __init__(self, session):   
+    """
+    Manages the selection and initialization of different TTS engines.
+
+    This class acts as a factory and a facade for various TTS implementations.
+    It reads the 'tts_engine' from the session configuration and loads the
+    appropriate engine, such as Coqui or VOXCPM.
+
+    Required session values:
+    - 'tts_engine': Specifies which TTS engine to load.
+    - ... plus any session values required by the selected TTS engine.
+
+    For Coqui engines, the following session values are used:
+    - fine_tuned: Specifies if fine-tuned models are used.
+    - device: Device for computation ('cuda' or 'cpu').
+    - custom_model: Name of the custom model if applicable.
+    - custom_model_dir: Directory for custom models.
+    - language: Language code for synthesis.
+    - voice: Path to the voice file or speaker name.
+    - process_dir: Directory for processing output.
+    - final_name: Name of the final output file.
+    - language_iso1: ISO-1 language code.
+    - temperature: (optional) Temperature for sampling.
+    - length_penalty: (optional) Penalty for output length.
+    - num_beams: (optional) Number of beams for beam search.
+    - repetition_penalty: (optional) Penalty for repetition.
+    - top_k: (optional) Top-k sampling parameter.
+    - top_p: (optional) Top-p sampling parameter.
+    - speed: (optional) Speaking speed.
+    - enable_text_splitting: (optional) Enable text splitting.
+    - text_temp: (optional) Text temperature for Bark.
+    - waveform_temp: (optional) Waveform temperature for Bark.
+    """
+    def __init__(self, session):
+        """
+        Initializes the TTSManager.
+
+        Args:
+            session (dict): The session dictionary containing configuration.
+        """
         self.session = session
         self.tts = None
         self._build()
