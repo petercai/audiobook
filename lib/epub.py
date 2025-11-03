@@ -3,8 +3,6 @@ import math
 import os
 import shutil
 import subprocess
-import sys
-import traceback
 import unicodedata
 
 import ebooklib
@@ -17,14 +15,11 @@ from num2words import num2words
 from PIL import Image
 from tqdm import tqdm
 
-from lib import (TTS_SML, abbreviations_mapping, default_audio_proc_format,
-                 default_language_code, ebook_formats, emojis_list,
-                 language_clock, language_mapping, language_math_phonemes,
-                 punctuation_list_set, punctuation_split_hard_set,
-                 punctuation_split_soft_set, punctuation_switch,
-                 roman_numbers_tuples, specialchars_mapping,
-                 specialchars_remove, year_to_decades_languages)
+
 from lib.classes.tts_manager import TTSManager
+from lib.lang import abbreviations_mapping, year_to_decades_languages
+from lib.conf import default_audio_proc_format, ebook_formats
+from lib.models import TTS_SML
 from lib.ebook_audio import EbookAudio
 from lib.functions import DependencyError
 
@@ -1063,7 +1058,7 @@ class EPubProcessor:
             return True
         except NotImplementedError:
             return False
-        except Exception as e:
+        except Exception:
             return False
 
     def _set_formatted_number(self, text: str, lang, lang_iso1: str, is_num2words_compat: bool, max_single_value: int = 999_999_999_999_999_999):
