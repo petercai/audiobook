@@ -112,7 +112,7 @@ def test_convert_chapters2audio(test_session):
     audio_files = [f for f in os.listdir(test_session['chapters_dir']) if f.endswith('.flac')]
     assert len(audio_files) > 0, "No audio files were created in chapters directory"
 
-def test_convert_onesentense(test_session):
+def  test_convert_onesentense(test_session):
     context, session_id, session = test_session
     # get function name
     func_name = inspect.currentframe().f_code.co_name

@@ -5,7 +5,7 @@ from ebooklib import epub
 from lib import TTS_ENGINES, tmp_dir, voices_dir
 from lib.epub import EPubProcessor
 from lib.headless_processor import EBookProcessor
-from lib.session import SessionContextMock
+from lib.mock_session import SessionContextMock
 
 
 @pytest.fixture

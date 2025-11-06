@@ -1,13 +1,12 @@
+import inspect
 import os
 import pytest
 from ebooklib import epub
 
-from lib import TTS_ENGINES, tmp_dir, voices_dir
-from lib.classes.tts_engines.coqui import Coqui
-from lib.classes.tts_manager import TTSManager
-from lib.epub import EPubProcessor
 from lib.headless_processor import EBookProcessor
-from lib.session import SessionContextMock
+from lib.models import TTS_ENGINES, voices_dir
+from lib.classes.tts_manager import TTSManager
+from lib.mock_session import SessionContextMock, set_process_dir
 
 
 @pytest.fixture
@@ -46,19 +45,19 @@ def session_context(tmp_path):
             "voice": None,
             "voice_dir": os.path.join(voices_dir, '__sessions', "test_voice"),
             # "speaker_wav": os.path.join(voices_dir, "zho", "adult", "male", "yunjian_24000.wav"),
-            "temperature": 0.75,
-            "length_penalty": 1.0,
-            "num_beams": 5,
-            "repetition_penalty": 1.0,
-            "top_k": 50,
-            "top_p": 0.95,
-            "speed": 1.0,
-            "enable_text_splitting": True,
-            "text_temp": 0.7,
-            "waveform_temp": 0.7,
+            # "temperature": 0.75,
+            # "length_penalty": 1.0,
+            # "num_beams": 5,
+            # "repetition_penalty": 1.0,
+            # "top_k": 50,
+            # "top_p": 0.95,
+            # "speed": 1.0,
+            # "enable_text_splitting": True,
+            # "text_temp": 0.7,
+            # "waveform_temp": 0.7,
             "audiobooks_dir": tmp_path,
             "output_split": "by-chapter",
-            "output_split_hours": 1,
+            # "output_split_hours": 1,
             "is_gui_process": False,
             "script_mode": "native"
         }
@@ -73,15 +72,11 @@ def session_context(tmp_path):
 def test_tts_cn_convert(session_context, ebook_path, tmp_path):
     context, session_id, session = session_context
     # own process dir
-    process_dir = os.path.join(tmp_path,  "test_god_c12")
-    os.makedirs(process_dir, exist_ok=True)
-    session['process_dir'] = str(process_dir)
+
 
     # Setup arguments for EBookProcessor
     args = {
         "ebook": os.path.join(ebook_path, "god-c12.epub"),
-        "chapters_dir": os.path.join(session['process_dir'], "chapters"),
-        "chapters_dir_sentences": os.path.join(session['process_dir'], "chapters", "sentences"),
         "device": "cpu",
         "language": "zho",
         "language_iso1": "zh",
@@ -92,8 +87,9 @@ def test_tts_cn_convert(session_context, ebook_path, tmp_path):
     }
     # update session with args
     session.update(args)
-    os.makedirs(session['chapters_dir'], exist_ok=True)
-    os.makedirs(session['chapters_dir_sentences'], exist_ok=True)
+
+    func_name = inspect.currentframe().f_code.co_name
+    set_process_dir(session, func_name)
 
     # Instantiate EBookProcessor
     ebook_processor = EBookProcessor()
@@ -120,7 +116,7 @@ def test_tts_en_convert(session_context, ebook_path, tmp_path):
 
     # Setup arguments for EBookProcessor
     args = {
-        "ebook": os.path.join(ebook_path, "UnravelMe-c12.epub"),
+        # "ebook": os.path.join(ebook_path, "UnravelMe-c12.epub"),
         "chapters_dir": os.path.join(session['process_dir'], "chapters"),
         "chapters_dir_sentences": os.path.join(session['process_dir'], "chapters", "sentences"),
         "device": "cpu",
@@ -144,5 +140,5 @@ def test_tts_en_convert(session_context, ebook_path, tmp_path):
     # session["filename_noext"] = name_splits[0]
 
     tts_manager = TTSManager(session)
-    result = tts_manager.convert_sentence2audio(1, "Compute or retrieve speaker latents.")
+    result = tts_manager.convert_sentence2audio(0, "Compute or retrieve speaker latents.")
     assert result
