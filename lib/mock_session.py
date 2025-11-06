@@ -1,7 +1,11 @@
 
 import json
+import os
 import uuid
 from types import SimpleNamespace
+
+from lib import tmp_dir
+
 
 def to_object(data):
     if isinstance(data, dict):
@@ -63,3 +67,12 @@ class Session(SimpleNamespace):
     # def from_json(cls, json_str):
     #     """Create object directly from JSON string."""
     #     return cls(json.loads(json_str))
+
+
+def set_process_dir(session, process_dir):
+    session["process_dir"] = os.path.join(tmp_dir, process_dir)
+    session["chapters_dir"] = os.path.join(tmp_dir, process_dir, "chapters")
+    session["chapters_dir_sentences"] = os.path.join(tmp_dir, process_dir, "chapters", "sentences")
+    os.makedirs(session['process_dir'], exist_ok=True)
+    os.makedirs(session['chapters_dir'], exist_ok=True)
+    os.makedirs(session['chapters_dir_sentences'], exist_ok=True)
