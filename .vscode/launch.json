@@ -5,6 +5,15 @@
   "version": "0.2.0",
   "configurations": [
     {
+      "name": "Python Debugger: test_tts_en_convert",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "pytest",
+      "console": "integratedTerminal",
+      "args": "tests/test_coqui.py::test_tts_en_convert",
+      "justMyCode": false
+    },
+    {
       "name": "GUI",
       "type": "debugpy",
       "request": "launch",
