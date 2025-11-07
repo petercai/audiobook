@@ -462,9 +462,8 @@ class EBookProcessor:
             traceback.print_exc()
             return str(e), False
 
-    def process_epub(self, id, context):
+    def process_epub(self, session):
         try:
-            session = context.get_session(id)
             epubBook = epub.read_epub(session["epub_path"], {"ignore_ncx": True})
             return self.process_epub_chapters(epubBook, session)
         except Exception as e:
