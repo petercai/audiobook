@@ -6,8 +6,6 @@ from lib.functions import *
 from lib.conf import *
 from lib.models import *
 
-from multiprocessing import Manager
-
 
 @pytest.fixture
 def test_session():

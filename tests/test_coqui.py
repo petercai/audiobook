@@ -57,7 +57,7 @@ def session_context(tmp_path):
             # "waveform_temp": 0.7,
             "audiobooks_dir": tmp_path,
             "output_split": "by-chapter",
-            # "output_split_hours": 1,
+            "output_split_hours": 1,
             "is_gui_process": False,
             "script_mode": "native"
         }
@@ -109,10 +109,6 @@ def test_tts_cn_convert(session_context, ebook_path, tmp_path):
 
 def test_tts_en_convert(session_context, ebook_path, tmp_path):
     context, session_id, session = session_context
-    # Create necessary directories
-    process_dir = os.path.join(tmp_path,  "test_UnravelMe-c12")
-    os.makedirs(process_dir, exist_ok=True)
-    session['process_dir'] = str(process_dir)
 
     # Setup arguments for EBookProcessor
     args = {
@@ -128,8 +124,10 @@ def test_tts_en_convert(session_context, ebook_path, tmp_path):
     }
     # update session with args
     session.update(args)
-    os.makedirs(session['chapters_dir'], exist_ok=True)
-    os.makedirs(session['chapters_dir_sentences'], exist_ok=True)
+    # Create necessary directories
+    # func_name = inspect.currentframe().f_code.co_name
+    set_process_dir(session, "test_UnravelMe_c12")
+
 
     # Instantiate EBookProcessor
     # ebook_processor = EBookProcessor()
