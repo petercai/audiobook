@@ -1,3 +1,4 @@
+import inspect
 import os
 import pytest
 from ebooklib import epub
@@ -5,7 +6,7 @@ from ebooklib import epub
 from lib import TTS_ENGINES, tmp_dir, voices_dir
 from lib.epub import EPubProcessor
 from lib.headless_processor import EBookProcessor
-from lib.mock_session import SessionContextMock
+from lib.mock_session import SessionContextMock, set_process_dir
 
 
 @pytest.fixture
@@ -65,9 +66,8 @@ def test_convert2epub(session_context, ebook_path, tmp_path):
     context, session_id, session = session_context
     # session = context.get_session(session_id)
     # Create necessary directories
-    process_dir = os.path.join(tmp_path,  "test_process")
-    os.makedirs(process_dir, exist_ok=True)
-    session['process_dir'] = str(process_dir)
+    func_name = inspect.currentframe().f_code.co_name
+    set_process_dir(session, func_name)
 
     input_file = os.path.join(ebook_path, "god-c12-short.epub")
 
@@ -80,10 +80,6 @@ def test_convert2epub(session_context, ebook_path, tmp_path):
 def test_process_epub(session_context, ebook_path, tmp_path):
     """Test successful processing of an EPUB file."""
     context, session_id, session = session_context
-    # Create necessary directories
-    process_dir = os.path.join(tmp_path,  "test_process")
-    os.makedirs(process_dir, exist_ok=True)
-    session['process_dir'] = str(process_dir)
 
     # Setup arguments for EBookProcessor
     args = {
@@ -98,16 +94,7 @@ def test_process_epub(session_context, ebook_path, tmp_path):
         "custom_model": None,
         "fine_tuned": "internal",
         "voice": None,
-        "temperature": 0.75,
-        "length_penalty": 1.0,
-        "num_beams": 5,
-        "repetition_penalty": 1.0,
-        "top_k": 50,
-        "top_p": 0.95,
-        "speed": 1.0,
-        "enable_text_splitting": True,
-        "text_temp": 0.7,
-        "waveform_temp": 0.7,
+        # "enable_text_splitting": True,
         "audiobooks_dir": tmp_path,
         "output_format": "mp3",
         "output_split": "by-chapter",
@@ -117,6 +104,9 @@ def test_process_epub(session_context, ebook_path, tmp_path):
     }
     # update session with args
     session.update(args)
+    # Create necessary directories
+    func_name = inspect.currentframe().f_code.co_name
+    set_process_dir(session, func_name)
 
     # Instantiate EBookProcessor
     ebook_processor = EBookProcessor()
