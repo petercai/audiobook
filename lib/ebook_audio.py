@@ -16,7 +16,6 @@ from lib import TTS_SML, default_audio_proc_format
 from lib.functions import DependencyError
 
 class EbookAudio:
-    is_gui_process = False
 
     def get_sanitized(self, str, replacement="_"):
         str = str.replace('&', 'And')

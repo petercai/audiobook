@@ -1,49 +1,31 @@
-import threading
-from types import MappingProxyType
-import gradio as gr
+import json
 import os
 import platform
-import psutil
 import re
 import shutil
 import socket
-import time
+import threading
 import uuid
-import json
 from glob import glob
 from pathlib import Path
-from pydub.utils import mediainfo
+from types import MappingProxyType
 
-from lib import *
+import gradio as gr
+import psutil
+from pydub.utils import mediainfo
+from iso639 import languages
 from lib.classes.voice_extractor import VoiceExtractor
-from lib.functions import (
-    get_sanitized,
-    DependencyError,
-    hash_proxy_dict,
-    proxy2dict,
-    delete_unused_tmp_dirs,
-    get_compatible_tts_engines,
-    reset_ebook_session,
-    language_mapping,
-    models,
-    default_language_code,
+from lib.conf import (
+    models_dir,
     default_device,
-    default_tts_engine,
-    default_fine_tuned,
     default_output_format,
     default_output_split,
     default_output_split_hours,
-    default_engine_settings,
-    TTS_ENGINES,
     ebook_formats,
-    restore_session_from_data,
-    show_alert,
     voice_formats,
     output_formats,
     prog_version,
     interface_component_options,
-    max_custom_voices,
-    max_custom_model,
     voices_dir,
     audiobooks_gradio_dir,
     interface_shared_tmp_expire,
@@ -53,9 +35,34 @@ from lib.functions import (
     interface_concurrency_limit,
     interface_host,
     interface_port,
-    max_upload_size
+)
+from lib.models import (
+    models,
+    default_fine_tuned,
+    default_tts_engine,
+    default_engine_settings,
+    TTS_ENGINES,
+    max_custom_voices,
+    max_custom_model,
+    max_upload_size)
+from lib.ebook_audio import EbookAudio
+from lib.functions import (
+    DependencyError,
+    hash_proxy_dict,
+    proxy2dict,
+    delete_unused_tmp_dirs,
+    get_compatible_tts_engines,
+    reset_ebook_session,
+    restore_session_from_data,
+    show_alert,
+    analyze_uploaded_file,
+    extract_custom_model
 )
 from lib.headless_processor import EBookProcessor
+from lib.lang import (language_mapping,
+    default_language_code,
+                      language_tts
+                      )
 
 # context = None
 # is_gui_process = False
@@ -843,7 +850,8 @@ def web_interface(args, ctx):
                 else:                  
                     session = context.get_session(id)
                     voice_name = os.path.splitext(os.path.basename(f))[0].replace('&', 'And')
-                    voice_name = get_sanitized(voice_name)
+                    eaudio = EbookAudio()
+                    voice_name = eaudio.get_sanitized(voice_name)
                     final_voice_file = os.path.join(session['voice_dir'], f'{voice_name}.wav')
                     extractor = VoiceExtractor(session, f, voice_name)
                     status, msg = extractor.extract_voice()
@@ -1134,7 +1142,7 @@ def web_interface(args, ctx):
                 state = {}
                 try:
                     if len(custom_model_options) > max_custom_model:
-                        error = f'You are allowed to upload a max of {max_custom_models} models'   
+                        error = f'You are allowed to upload a max of {max_custom_model} models'   
                         state['type'] = 'warning'
                         state['msg'] = error
                     else:
