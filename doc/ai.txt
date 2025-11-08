@@ -15,9 +15,11 @@ move combine_audio_chapters() in functions.py to file ebook_audio.py with refact
 - move sole deps to the same file
 - update all impacted python files when required
 
-refactor headless_processor.py to a class EBookProcessor 
-- convert_ebook() and convert_ebook_batch() are 2 class methods
+refactor web_interface() in web_ui.py to a class WebUI 
+- don't put any logic in constructor
+- create minimum or no class states
 - update all impacted python files when required
+
 
 refactor epub.py to a class EPubProcessor 
 - convert2epub() is class method
