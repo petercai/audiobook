@@ -7,9 +7,9 @@
     <option name="rewriteBookmarkType" value="true" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="bcd469c6-39de-404a-a81c-1dfdefca9523" name="Changes" comment="test-coqui">
+    <list default="true" id="bcd469c6-39de-404a-a81c-1dfdefca9523" name="Changes" comment="headless_processor.py">
+      <change beforePath="$PROJECT_DIR$/.idea/ebook2audiobook.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/ebook2audiobook.iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/classes/tts_engines/coqui.py" beforeDir="false" afterPath="$PROJECT_DIR$/lib/classes/tts_engines/coqui.py" afterDir="false" />
     </list>
     <list id="bf2dc45e-cc89-4ed9-bb98-d952cdf9b0eb" name="temp" comment="test_filter_chapter" />
     <option name="SHOW_DIALOG" value="false" />
@@ -45,58 +45,59 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "ModuleVcsDetector.initialDetectionPerformed": "true",
-    "Python tests.pytest for test_convert_chapters2audio.test_convert_chapters2audio.executor": "Run",
-    "Python tests.pytest for test_convert_chapters2audio.test_convert_onesentense.executor": "Run",
-    "Python tests.pytest for test_convert_chinese2audio.test_convert_chinese2audio.executor": "Run",
-    "Python tests.pytest for test_convert_chinese2audio.test_convert_chinese_chapter2audio.executor": "Run",
-    "Python tests.pytest for test_coqui.test_process_epub_chapters_en.executor": "Run",
-    "Python tests.pytest for test_coqui.test_tts_en_convert.executor": "Debug",
-    "Python tests.pytest for test_epub.test_convert2epub_success.executor": "Run",
-    "Python tests.pytest for test_epub.test_filter_chapter.executor": "Run",
-    "Python tests.pytest for test_epub.test_get_chapters.executor": "Debug",
-    "Python tests.pytest for test_epub.test_get_cover.executor": "Run",
-    "Python tests.pytest for test_epub.test_process_epub_chapters.executor": "Run",
-    "Python tests.pytest for test_epub.test_process_epub_chapters_en.executor": "Run",
-    "Python tests.pytest for test_epub.test_process_epub_metadata.executor": "Run",
-    "Python tests.pytest for tests.test_convert_chapters2audio.test_convert_onesentense.executor": "Debug",
-    "Python tests.pytest for tests.test_convert_chinese2audio.test_convert_chinese_chapter2audio.executor": "Debug",
-    "Python tests.pytest for tests.test_coqui.test_tts_en_convert.executor": "Run",
-    "Python tests.pytest for tests.test_epub.executor": "Run",
-    "Python tests.pytest for tests.test_epub.test_get_chapters.executor": "Debug",
-    "Python tests.pytest for tests.test_epub.test_process_epub_chapters.executor": "Run",
-    "Python tests.pytest for tests.test_epub.test_process_epub_metadata.executor": "Run",
-    "Python tests.pytest in test_tts_info.py.executor": "Run",
-    "Python tests.pytest.executor": "Debug",
-    "Python.stanza.executor": "Run",
-    "Python.stanza_t.executor": "Run",
-    "Python.test_tts.executor": "Run",
-    "Python.test_voxcpm-cn.executor": "Run",
-    "Python.test_voxcpm.executor": "Run",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "git-widget-placeholder": "refactor-no-state2",
-    "ignore.virus.scanning.warn.message": "true",
-    "ignore_missing_gitignore": "true",
-    "last_opened_file_path": "C:/workspace/github/audiobook/ebook2audiobook/tests",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "settings.editor.selected.configurable": "preferences.pluginManager",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;Python tests.pytest for test_convert_chapters2audio.test_convert_chapters2audio.executor&quot;: &quot;Run&quot;,
+    &quot;Python tests.pytest for test_convert_chapters2audio.test_convert_onesentense.executor&quot;: &quot;Run&quot;,
+    &quot;Python tests.pytest for test_convert_chinese2audio.test_convert_chinese2audio.executor&quot;: &quot;Run&quot;,
+    &quot;Python tests.pytest for test_convert_chinese2audio.test_convert_chinese_chapter2audio.executor&quot;: &quot;Run&quot;,
+    &quot;Python tests.pytest for test_coqui.test_process_epub_chapters_en.executor&quot;: &quot;Run&quot;,
+    &quot;Python tests.pytest for test_coqui.test_tts_cn_convert.executor&quot;: &quot;Run&quot;,
+    &quot;Python tests.pytest for test_coqui.test_tts_en_convert.executor&quot;: &quot;Run&quot;,
+    &quot;Python tests.pytest for test_epub.test_convert2epub_success.executor&quot;: &quot;Run&quot;,
+    &quot;Python tests.pytest for test_epub.test_filter_chapter.executor&quot;: &quot;Run&quot;,
+    &quot;Python tests.pytest for test_epub.test_get_chapters.executor&quot;: &quot;Debug&quot;,
+    &quot;Python tests.pytest for test_epub.test_get_cover.executor&quot;: &quot;Run&quot;,
+    &quot;Python tests.pytest for test_epub.test_process_epub_chapters.executor&quot;: &quot;Run&quot;,
+    &quot;Python tests.pytest for test_epub.test_process_epub_chapters_en.executor&quot;: &quot;Run&quot;,
+    &quot;Python tests.pytest for test_epub.test_process_epub_metadata.executor&quot;: &quot;Run&quot;,
+    &quot;Python tests.pytest for tests.test_convert_chapters2audio.test_convert_onesentense.executor&quot;: &quot;Debug&quot;,
+    &quot;Python tests.pytest for tests.test_convert_chinese2audio.test_convert_chinese_chapter2audio.executor&quot;: &quot;Debug&quot;,
+    &quot;Python tests.pytest for tests.test_coqui.test_tts_en_convert.executor&quot;: &quot;Run&quot;,
+    &quot;Python tests.pytest for tests.test_epub.executor&quot;: &quot;Run&quot;,
+    &quot;Python tests.pytest for tests.test_epub.test_get_chapters.executor&quot;: &quot;Debug&quot;,
+    &quot;Python tests.pytest for tests.test_epub.test_process_epub_chapters.executor&quot;: &quot;Run&quot;,
+    &quot;Python tests.pytest for tests.test_epub.test_process_epub_metadata.executor&quot;: &quot;Run&quot;,
+    &quot;Python tests.pytest in test_tts_info.py.executor&quot;: &quot;Run&quot;,
+    &quot;Python tests.pytest.executor&quot;: &quot;Run&quot;,
+    &quot;Python.stanza.executor&quot;: &quot;Run&quot;,
+    &quot;Python.stanza_t.executor&quot;: &quot;Run&quot;,
+    &quot;Python.test_tts.executor&quot;: &quot;Run&quot;,
+    &quot;Python.test_voxcpm-cn.executor&quot;: &quot;Run&quot;,
+    &quot;Python.test_voxcpm.executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;refactor-no-state2&quot;,
+    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
+    &quot;ignore_missing_gitignore&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/workspace/github/audiobook/ebook2audiobook/tests&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.pluginManager&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="C:\workspace\github\audiobook\ebook2audiobook\tests" />
       <recent name="C:\workspace\github\audiobook\ebook2audiobook\lib" />
     </key>
   </component>
-  <component name="RunManager" selected="Python tests.pytest for tests.test_coqui.test_tts_en_convert">
+  <component name="RunManager" selected="Python tests.pytest for test_coqui.test_tts_cn_convert">
     <configuration default="true" type="tests" factoryName="py.test">
       <module name="ebook2audiobook" />
       <option name="ENV_FILES" value="" />
@@ -104,7 +105,7 @@
       <option name="PARENT_ENVS" value="true" />
       <option name="SDK_HOME" value="" />
       <option name="SDK_NAME" value="Python 3.12 (ebook2audiobook)" />
-      <option name="WORKING_DIRECTORY" value="$ProjectFileDir$" />
+      <option name="WORKING_DIRECTORY" value="" />
       <option name="IS_MODULE_SDK" value="false" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
@@ -114,6 +115,24 @@
       <option name="_new_additionalArguments" value="&quot;&quot;" />
       <option name="_new_target" value="&quot;&quot;" />
       <option name="_new_targetType" value="&quot;PATH&quot;" />
+      <method v="2" />
+    </configuration>
+    <configuration name="pytest for test_convert_chapters2audio.test_convert_onesentense" type="tests" factoryName="py.test" temporary="true" nameIsGenerated="true">
+      <module name="ebook2audiobook" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="_new_keywords" value="&quot;&quot;" />
+      <option name="_new_parameters" value="&quot;&quot;" />
+      <option name="_new_additionalArguments" value="&quot;&quot;" />
+      <option name="_new_target" value="&quot;test_convert_chapters2audio.test_convert_onesentense&quot;" />
+      <option name="_new_targetType" value="&quot;PYTHON&quot;" />
       <method v="2" />
     </configuration>
     <configuration name="pytest for test_coqui.test_process_epub_chapters_en" type="tests" factoryName="py.test" temporary="true" nameIsGenerated="true">
@@ -134,6 +153,24 @@
       <option name="_new_targetType" value="&quot;PYTHON&quot;" />
       <method v="2" />
     </configuration>
+    <configuration name="pytest for test_coqui.test_tts_cn_convert" type="tests" factoryName="py.test" temporary="true" nameIsGenerated="true">
+      <module name="ebook2audiobook" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="_new_keywords" value="&quot;&quot;" />
+      <option name="_new_parameters" value="&quot;&quot;" />
+      <option name="_new_additionalArguments" value="&quot;&quot;" />
+      <option name="_new_target" value="&quot;test_coqui.test_tts_cn_convert&quot;" />
+      <option name="_new_targetType" value="&quot;PYTHON&quot;" />
+      <method v="2" />
+    </configuration>
     <configuration name="pytest for test_coqui.test_tts_en_convert" type="tests" factoryName="py.test" temporary="true" nameIsGenerated="true">
       <module name="ebook2audiobook" />
       <option name="ENV_FILES" value="" />
@@ -149,42 +186,6 @@
       <option name="_new_parameters" value="&quot;&quot;" />
       <option name="_new_additionalArguments" value="&quot;&quot;" />
       <option name="_new_target" value="&quot;test_coqui.test_tts_en_convert&quot;" />
-      <option name="_new_targetType" value="&quot;PYTHON&quot;" />
-      <method v="2" />
-    </configuration>
-    <configuration name="pytest for test_epub.test_process_epub_chapters" type="tests" factoryName="py.test" temporary="true" nameIsGenerated="true">
-      <module name="ebook2audiobook" />
-      <option name="ENV_FILES" value="" />
-      <option name="INTERPRETER_OPTIONS" value="" />
-      <option name="PARENT_ENVS" value="true" />
-      <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
-      <option name="IS_MODULE_SDK" value="true" />
-      <option name="ADD_CONTENT_ROOTS" value="true" />
-      <option name="ADD_SOURCE_ROOTS" value="true" />
-      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
-      <option name="_new_keywords" value="&quot;&quot;" />
-      <option name="_new_parameters" value="&quot;&quot;" />
-      <option name="_new_additionalArguments" value="&quot;&quot;" />
-      <option name="_new_target" value="&quot;test_epub.test_process_epub_chapters&quot;" />
-      <option name="_new_targetType" value="&quot;PYTHON&quot;" />
-      <method v="2" />
-    </configuration>
-    <configuration name="pytest for test_epub.test_process_epub_chapters_en" type="tests" factoryName="py.test" temporary="true" nameIsGenerated="true">
-      <module name="ebook2audiobook" />
-      <option name="ENV_FILES" value="" />
-      <option name="INTERPRETER_OPTIONS" value="" />
-      <option name="PARENT_ENVS" value="true" />
-      <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
-      <option name="IS_MODULE_SDK" value="true" />
-      <option name="ADD_CONTENT_ROOTS" value="true" />
-      <option name="ADD_SOURCE_ROOTS" value="true" />
-      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
-      <option name="_new_keywords" value="&quot;&quot;" />
-      <option name="_new_parameters" value="&quot;&quot;" />
-      <option name="_new_additionalArguments" value="&quot;&quot;" />
-      <option name="_new_target" value="&quot;test_epub.test_process_epub_chapters_en&quot;" />
       <option name="_new_targetType" value="&quot;PYTHON&quot;" />
       <method v="2" />
     </configuration>
@@ -209,19 +210,19 @@
     <list>
       <item itemvalue="Python.Audiobook - GUI" />
       <item itemvalue="Python.tts en with bark/gpu" />
+      <item itemvalue="Python tests.pytest for test_coqui.test_tts_cn_convert" />
+      <item itemvalue="Python tests.pytest for test_convert_chapters2audio.test_convert_onesentense" />
       <item itemvalue="Python tests.pytest for tests.test_coqui.test_tts_en_convert" />
       <item itemvalue="Python tests.pytest for test_coqui.test_tts_en_convert" />
       <item itemvalue="Python tests.pytest for test_coqui.test_process_epub_chapters_en" />
-      <item itemvalue="Python tests.pytest for test_epub.test_process_epub_chapters" />
-      <item itemvalue="Python tests.pytest for test_epub.test_process_epub_chapters_en" />
     </list>
     <recent_temporary>
       <list>
-        <item itemvalue="Python tests.pytest for tests.test_coqui.test_tts_en_convert" />
+        <item itemvalue="Python tests.pytest for test_coqui.test_tts_cn_convert" />
         <item itemvalue="Python tests.pytest for test_coqui.test_tts_en_convert" />
+        <item itemvalue="Python tests.pytest for test_convert_chapters2audio.test_convert_onesentense" />
+        <item itemvalue="Python tests.pytest for tests.test_coqui.test_tts_en_convert" />
         <item itemvalue="Python tests.pytest for test_coqui.test_process_epub_chapters_en" />
-        <item itemvalue="Python tests.pytest for test_epub.test_process_epub_chapters_en" />
-        <item itemvalue="Python tests.pytest for test_epub.test_process_epub_chapters" />
       </list>
     </recent_temporary>
   </component>
@@ -279,6 +280,12 @@
       <workItem from="1762110606196" duration="105000" />
       <workItem from="1762110730988" duration="1086000" />
       <workItem from="1762112182329" duration="3952000" />
+      <workItem from="1762319064744" duration="427000" />
+      <workItem from="1762357700919" duration="5588000" />
+      <workItem from="1762449727757" duration="2157000" />
+      <workItem from="1762454706571" duration="6720000" />
+      <workItem from="1762484560757" duration="5552000" />
+      <workItem from="1762622307420" duration="1004000" />
     </task>
     <task id="LOCAL-00001" summary="clean up">
       <option name="closed" value="true" />
@@ -448,7 +455,15 @@
       <option name="project" value="LOCAL" />
       <updated>1762112662656</updated>
     </task>
-    <option name="localTasksCounter" value="22" />
+    <task id="LOCAL-00022" summary="headless_processor.py">
+      <option name="closed" value="true" />
+      <created>1762489638523</created>
+      <option name="number" value="00022" />
+      <option name="presentableId" value="LOCAL-00022" />
+      <option name="project" value="LOCAL" />
+      <updated>1762489638523</updated>
+    </task>
+    <option name="localTasksCounter" value="23" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -484,19 +499,7 @@
         </entry>
         <entry key="MAIN">
           <value>
-            <State>
-              <option name="FILTERS">
-                <map>
-                  <entry key="branch">
-                    <value>
-                      <list>
-                        <option value="refactor-no-state2" />
-                      </list>
-                    </value>
-                  </entry>
-                </map>
-              </option>
-            </State>
+            <State />
           </value>
         </entry>
       </map>
@@ -521,7 +524,8 @@
     <MESSAGE value=" add docstring" />
     <MESSAGE value=" !!! significant changes in Coqui.convert()" />
     <MESSAGE value="test-coqui" />
-    <option name="LAST_COMMIT_MESSAGE" value="test-coqui" />
+    <MESSAGE value="headless_processor.py" />
+    <option name="LAST_COMMIT_MESSAGE" value="headless_processor.py" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -553,17 +557,17 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/tests/test_epub.py</url>
-          <line>212</line>
+          <line>202</line>
           <option name="timeStamp" value="23" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/tests/test_epub.py</url>
-          <line>125</line>
+          <line>115</line>
           <option name="timeStamp" value="25" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/tests/test_epub.py</url>
-          <line>287</line>
+          <line>277</line>
           <option name="timeStamp" value="28" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
@@ -573,27 +577,27 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/tests/test_epub.py</url>
-          <line>383</line>
+          <line>373</line>
           <option name="timeStamp" value="57" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/tests/test_epub.py</url>
-          <line>373</line>
+          <line>363</line>
           <option name="timeStamp" value="58" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/lib/epub.py</url>
-          <line>1040</line>
+          <line>1042</line>
           <option name="timeStamp" value="63" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/tests/test_epub.py</url>
-          <line>318</line>
+          <line>308</line>
           <option name="timeStamp" value="68" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/tests/test_epub.py</url>
-          <line>320</line>
+          <line>310</line>
           <option name="timeStamp" value="69" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
@@ -613,7 +617,7 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/lib/epub.py</url>
-          <line>1320</line>
+          <line>1322</line>
           <option name="timeStamp" value="84" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
@@ -628,7 +632,7 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/lib/epub.py</url>
-          <line>1235</line>
+          <line>1237</line>
           <option name="timeStamp" value="87" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
@@ -648,7 +652,7 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/tests/test_coqui.py</url>
-          <line>146</line>
+          <line>140</line>
           <option name="timeStamp" value="91" />
         </line-breakpoint>
       </breakpoints>
@@ -658,9 +662,10 @@
     <SUITE FILE_PATH="coverage/ebook2audiobook$pytest_for_test_epub_test_convert2epub_success.coverage" NAME="pytest for test_epub.test_convert2epub_success Coverage Results" MODIFIED="1760831197606" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/ebook2audiobook$pytest_for_test_convert_chapters2audio_test_convert_chapters2audio.coverage" NAME="pytest for test_convert_chapters2audio.test_convert_chapters2audio Coverage Results" MODIFIED="1756572512751" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/ebook2audiobook$pytest_for_tests_test_convert_chinese2audio_test_convert_chinese_chapter2audio.coverage" NAME="pytest for tests.test_convert_chinese2audio.test_convert_chinese_chapter2audio Coverage Results" MODIFIED="1756593105785" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="C:\workspace\github\audiobook\ebook2audiobook" />
+    <SUITE FILE_PATH="coverage/ebook2audiobook$pytest_for_test_coqui_test_tts_cn_convert.coverage" NAME="pytest for test_coqui.test_tts_cn_convert Coverage Results" MODIFIED="1762487383127" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/ebook2audiobook$test_voxcpm_cn.coverage" NAME="test_voxcpm-cn Coverage Results" MODIFIED="1759722525892" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/ebook2audiobook$pytest_for_test_coqui_test_tts_en_convert.coverage" NAME="pytest for test_coqui.test_tts_en_convert Coverage Results" MODIFIED="1762468755607" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/ebook2audiobook$pytest_for_test_coqui_test_process_epub_chapters_en.coverage" NAME="pytest for test_coqui.test_process_epub_chapters_en Coverage Results" MODIFIED="1762110882248" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
-    <SUITE FILE_PATH="coverage/ebook2audiobook$pytest_for_test_coqui_test_tts_en_convert.coverage" NAME="pytest for test_coqui.test_tts_en_convert Coverage Results" MODIFIED="1762118836204" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/ebook2audiobook$pytest_for_tests_test_epub_test_process_epub_chapters.coverage" NAME="pytest for tests.test_epub.test_process_epub_chapters Coverage Results" MODIFIED="1762058438400" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/ebook2audiobook$pytest_for_test_convert_chinese2audio_test_convert_chinese_chapter2audio.coverage" NAME="pytest for test_convert_chinese2audio.test_convert_chinese_chapter2audio Coverage Results" MODIFIED="1756594615481" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="C:\workspace\github\audiobook\ebook2audiobook" />
     <SUITE FILE_PATH="coverage/ebook2audiobook$pytest_for_test_epub_test_get_cover.coverage" NAME="pytest for test_epub.test_get_cover Coverage Results" MODIFIED="1761534944221" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
@@ -671,13 +676,14 @@
     <SUITE FILE_PATH="coverage/ebook2audiobook$pytest_for_tests_test_epub.coverage" NAME="pytest for tests.test_epub Coverage Results" MODIFIED="1762031474251" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/ebook2audiobook$pytest_for_test_epub_test_process_epub_chapters_en.coverage" NAME="pytest for test_epub.test_process_epub_chapters_en Coverage Results" MODIFIED="1762060874244" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/ebook2audiobook$test_tts.coverage" NAME="test_tts Coverage Results" MODIFIED="1756652302837" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/tests" />
+    <SUITE FILE_PATH="coverage/ebook2audiobook$pytest.coverage" NAME="pytest Coverage Results" MODIFIED="1762457098217" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="C:\workspace\github\audiobook\ebook2audiobook" />
     <SUITE FILE_PATH="coverage/ebook2audiobook$pytest_in_test_tts_info_py.coverage" NAME="pytest in test_tts_info.py Coverage Results" MODIFIED="1756670492274" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/tests" />
     <SUITE FILE_PATH="coverage/ebook2audiobook$pytest_for_tests_test_coqui_test_tts_en_convert.coverage" NAME="pytest for tests.test_coqui.test_tts_en_convert Coverage Results" MODIFIED="1762119182692" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/ebook2audiobook$pytest_for_test_epub_test_process_epub_metadata.coverage" NAME="pytest for test_epub.test_process_epub_metadata Coverage Results" MODIFIED="1762031495256" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/ebook2audiobook$pytest_for_test_convert_chinese2audio_test_convert_chinese2audio.coverage" NAME="pytest for test_convert_chinese2audio.test_convert_chinese2audio Coverage Results" MODIFIED="1756683452536" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="C:\workspace\github\audiobook\ebook2audiobook" />
     <SUITE FILE_PATH="coverage/ebook2audiobook$pytest_for_tests_test_epub_test_get_chapters.coverage" NAME="pytest for tests.test_epub.test_get_chapters Coverage Results" MODIFIED="1761516016279" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/ebook2audiobook$pytest_for_test_epub_test_filter_chapter.coverage" NAME="pytest for test_epub.test_filter_chapter Coverage Results" MODIFIED="1761534110324" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
-    <SUITE FILE_PATH="coverage/ebook2audiobook$pytest_for_test_convert_chapters2audio_test_convert_onesentense.coverage" NAME="pytest for test_convert_chapters2audio.test_convert_onesentense Coverage Results" MODIFIED="1756684357602" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/ebook2audiobook$pytest_for_test_convert_chapters2audio_test_convert_onesentense.coverage" NAME="pytest for test_convert_chapters2audio.test_convert_onesentense Coverage Results" MODIFIED="1762458329526" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/ebook2audiobook$pytest_for_tests_test_epub_test_process_epub_metadata.coverage" NAME="pytest for tests.test_epub.test_process_epub_metadata Coverage Results" MODIFIED="1761540045473" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
   </component>
 </project>
