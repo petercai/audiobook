@@ -10,7 +10,7 @@ from lib.functions import (
     SessionContext,
 )
 from lib.headless_processor import EBookProcessor
-from lib.web_ui import web_interface
+from lib.web_ui import WebUI
 
 
 def check_virtual_env(script_mode):
@@ -286,7 +286,7 @@ def start_ui(args, ctx):
     allowed_arguments = {'--share', '--script_mode'}
     passed_args_set = {arg for arg in passed_arguments if arg.startswith('--')}
     if passed_args_set.issubset(allowed_arguments):
-        web_interface(args, ctx)
+        WebUI().launch(args, ctx)
     else:
         error = 'Error: In non-headless mode, no option or only --share can be passed'
         print(error)
