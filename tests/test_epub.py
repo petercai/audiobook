@@ -38,17 +38,17 @@ def session_context(tmp_path):
             "fine_tuned": "internal",
             "voice": None,
             "voice_dir": os.path.join(voices_dir, '__sessions', "test_voice"),
-            # "speaker_wav": os.path.join(voices_dir, "zho", "adult", "male", "yunjian_24000.wav"),
-            "temperature": 0.75,
-            "length_penalty": 1.0,
-            "num_beams": 5,
-            "repetition_penalty": 1.0,
-            "top_k": 50,
-            "top_p": 0.95,
-            "speed": 1.0,
+            "speaker_wav": os.path.join(voices_dir, "zho", "adult", "male", "yunjian_24000.wav"),
+            # "temperature": 0.75,
+            # "length_penalty": 1.0,
+            # "num_beams": 5,
+            # "repetition_penalty": 1.0,
+            # "top_k": 50,
+            # "top_p": 0.95,
+            # "speed": 1.0,
             "enable_text_splitting": True,
-            "text_temp": 0.7,
-            "waveform_temp": 0.7,
+            # "text_temp": 0.7,
+            # "waveform_temp": 0.7,
             "audiobooks_dir": tmp_path,
             "output_split": "by-chapter",
             "output_split_hours": 1,
@@ -62,7 +62,7 @@ def session_context(tmp_path):
     return context, session_id, session
 
 def test_convert2epub(session_context, ebook_path, tmp_path):
-    """Test successful conversion of a .txt file to .epub."""
+    """Test successful conversion of a .txt or .pdf file to .epub."""
     context, session_id, session = session_context
     # session = context.get_session(session_id)
     # Create necessary directories
@@ -74,8 +74,8 @@ def test_convert2epub(session_context, ebook_path, tmp_path):
     session['ebook'] = str(input_file)
     session['epub_path'] = tmp_path+  "/book_gen.epub"
 
-    processor = EPubProcessor(session_id, context)
-    result = processor.convert2epub()
+    processor = EPubProcessor()
+    result = processor.convert2epub(session)
 
 def test_process_epub(session_context, ebook_path, tmp_path):
     """Test successful processing of an EPUB file."""
@@ -83,35 +83,25 @@ def test_process_epub(session_context, ebook_path, tmp_path):
 
     # Setup arguments for EBookProcessor
     args = {
-        "session": session_id,
-        'cancellation_requested': False,
         "ebook": os.path.join(ebook_path, "god-c12.epub"),
-        "ebook_list": None,
         "device": "cpu",
         "language": "zho",
         "language_iso1": "zh",
         "tts_engine": TTS_ENGINES['XTTSv2'],
-        "custom_model": None,
-        "fine_tuned": "internal",
-        "voice": None,
+        "voice_dir": os.path.join(voices_dir, '__sessions', "test_voice"),
+        "speaker_wav": os.path.join(voices_dir, "zho", "adult", "male", "yunjian_24000.wav"),
         # "enable_text_splitting": True,
-        "audiobooks_dir": tmp_path,
-        "output_format": "mp3",
-        "output_split": "by-chapter",
-        "output_split_hours": 1,
-        "is_gui_process": False,
-        "script_mode": "native"
+        "output_format": "mb4",
     }
     # update session with args
     session.update(args)
     # Create necessary directories
     func_name = inspect.currentframe().f_code.co_name
     set_process_dir(session, func_name)
+    session['epub_path'] = session['ebook']
 
     # Instantiate EBookProcessor
     ebook_processor = EBookProcessor()
-    session['epub_path'] = session['ebook']
-    
     # Process the EPUB
     status, success = ebook_processor.process_epub(session_id, context)
 
