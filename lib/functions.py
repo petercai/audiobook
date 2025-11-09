@@ -85,6 +85,7 @@ class SessionContext:
                 "status": None,
                 "event": None,
                 "progress": 0,
+                "offline_mode": False,
                 "cancellation_requested": False,
                 "device": default_device,
                 "system": None,

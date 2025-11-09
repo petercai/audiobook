@@ -53,3 +53,16 @@ enhancement:
 - check input_file. if it's epub format, directly assign it to epub_path and return 
 - don't change any other existing logic
 - update docstring too
+
+
+
+background:
+if input file is epub format, no need to convert
+
+enhance the app to support offline_mode for stanza, hf_hub_download, torch.load(), etc.
+- add offline_mode arguments at the end of options in app.py main() so that won't impact existing logic
+- update offline_mode to session
+- check offline_mode value from session for the libs calls, such as tts.load_checkpoint(), torch.load(), stanza.download(), ehance the existing call to read them from cache
+- if there is fialure cannot move forward, print out the details about failed on wich file and its expected location
+- only need to check py files in /lib folder
+- don't change existing logic

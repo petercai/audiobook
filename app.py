@@ -172,6 +172,7 @@ def main():
         "--version",  # 24
         "--workflow",  # 25
         "--help",  # 26
+        "--offline_mode",  # 27
     ]
     parser = init_arg_parser(options)
 
@@ -199,6 +200,7 @@ def main():
         # Set session ID to None if not provided
         elif not args['session']:
             args['session'] = None
+        args['offline_mode'] = bool(args['offline_mode'])
         args['share'] = bool(args['share'])
         args['ebook_list'] = None
 
@@ -229,6 +231,7 @@ def start_headless(args, ctx):
         'tts_engine'] if args['tts_engine'] in TTS_ENGINES.values() else None
     args['output_split'] = default_output_split
     args['output_split_hours'] = default_output_split_hours
+    args['offline_mode'] = args['offline_mode']
     # Condition to stop if both --ebook and --ebooks_dir are provided
     if args['ebook'] and args['ebooks_dir']:
         error = 'Error: You cannot specify both --ebook and --ebooks_dir in headless mode.'
@@ -331,6 +334,7 @@ def init_arg_parser(options):
         "--version",  # 24
         "--workflow",  # 25
         "--help",  # 26
+        "--offline_mode", #27
     :return:
     '''
     # Argument parser to handle optional parameters with descriptions
@@ -518,6 +522,11 @@ Tip: to add of silence (1.4 seconds) into your text just use "###" or "[pause]".
     headless_optional_group.add_argument(options[24], action='version',
                                          version=f'ebook2audiobook version {prog_version}',
                                          help='''Show the version of the script and exit''')
+    headless_optional_group.add_argument(
+        options[27],
+        action="store_true",
+        help="""(Optional) Enable offline mode. The app will try to use cached models and data without internet access.""",
+    )
     headless_optional_group.add_argument(options[25], action='store_true', help=argparse.SUPPRESS)
     return parser
 

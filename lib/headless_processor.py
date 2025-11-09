@@ -367,6 +367,7 @@ class EBookProcessor:
             if args["output_split_hours"] is not None
             else default_output_split_hours
         )
+        session["offline_mode"] = args["offline_mode"]
         return dict(session), id
 
     def process_epub_chapters(self, epubBook, session):

@@ -9,9 +9,14 @@ from lib.models import default_voice_detection_model
 
 class BackgroundDetector:
 
-    def __init__(self, wav_file: str):
+    def __init__(self, session, wav_file: str):
         self.wav_file   = wav_file
-        model = Model.from_pretrained(default_voice_detection_model, cache_dir=tts_dir)
+        try:
+            model = Model.from_pretrained(default_voice_detection_model, cache_dir=tts_dir, local_files_only=session['offline_mode'])
+        except Exception as e:
+            if session['offline_mode']:
+                print(f"Offline mode: Failed to load background detection model '{default_voice_detection_model}'. Expected in '{tts_dir}'")
+            raise e
         self.pipeline = VoiceActivityDetection(segmentation=model)
         hyper_params = {
           # onset/offset activation thresholds
