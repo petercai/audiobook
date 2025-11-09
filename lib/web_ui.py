@@ -131,10 +131,9 @@ class WebUI:
             return None
 
     def launch(self, args, ctx):
-        context = ctx
-        self.context = context
+        self.context = ctx
         self.script_mode = args['script_mode']
-        is_gui_shared = args['share']
+        self.is_gui_shared = args['share']
         title = 'Ebook2Audiobook'
         glass_mask_msg = 'Initialization, please wait...'
         ebook_src = None
@@ -145,7 +144,7 @@ class WebUI:
         
         visible_gr_tab_xtts_params = interface_component_options['gr_tab_xtts_params']
         visible_gr_tab_bark_params = interface_component_options['gr_tab_bark_params']
-        visible_gr_group_custom_model = interface_component_options['gr_group_custom_model']
+        self.visible_gr_group_custom_model = interface_component_options['gr_group_custom_model']
         visible_gr_group_voice_file = interface_component_options['gr_group_voice_file']
 
         theme = gr.themes.Origin(
@@ -347,7 +346,7 @@ class WebUI:
                     with gr.Row(elem_id='gr_row_tab_main'):
                         with gr.Column(elem_id='gr_col_1', scale=3):
                             with gr.Group(elem_id='gr1'):
-                                gr_ebook_file = gr.File(label=src_label_file, elem_id='gr_ebook_file', file_types=ebook_formats, file_count='single', allow_reordering=True, height=140)
+                                gr_ebook_file = gr.File(label=self.src_label_file, elem_id='gr_ebook_file', file_types=ebook_formats, file_count='single', allow_reordering=True, height=140)
                                 gr_ebook_mode = gr.Radio(label='', elem_id='gr_ebook_mode', choices=[('File','single'), ('Directory','directory')], value='single', interactive=True)
                             with gr.Group(elem_id='gr_group_language'):
                                 gr_language = gr.Dropdown(label='Language', elem_id='gr_language', choices=language_options, value=default_language_code, type='value', interactive=True)
@@ -357,7 +356,7 @@ class WebUI:
                                 gr_row_voice_player = gr.Row(elem_id='gr_row_voice_player')
                                 with gr_row_voice_player:
                                     gr_voice_player = gr.Audio(elem_id='gr_voice_player', type='filepath', interactive=False, show_download_button=False, container=False, visible=False, show_share_button=False, show_label=False, waveform_options=gr.WaveformOptions(show_controls=False), scale=0, min_width=60)
-                                    gr_voice_list = gr.Dropdown(label='', elem_id='gr_voice_list', choices=voice_options, type='value', interactive=True, scale=2)
+                                    gr_voice_list = gr.Dropdown(label='', elem_id='gr_voice_list', choices=self.voice_options, type='value', interactive=True, scale=2)
                                     gr_voice_del_btn = gr.Button('🗑', elem_id='gr_voice_del_btn', elem_classes=['small-btn'], variant='secondary', interactive=True, visible=False, scale=0, min_width=60)
                                 gr_optional_markdown = gr.Markdown(elem_id='gr_markdown_optional', value='<p>&nbsp;&nbsp;* Optional</p>')
                             with gr.Group(elem_id='gr_group_device'):
@@ -374,7 +373,7 @@ class WebUI:
                                 gr_tts_engine_list = gr.Dropdown(label='TTS Engine', elem_id='gr_tts_engine_list', choices=self.tts_engine_options, type='value', interactive=True)
                                 gr_tts_rating = gr.HTML()
                                 gr_fine_tuned_list = gr.Dropdown(label='Fine Tuned Models (Presets)', elem_id='gr_fine_tuned_list', choices=self.fine_tuned_options, type='value', interactive=True)
-                                gr_group_custom_model = gr.Group(visible=visible_gr_group_custom_model)
+                                gr_group_custom_model = gr.Group(visible=self.visible_gr_group_custom_model)
                                 with gr_group_custom_model:
                                     gr_custom_model_file = gr.File(label=f"Upload Fine Tuned Model", elem_id='gr_custom_model_file', value=None, file_types=['.zip'], height=140)
                                     with gr.Row(elem_id='gr_row_custom_model'):
@@ -1195,7 +1194,7 @@ class WebUI:
             app.queue(default_concurrency_limit=interface_concurrency_limit).launch(
                 debug=bool(int(os.environ.get('GRADIO_DEBUG', '0'))), show_error=debug_mode,
                 favicon_path='./favicon.ico', server_name=interface_host, server_port=interface_port,
-                share=is_gui_shared, max_file_size=max_upload_size)
+                share=self.is_gui_shared, max_file_size=max_upload_size)
         except OSError as e:
             error = f'Connection error: {e}'
             self.alert_exception(error)
@@ -1828,7 +1827,7 @@ class WebUI:
             visible = False
             if session['tts_engine'] == TTS_ENGINES['XTTSv2']:
                 if selected == 'internal':
-                    visible = visible_gr_group_custom_model
+                    visible = self.visible_gr_group_custom_model
             session['fine_tuned'] = selected
             return gr.update(visible=visible)
         return gr.update()
@@ -2022,7 +2021,7 @@ class WebUI:
             if data.get('tab_id') == session.get('tab_id') or len(active_sessions) == 0:
                 restore_session_from_data(data, session)
                 session['status'] = None
-            if not ctx_tracker.start_session(session['id']):
+            if not ctx_tracker.start_session(session['id'], self.context):
                 error = "Your session is already active.<br>If it's not the case please close your browser and relaunch it."
                 return gr.update(), gr.update(), gr.update(value=''), self.update_gr_glass_mask(str=error)
             else:
