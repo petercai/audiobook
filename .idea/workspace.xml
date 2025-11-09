@@ -8,8 +8,9 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="bcd469c6-39de-404a-a81c-1dfdefca9523" name="Changes" comment="headless_processor.py">
-      <change beforePath="$PROJECT_DIR$/.idea/ebook2audiobook.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/ebook2audiobook.iml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/runConfigurations/Audiobook___GUI.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/runConfigurations/Audiobook___GUI.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_epub.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_epub.py" afterDir="false" />
     </list>
     <list id="bf2dc45e-cc89-4ed9-bb98-d952cdf9b0eb" name="temp" comment="test_filter_chapter" />
     <option name="SHOW_DIALOG" value="false" />
@@ -71,14 +72,16 @@
     &quot;Python tests.pytest for tests.test_epub.test_process_epub_metadata.executor&quot;: &quot;Run&quot;,
     &quot;Python tests.pytest in test_tts_info.py.executor&quot;: &quot;Run&quot;,
     &quot;Python tests.pytest.executor&quot;: &quot;Run&quot;,
+    &quot;Python.Audiobook - GUI.executor&quot;: &quot;Debug&quot;,
     &quot;Python.stanza.executor&quot;: &quot;Run&quot;,
     &quot;Python.stanza_t.executor&quot;: &quot;Run&quot;,
     &quot;Python.test_tts.executor&quot;: &quot;Run&quot;,
     &quot;Python.test_voxcpm-cn.executor&quot;: &quot;Run&quot;,
     &quot;Python.test_voxcpm.executor&quot;: &quot;Run&quot;,
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;refactor-no-state2&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;refactor-gradio&quot;,
     &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
     &quot;ignore_missing_gitignore&quot;: &quot;true&quot;,
     &quot;last_opened_file_path&quot;: &quot;C:/workspace/github/audiobook/ebook2audiobook/tests&quot;,
@@ -87,7 +90,7 @@
     &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
     &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
     &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.pluginManager&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable&quot;,
     &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
 }</component>
@@ -97,7 +100,7 @@
       <recent name="C:\workspace\github\audiobook\ebook2audiobook\lib" />
     </key>
   </component>
-  <component name="RunManager" selected="Python tests.pytest for test_coqui.test_tts_cn_convert">
+  <component name="RunManager" selected="Python.Audiobook - GUI">
     <configuration default="true" type="tests" factoryName="py.test">
       <module name="ebook2audiobook" />
       <option name="ENV_FILES" value="" />
@@ -286,6 +289,11 @@
       <workItem from="1762454706571" duration="6720000" />
       <workItem from="1762484560757" duration="5552000" />
       <workItem from="1762622307420" duration="1004000" />
+      <workItem from="1762635214245" duration="2554000" />
+      <workItem from="1762646469716" duration="4019000" />
+      <workItem from="1762660159451" duration="2947000" />
+      <workItem from="1762664940569" duration="116000" />
+      <workItem from="1762720987388" duration="377000" />
     </task>
     <task id="LOCAL-00001" summary="clean up">
       <option name="closed" value="true" />
@@ -552,72 +560,72 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/lib/functions.py</url>
-          <line>817</line>
+          <line>831</line>
           <option name="timeStamp" value="20" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/tests/test_epub.py</url>
-          <line>202</line>
+          <line>192</line>
           <option name="timeStamp" value="23" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/tests/test_epub.py</url>
-          <line>115</line>
+          <line>105</line>
           <option name="timeStamp" value="25" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/tests/test_epub.py</url>
-          <line>277</line>
+          <line>267</line>
           <option name="timeStamp" value="28" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/lib/headless_processor.py</url>
-          <line>126</line>
+          <line>154</line>
           <option name="timeStamp" value="37" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/tests/test_epub.py</url>
-          <line>373</line>
+          <line>363</line>
           <option name="timeStamp" value="57" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/tests/test_epub.py</url>
-          <line>363</line>
+          <line>353</line>
           <option name="timeStamp" value="58" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/lib/epub.py</url>
-          <line>1042</line>
+          <line>1092</line>
           <option name="timeStamp" value="63" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/tests/test_epub.py</url>
-          <line>308</line>
+          <line>298</line>
           <option name="timeStamp" value="68" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/tests/test_epub.py</url>
-          <line>310</line>
+          <line>300</line>
           <option name="timeStamp" value="69" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/lib/headless_processor.py</url>
-          <line>329</line>
+          <line>416</line>
           <option name="timeStamp" value="73" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/lib/headless_processor.py</url>
-          <line>321</line>
+          <line>408</line>
           <option name="timeStamp" value="74" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/lib/headless_processor.py</url>
-          <line>334</line>
+          <line>421</line>
           <option name="timeStamp" value="76" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/lib/epub.py</url>
-          <line>1322</line>
+          <line>1372</line>
           <option name="timeStamp" value="84" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
@@ -632,7 +640,7 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/lib/epub.py</url>
-          <line>1237</line>
+          <line>1287</line>
           <option name="timeStamp" value="87" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
