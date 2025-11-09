@@ -99,53 +99,86 @@ class EBookProcessor:
             return str(e), False
 
     def convert_ebook(self, args, ctx=None):
+        """
+        Orchestrates the conversion of a single ebook file to an audiobook.
+
+        This method serves as the main entry point for the conversion process. It handles
+        session initialization, language validation, dependency checks, and the step-by-step
+        workflow from the source ebook file to the final audio output.
+
+        Args:
+            args (dict): A dictionary of arguments, typically from the command line or UI,
+                         containing all necessary parameters for the conversion (e.g.,
+                         ebook path, language, TTS engine).
+            ctx (SessionContext, optional): The session context manager. If not provided,
+                                            a new one is assumed to be available in the
+                                            class scope. Defaults to None.
+
+        Returns:
+            tuple: A tuple containing:
+                - str: A status message indicating success, cancellation, or failure.
+                - bool: True if the conversion was successful, False otherwise.
+        """
         try:
-            # global is_gui_process, context
             error = None
             id = None
+            # 1. Validate that a language is provided.
             if args["language"] is not None:
+                # Validate the language and ebook file path.
                 err, ok = self.validate_language(args)
                 if ok is False:
                     return err, False
 
+                # 2. Initialize the session for this conversion.
+                # This sets up a shared state for all processing steps.
                 session, id = self.init_session(args, ctx)
 
-                info_session = f"\n*********** Session: {id} **************\nStore it in case of interruption, crash, reuse of custom model or custom voice,\nyou can resume the conversion with --session option"
-
+                # 3. Process custom models and voices if running in headless mode.
                 if not is_gui_process:
                     error = self._process_custom_model(session)
-                    error = self._process_voice(session)
+                    if error is None:
+                        error = self._process_voice(session)
+
+                # 4. Proceed if no errors have occurred yet.
                 if error is None:
+                    # 5. Check for required external dependencies (Calibre, FFmpeg) in native mode.
                     if session["script_mode"] == NATIVE:
                         bool, e = check_programs("Calibre", "ebook-convert", "--version")
                         if not bool:
                             error = f"check_programs() Calibre failed: {e}"
-                        bool, e = check_programs("FFmpeg", "ffmpeg", "-version")
-                        if not bool:
-                            error = f"check_programs() FFMPEG failed: {e}"
+                        if error is None:
+                            bool, e = check_programs("FFmpeg", "ffmpeg", "-version")
+                            if not bool:
+                                error = f"check_programs() FFMPEG failed: {e}"
+
+                    # 6. Proceed if all dependencies are met.
                     if error is None:
+                        # Prepare session-specific cache directories.
                         if self.prepare_session_cache(args, session):
+                            # 7. Check GPU availability and configure the processing device.
                             self.gpu_check(is_gui_process, session)
 
-                            self.gpu_check(self.is_gui_process, session)
-
+                            # 8. Convert the source ebook to EPUB format, which is the standard for processing.
                             epub_processor = EPubProcessor()
-                            if epub_processor.convert2epub(id, self.context):
-                                progress_status, passed = self.process_epub(id, self.context)
+                            if epub_processor.convert2epub(id, context):
+                                # 9. Process the EPUB: extract text, generate TTS, and create the audiobook.
+                                progress_status, passed = self.process_epub(session)
                                 if passed:
                                     return progress_status, True
                                 else:
                                     error = progress_status
                             else:
                                 error = "convert2epub() failed!"
-                            error = f"Temporary directory {session['process_dir']} not removed due to failure."
             else:
                 error = f"Language {args['language']} is not supported."
-            if session["cancellation_requested"]:
+
+            # 10. Final error and status handling.
+            if session and session.get("cancellation_requested"):
                 error = "Cancelled"
-            else:
-                    if not is_gui_process and id is not None:
-                        error += f"\n*********** Session: {id} **************\nStore it in case of interruption, crash, reuse of custom model or custom voice,\nyou can resume the conversion with --session option"
+
+            if not is_gui_process and id is not None:
+                error += f"\n*********** Session: {id} **************\nStore it in case of interruption, crash, reuse of custom model or custom voice,\nyou can resume the conversion with --session option"
+
             print(error)
             return error, False
         except Exception as e:
@@ -211,6 +244,25 @@ class EBookProcessor:
         print(msg)
 
     def prepare_session_cache(self, args, session):
+        """
+        Prepares the session cache by renaming the old session directory to the new process directory and creating
+        the necessary subdirectories for processing the ebook.
+
+        The following session fields are updated:
+
+        - session_dir: The root directory for the session.
+        - process_dir: The directory for the current process.
+        - chapters_dir: The directory for the chapters.
+        - chapters_dir_sentences: The directory for the sentences of the chapters.
+        - epub_path: The path to the epub file.
+
+        Args:
+            args (dict): A dictionary containing the configuration settings for the TTS engine.
+            session (dict): A dictionary containing the session configuration settings.
+
+        Returns:
+            The updated session dictionary with the cache prepared.
+        """
         old_session_dir = os.path.join(tmp_dir, f"ebook-{session['id']}")
         session["session_dir"] = os.path.join(
             tmp_dir, f"proc-{session['id']}"
@@ -235,6 +287,40 @@ class EBookProcessor:
 
     def init_session(self, args, ctx):
         # global is_gui_process, context
+        """
+        Initializes the session dictionary with the provided configuration settings.
+
+        Updates the following session fields:
+
+        - session: The unique identifier for the session.
+        - script_mode: The script mode, either NATIVE or WEB.
+        - ebook: The path to the ebook file or None if not provided.
+        - ebook_list: The list of ebook files or None if not provided.
+        - device: The device to use for computation, either 'cpu' or 'cuda'.
+        - language: The language code for synthesis.
+        - language_iso1: The ISO-1 language code for synthesis.
+        - tts_engine: The TTS engine to use, either 'XTTSv2', 'Bark', 'VITS', or 'FAIRSEQ'.
+        - custom_model: The custom model to use, either None or the path to the custom model.
+        - fine_tuned: The fine-tuned model to use, either None or the path to the fine-tuned model.
+        - voice: The voice to use, either None or the path to the voice file.
+        - temperature: The temperature for sampling, either None or a float.
+        - length_penalty: The length penalty for sampling, either None or a float.
+        - num_beams: The number of beams for beam search, either None or an integer.
+        - repetition_penalty: The repetition penalty for sampling, either None or a float.
+        - top_k: The top-k sampling parameter, either None or an integer.
+        - top_p: The top-p sampling parameter, either None or a float.
+        - speed: The speaking speed, either None or a float.
+        - enable_text_splitting: A boolean indicating whether to enable text splitting.
+        - text_temp: The text temperature for Bark, either None or a float.
+        - waveform_temp: The waveform temperature for Bark, either None or a float.
+        - audiobooks_dir: The directory for the audiobooks, either None or a path.
+        - output_format: The output format, either None or a string.
+        - output_split: A boolean indicating whether to split the output into multiple files.
+        - output_split_hours: The number of hours to split the output into, either None or an integer.
+
+        Returns:
+            A dictionary containing the updated session fields and the session ID.
+        """
         if ctx is not None:
             context = ctx
 

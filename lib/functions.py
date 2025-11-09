@@ -212,6 +212,20 @@ def recursive_proxy(data, manager=None):
         return None
 
 def prepare_dirs(src, session):
+    """
+    Prepare directories for an ebook conversion session.
+
+    This function creates all necessary directories for a conversion session, including the
+    session directory, process directory, custom model directory, voice directory, audiobooks
+    directory, chapters directory, and chapters sentences directory. It also checks if the
+    ebook file already exists in the process directory and if so, it sets the resume flag to
+    True. If the ebook file does not exist, it removes the chapters directory and recreates
+    it. Finally, it copies the ebook file to the process directory.
+
+    :param src: The path to the ebook file.
+    :param session: The session dictionary containing all necessary fields for the conversion session.
+    :return: True if the directories were prepared successfully, False otherwise.
+    """
     try:
         resume = False
         os.makedirs(os.path.join(models_dir,'tts'), exist_ok=True)
