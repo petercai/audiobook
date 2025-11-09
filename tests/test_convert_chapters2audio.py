@@ -98,8 +98,10 @@ def test_convert_chapters2audio(test_session):
     
     # Split content into chapters for testing (assuming chapters are separated by some delimiter, here using empty line for simplicity)
     chapters = content.split('\n\n')
-    test_session['chapters'] = [chapter.split('. ') for chapter in chapters if chapter.strip()]
-    test_session['final_name'] = "test_audiobook_output"  # Ensure final_name is set to a valid string
+    session['chapters'] = [chapter.split('. ') for chapter in chapters if chapter.strip()]
+    session['final_name'] = "test_audiobook_output"  # Ensure final_name is set to a valid string
+    func_name = inspect.currentframe().f_code.co_name
+    set_process_dir(session, func_name)
     
     # Call the function to test
     epub_processor = EPubProcessor()

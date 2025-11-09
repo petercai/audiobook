@@ -1,9 +1,11 @@
+import inspect
 import os
 import shutil
 import pytest
 from lib.epub import EPubProcessor
 from lib.functions import *
 from lib.conf import *
+from lib.mock_session import SessionContextMock, set_process_dir
 from lib.models import *
 
 
@@ -104,9 +106,10 @@ def test_convert_chinese2audio(test_session):
             for chapter in chapters
             if chapter.strip()            # filter out empty/whitespace-only strings
         ]
-    test_session['chapters'] = chapter_strip_
-    test_session['final_name'] = "test_audiobook_output"  # Ensure final_name is set to a valid string
-    
+    session['chapters'] = chapter_strip_
+    session['final_name'] = "test_audiobook_output"  # Ensure final_name is set to a valid string
+    func_name = inspect.currentframe().f_code.co_name
+    set_process_dir(session, func_name)
     # Call the function to test
     epub_processor = EPubProcessor()
     result = epub_processor.convert_chapters2audio(session_id, context)
@@ -120,7 +123,7 @@ def test_convert_chinese2audio(test_session):
     
 
 def test_convert_chinese_chapter2audio(test_session):
-    context, session_id, session = session_context
+    context, session_id, session = test_session
     # Read test file content
     test_file_path = "ebooks/god-1-2.txt"
     with open(test_file_path, 'r', encoding='utf-8') as f:
