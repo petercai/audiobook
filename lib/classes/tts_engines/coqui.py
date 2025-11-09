@@ -106,8 +106,17 @@ class Coqui:
                 xtt_sv_files_ = default_engine_settings[TTS_ENGINES['XTTSv2']]['files']
                 if xtts_builtin_speakers_list is None:
                     repo_ = models[TTS_ENGINES['XTTSv2']]['internal']['repo']
-                    self.speakers_path = hf_hub_download(repo_id=repo_, filename=xtt_sv_files_[4], cache_dir=self.cache_dir)
-                    xtts_builtin_speakers_list = torch.load(self.speakers_path)
+                    try:
+                        self.speakers_path = hf_hub_download(
+                            repo_id=repo_,
+                            filename=xtt_sv_files_[4],
+                            cache_dir=self.cache_dir,
+                            local_files_only=self.session['offline_mode'])
+                        xtts_builtin_speakers_list = torch.load(self.speakers_path, map_location=self.session['device'])
+                    except Exception as e:
+                        if self.session['offline_mode']:
+                            print(f"Offline mode: Failed to load XTTSv2 speakers file. Expected in '{self.cache_dir}'.")
+                        raise e
 
                 # --- Model Loading Logic per Engine ---
                 fine_tuned_ = self.session['fine_tuned']
@@ -127,9 +136,26 @@ class Coqui:
                         # Download and load a pre-trained XTTSv2 model from Hugging Face Hub.
                         hf_repo = models[tts_engine_][fine_tuned_]['repo']
                         hf_sub = '' if fine_tuned_ == 'internal' else models[tts_engine_][fine_tuned_]['sub']
-                        config_path = hf_hub_download(repo_id=hf_repo, filename=f"{hf_sub}{tuned_files_[0]}", cache_dir=self.cache_dir)
-                        checkpoint_path = hf_hub_download(repo_id=hf_repo, filename=f"{hf_sub}{tuned_files_[1]}", cache_dir=self.cache_dir)
-                        vocab_path = hf_hub_download(repo_id=hf_repo, filename=f"{hf_sub}{tuned_files_[2]}", cache_dir=self.cache_dir)
+                        try:
+                            config_path = hf_hub_download(
+                                repo_id=hf_repo,
+                                filename=f"{hf_sub}{tuned_files_[0]}",
+                                cache_dir=self.cache_dir,
+                                local_files_only=self.session['offline_mode'])
+                            checkpoint_path = hf_hub_download(
+                                repo_id=hf_repo,
+                                filename=f"{hf_sub}{tuned_files_[1]}",
+                                cache_dir=self.cache_dir,
+                                local_files_only=self.session['offline_mode'])
+                            vocab_path = hf_hub_download(
+                                repo_id=hf_repo,
+                                filename=f"{hf_sub}{tuned_files_[2]}",
+                                cache_dir=self.cache_dir,
+                                local_files_only=self.session['offline_mode'])
+                        except Exception as e:
+                            if self.session['offline_mode']:
+                                print(f"Offline mode: Failed to load XTTSv2 model files from '{hf_repo}'. Expected in '{self.cache_dir}'.")
+                            raise e
                         tts = self._load_checkpoint(tts_engine=tts_engine_, key=self.tts_key, checkpoint_path=checkpoint_path, config_path=config_path, vocab_path=vocab_path, device=self.session['device'])
 
                 elif tts_engine_ == TTS_ENGINES['BARK']:
@@ -140,7 +166,12 @@ class Coqui:
                         # Download and load a pre-trained BARK model.
                         hf_repo = models[tts_engine_][fine_tuned_]['repo']
                         hf_sub = models[tts_engine_][fine_tuned_]['sub']
-                        text_model_path = hf_hub_download(repo_id=hf_repo, filename=f"{hf_sub}{tuned_files_[0]}", cache_dir=self.cache_dir)
+                        try:
+                            text_model_path = hf_hub_download(repo_id=hf_repo, filename=f"{hf_sub}{tuned_files_[0]}", cache_dir=self.cache_dir, local_files_only=self.session['offline_mode'])
+                        except Exception as e:
+                            if self.session['offline_mode']:
+                                print(f"Offline mode: Failed to load BARK model file from '{hf_repo}'. Expected in '{self.cache_dir}'.")
+                            raise e
                         # Other model files are downloaded implicitly by the library.
                         checkpoint_dir = os.path.dirname(text_model_path)
                         tts = self._load_checkpoint(tts_engine=tts_engine_, key=self.tts_key, checkpoint_dir=checkpoint_dir, device=self.session['device'])
@@ -430,10 +461,28 @@ class Coqui:
                         tts = (loaded_tts.get(tts_internal_key) or {}).get('engine', False)
                         if not tts:
                             # Unload other models to free up memory before loading the new one.
-                            for key in list(loaded_tts.keys()): unload_tts(device, None, key)
-                            config_path = hf_hub_download(repo_id=hf_repo, filename=f"{hf_sub}{models[TTS_ENGINES['XTTSv2']]['internal']['files'][0]}", cache_dir=self.cache_dir)
-                            checkpoint_path = hf_hub_download(repo_id=hf_repo, filename=f"{hf_sub}{models[TTS_ENGINES['XTTSv2']]['internal']['files'][1]}", cache_dir=self.cache_dir)
-                            vocab_path = hf_hub_download(repo_id=hf_repo, filename=f"{hf_sub}{models[TTS_ENGINES['XTTSv2']]['internal']['files'][2]}", cache_dir=self.cache_dir)
+                            for key in list(loaded_tts.keys()):
+                                unload_tts(device, None, key)
+                            try:
+                                config_path = hf_hub_download(
+                                    repo_id=hf_repo,
+                                    filename=f"{hf_sub}{models[TTS_ENGINES['XTTSv2']]['internal']['files'][0]}",
+                                    cache_dir=self.cache_dir,
+                                    local_files_only=self.session['offline_mode'])
+                                checkpoint_path = hf_hub_download(
+                                    repo_id=hf_repo,
+                                    filename=f"{hf_sub}{models[TTS_ENGINES['XTTSv2']]['internal']['files'][1]}",
+                                    cache_dir=self.cache_dir,
+                                    local_files_only=self.session['offline_mode'])
+                                vocab_path = hf_hub_download(
+                                    repo_id=hf_repo,
+                                    filename=f"{hf_sub}{models[TTS_ENGINES['XTTSv2']]['internal']['files'][2]}",
+                                    cache_dir=self.cache_dir,
+                                    local_files_only=self.session['offline_mode'])
+                            except Exception as e:
+                                if self.session['offline_mode']:
+                                    print(f"Offline mode: Failed to load internal XTTSv2 model files from '{hf_repo}'. Expected in '{self.cache_dir}'.")
+                                raise e
                             tts = self._load_checkpoint(tts_engine=TTS_ENGINES['XTTSv2'], key=tts_internal_key, checkpoint_path=checkpoint_path, config_path=config_path, vocab_path=vocab_path, device=device)
                         
                         if tts:
@@ -534,9 +583,26 @@ class Coqui:
                     tts = (loaded_tts.get(tts_internal_key) or {}).get('engine', False)
                     if not tts:
                         for key in list(loaded_tts.keys()): unload_tts(device, None, key)
-                        text_model_path = hf_hub_download(repo_id=hf_repo, filename=f"{hf_sub}{models[TTS_ENGINES['BARK']]['internal']['files'][0]}", cache_dir=self.cache_dir)
-                        coarse_model_path = hf_hub_download(repo_id=hf_repo, filename=f"{hf_sub}{models[TTS_ENGINES['BARK']]['internal']['files'][1]}", cache_dir=self.cache_dir)
-                        fine_model_path = hf_hub_download(repo_id=hf_repo, filename=f"{hf_sub}{models[TTS_ENGINES['BARK']]['internal']['files'][2]}", cache_dir=self.cache_dir)
+                        try:
+                            text_model_path = hf_hub_download(
+                                repo_id=hf_repo,
+                                filename=f"{hf_sub}{models[TTS_ENGINES['BARK']]['internal']['files'][0]}",
+                                cache_dir=self.cache_dir,
+                                local_files_only=self.session['offline_mode'])
+                            hf_hub_download(
+                                repo_id=hf_repo,
+                                filename=f"{hf_sub}{models[TTS_ENGINES['BARK']]['internal']['files'][1]}",
+                                cache_dir=self.cache_dir,
+                                local_files_only=self.session['offline_mode'])
+                            hf_hub_download(
+                                repo_id=hf_repo,
+                                filename=f"{hf_sub}{models[TTS_ENGINES['BARK']]['internal']['files'][2]}",
+                                cache_dir=self.cache_dir,
+                                local_files_only=self.session['offline_mode'])
+                        except Exception as e:
+                            if self.session['offline_mode']:
+                                print(f"Offline mode: Failed to load internal BARK model files from '{hf_repo}'. Expected in '{self.cache_dir}'.")
+                            raise e
                         checkpoint_dir = os.path.dirname(text_model_path)
                         tts = self._load_checkpoint(tts_engine=TTS_ENGINES['BARK'], key=tts_internal_key, checkpoint_dir=checkpoint_dir, device=device)
                     if tts:

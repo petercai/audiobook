@@ -16,7 +16,7 @@ from num2words import num2words
 from tqdm import tqdm
 
 from lib.classes.tts_manager import TTSManager
-from lib.conf import default_audio_proc_format, ebook_formats
+from lib.conf import default_audio_proc_format, ebook_formats, models_dir
 from lib.ebook_audio import EbookAudio
 from lib.functions import DependencyError
 from lib.lang import abbreviations_mapping, year_to_decades_languages, language_mapping, specialchars_remove, \
