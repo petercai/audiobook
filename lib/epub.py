@@ -40,7 +40,7 @@ class EPubProcessor:
         } | self.heading_tags | self.break_tags | self.pause_tags
         self.sml_tokens = set(TTS_SML.values())
 
-    def convert2epub(self, id, context):
+    def convert2epub(self, session):
         """
         Converts a given ebook file to EPUB format using Calibre's ebook-convert tool.
         
@@ -64,7 +64,7 @@ class EPubProcessor:
             - epub_path (str): The target absolute path for the converted EPUB file.
         """
         # Retrieve the session data using the provided ID.
-        session = context.get_session(id)
+        # session = context.get_session(id)
         # Check for a cancellation request before starting the process.
         if session['cancellation_requested']:
             print('Cancel requested')

@@ -15,10 +15,11 @@ move combine_audio_chapters() in functions.py to file ebook_audio.py with refact
 - move sole deps to the same file
 - update all impacted python files when required
 
-refactor web_interface() in web_ui.py to a class WebUI 
-- don't put any logic in constructor
-- create minimum or no class states
-- update all impacted python files when required
+move all nested functions inside launch() to WebUI class method
+- only update impacted reference code inside launch() for WebUI
+- don't change any other existing logic
+- don't try extra refactoring
+
 
 
 refactor epub.py to a class EPubProcessor 
@@ -40,3 +41,15 @@ add document for this method with detailed inline comments
 
 1. add document for this class and constructor
 2. list all session values required in the class
+
+move all nested functions inside launch() to WebUI class method
+- only update impacted reference code inside launch() for WebUI
+- don't change any other existing logic
+- don't try extra refactoring
+
+background:
+if input file is epub format, no need to convert
+enhancement: 
+- check input_file. if it's epub format, directly assign it to epub_path and return 
+- don't change any other existing logic
+- update docstring too

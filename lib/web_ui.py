@@ -1961,7 +1961,7 @@ class WebUI:
                 else:
                     print(f"Processing eBook file: {os.path.basename(args['ebook'])}")
                     ebook_processor = EBookProcessor()
-                    progress_status, passed = ebook_processor.convert_ebook(args)
+                    progress_status, passed = ebook_processor.convert_ebook(args, self.context)
                     if passed is False:
                         if session['status'] == 'converting':
                             error = 'Conversion cancelled.'

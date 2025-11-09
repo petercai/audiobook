@@ -44,7 +44,7 @@ class EBookProcessor:
     def __init__(self):
         self.ebook_audio = EbookAudio()
 
-    def convert_ebook_batch(self, args, ctx=None):
+    def convert_ebook_batch(self, args, ctx):
         if isinstance(args["ebook_list"], list):
             ebook_list = args["ebook_list"][:]
             for file in ebook_list:  # Use a shallow copy
@@ -98,7 +98,7 @@ class EBookProcessor:
             print(f"validate_language() Exception: {e}")
             return str(e), False
 
-    def convert_ebook(self, args, ctx=None):
+    def convert_ebook(self, args, context):
         """
         Orchestrates the conversion of a single ebook file to an audiobook.
 
@@ -110,9 +110,7 @@ class EBookProcessor:
             args (dict): A dictionary of arguments, typically from the command line or UI,
                          containing all necessary parameters for the conversion (e.g.,
                          ebook path, language, TTS engine).
-            ctx (SessionContext, optional): The session context manager. If not provided,
-                                            a new one is assumed to be available in the
-                                            class scope. Defaults to None.
+            context (SessionContext): The session context manager.
 
         Returns:
             tuple: A tuple containing:
@@ -131,7 +129,7 @@ class EBookProcessor:
 
                 # 2. Initialize the session for this conversion.
                 # This sets up a shared state for all processing steps.
-                session, id = self.init_session(args, ctx)
+                session, id = self.init_session(args, context)
 
                 # 3. Process custom models and voices if running in headless mode.
                 if not is_gui_process:
@@ -160,7 +158,7 @@ class EBookProcessor:
 
                             # 8. Convert the source ebook to EPUB format, which is the standard for processing.
                             epub_processor = EPubProcessor()
-                            if epub_processor.convert2epub(id, context):
+                            if epub_processor.convert2epub(session):
                                 # 9. Process the EPUB: extract text, generate TTS, and create the audiobook.
                                 progress_status, passed = self.process_epub(session)
                                 if passed:
@@ -183,12 +181,11 @@ class EBookProcessor:
             return error, False
         except Exception as e:
             print(f"convert_ebook() Exception: {e}")
+            # print traceback
+            traceback.print_exc()
             return e, False
 
     def gpu_check(self, is_gui_process, session):
-        session["filename_noext"] = os.path.splitext(
-            os.path.basename(session["ebook"])
-        )[0]
         msg = ""
         msg_extra = ""
         vram_avail = get_vram()
@@ -279,6 +276,10 @@ class EBookProcessor:
         session["chapters_dir_sentences"] = os.path.join(
             session["chapters_dir"], "sentences"
         )
+        session["filename_noext"] = os.path.splitext(
+            os.path.basename(session["ebook"])
+        )[0]
+        
         session["epub_path"] = os.path.join(
             session["process_dir"],
             "__" + session["filename_noext"] + ".epub",
