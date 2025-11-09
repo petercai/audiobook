@@ -43,7 +43,8 @@ class EPubProcessor:
     def convert2epub(self, id, context):
         """
         Converts a given ebook file to EPUB format using Calibre's ebook-convert tool.
-
+        
+        If the input file is already in EPUB format, it will be directly used without conversion.
         This method handles various input formats and prepares them for conversion.
         If the input is a PDF, it first converts it to Markdown to improve text extraction,
         then proceeds with the EPUB conversion. It relies on the external `ebook-convert`
@@ -72,6 +73,14 @@ class EPubProcessor:
         file_input = session['ebook']
         process_dir = session['process_dir']
         epub_output_file = session['epub_path']
+        # Get the file extension to determine the input format.
+        file_ext = os.path.splitext(file_input)[1].lower()
+        # If the input file is already an EPUB, just copy it and return.
+        if file_ext == '.epub':
+            print("Input file is already in EPUB format. Skipping conversion.")
+            if not os.path.exists(epub_output_file) or not os.path.samefile(file_input, epub_output_file):
+                shutil.copy(file_input, epub_output_file)
+            return True
         try:
             # Initialize title and author as False. They will be set if the input is a PDF.
             title = False
@@ -88,8 +97,6 @@ class EPubProcessor:
                 error = f"Input file is empty: {file_input}"
                 print(error)
                 return False
-            # Get the file extension to determine the input format.
-            file_ext = os.path.splitext(file_input)[1].lower()
             # Validate if the file format is supported.
             if file_ext not in ebook_formats:
                 error = f'Unsupported file format: {file_ext}'
