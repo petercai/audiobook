@@ -77,7 +77,7 @@ def test_convert2epub(session_context, ebook_path, tmp_path):
     processor = EPubProcessor()
     result = processor.convert2epub(session)
 
-def test_process_epub(session_context, ebook_path, tmp_path):
+def test_process_epub_cn(session_context, ebook_path, tmp_path):
     """Test successful processing of an EPUB file."""
     context, session_id, session = session_context
 
@@ -110,6 +110,44 @@ def test_process_epub(session_context, ebook_path, tmp_path):
     assert "Audiobook(s)" in status
     assert os.path.exists(session['audiobook'])
     
+def test_process_epub_en_mps(session_context, ebook_path, tmp_path):
+    """Test successful processing of an EPUB file."""
+    context, session_id, session = session_context
+
+    # Setup arguments for EBookProcessor
+    args = {
+        "ebook": os.path.join(ebook_path, "UnravelMe-c12.epub"),
+        "device": "mps",
+        "language": "eng",
+        "language_iso1": "en",
+        "tts_engine": TTS_ENGINES['XTTSv2'],
+        # "voice_dir": os.path.join(voices_dir, '__sessions', "test_voice"),
+        # "speaker_wav": os.path.join(voices_dir, "zho", "adult", "male", "yunjian_24000.wav"),
+        # "enable_text_splitting": True,
+        "output_format": "mb4",
+        "offline_mode": True
+    }
+    # update session with args
+    session.update(args)
+    # Create necessary directories
+    func_name = inspect.currentframe().f_code.co_name
+    set_process_dir(session, func_name)
+    session['epub_path'] = session['ebook']
+    
+    basename = os.path.basename(session["ebook"])
+    name_splits = os.path.splitext(basename)
+    session["filename_noext"] = name_splits[0]
+    
+    # Instantiate EBookProcessor
+    ebook_processor = EBookProcessor()
+    # Process the EPUB
+    status, success = ebook_processor.process_epub(session)
+
+    # Assertions
+    assert success is True
+    assert "Audiobook(s)" in status
+    assert os.path.exists(session['audiobook'])
+
 def test_process_epub_chapters_cn(session_context, ebook_path, tmp_path):
     """Test successful processing of an EPUB file."""
     context, session_id, session = session_context
@@ -134,16 +172,6 @@ def test_process_epub_chapters_cn(session_context, ebook_path, tmp_path):
         "voice": None,
         "voice_dir": os.path.join(voices_dir, '__sessions', "test_voice"),
         "speaker_wav": os.path.join(voices_dir, "zho", "adult", "male", "yunjian_24000.wav"),
-        "temperature": 0.75,
-        "length_penalty": 1.0,
-        "num_beams": 5,
-        "repetition_penalty": 1.0,
-        "top_k": 50,
-        "top_p": 0.95,
-        "speed": 1.0,
-        "enable_text_splitting": True,
-        "text_temp": 0.7,
-        "waveform_temp": 0.7,
         "audiobooks_dir": tmp_path,
         "output_split": "by-chapter",
         "output_split_hours": 1,
@@ -196,17 +224,7 @@ def test_process_epub_chapters_en(session_context, ebook_path, tmp_path):
         "fine_tuned": "internal",
         "voice": None,
         "voice_dir": os.path.join(voices_dir, '__sessions', "test_voice"),
-        "speaker_wav": os.path.join(voices_dir, "zho", "adult", "male", "yunjian_24000.wav"),
-        "temperature": 0.75,
-        "length_penalty": 1.0,
-        "num_beams": 5,
-        "repetition_penalty": 1.0,
-        "top_k": 50,
-        "top_p": 0.95,
-        "speed": 1.0,
-        "enable_text_splitting": True,
-        "text_temp": 0.7,
-        "waveform_temp": 0.7,
+
         "audiobooks_dir": tmp_path,
         "output_split": "by-chapter",
         "output_split_hours": 1,
