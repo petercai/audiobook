@@ -134,6 +134,7 @@ class WebUI:
         self.context = ctx
         self.script_mode = args['script_mode']
         self.is_gui_shared = args['share']
+        self.offline_mode = args.get('offline_mode', False)
         title = 'Ebook2Audiobook'
         glass_mask_msg = 'Initialization, please wait...'
         ebook_src = None
@@ -1890,6 +1891,7 @@ class WebUI:
             args = {
                 "is_gui_process": self.is_gui_process,
                 "session": id,
+                "offline_mode": self.offline_mode,
                 "script_mode": self.script_mode,
                 "device": device.lower(),
                 "tts_engine": tts_engine,

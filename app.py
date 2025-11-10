@@ -178,7 +178,8 @@ def main():
 
     validate_args(options)
 
-    args = vars(parser.parse_args())
+    args_ = parser.parse_args()
+    args = vars(args_)
 
     if not 'help' in args:
         if not check_virtual_env(args['script_mode']):
@@ -200,7 +201,7 @@ def main():
         # Set session ID to None if not provided
         elif not args['session']:
             args['session'] = None
-        args['offline_mode'] = bool(args['offline_mode'])
+        # args['offline_mode'] = bool(args['offline_mode'])
         args['share'] = bool(args['share'])
         args['ebook_list'] = None
 
@@ -286,7 +287,7 @@ def start_headless(args, ctx):
 def start_ui(args, ctx):
     args['is_gui_process'] = True
     passed_arguments = sys.argv[1:]
-    allowed_arguments = {'--share', '--script_mode'}
+    allowed_arguments = {'--share', '--script_mode', '--offline_mode'}
     passed_args_set = {arg for arg in passed_arguments if arg.startswith('--')}
     if passed_args_set.issubset(allowed_arguments):
         WebUI().launch(args, ctx)
@@ -522,7 +523,7 @@ Tip: to add of silence (1.4 seconds) into your text just use "###" or "[pause]".
     headless_optional_group.add_argument(options[24], action='version',
                                          version=f'ebook2audiobook version {prog_version}',
                                          help='''Show the version of the script and exit''')
-    headless_optional_group.add_argument(
+    gui_group.add_argument(
         options[27],
         action="store_true",
         help="""(Optional) Enable offline mode. The app will try to use cached models and data without internet access.""",

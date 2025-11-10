@@ -113,8 +113,8 @@ def test_tts_en_convert(session_context, ebook_path, tmp_path):
     # Setup arguments for EBookProcessor
     args = {
         # "ebook": os.path.join(ebook_path, "UnravelMe-c12.epub"),
-        "chapters_dir": os.path.join(session['process_dir'], "chapters"),
-        "chapters_dir_sentences": os.path.join(session['process_dir'], "chapters", "sentences"),
+        # "chapters_dir": os.path.join(session['process_dir'], "chapters"),
+        # "chapters_dir_sentences": os.path.join(session['process_dir'], "chapters", "sentences"),
         "device": "cpu",
         "language": "eng",
         "language_iso1": "en",
