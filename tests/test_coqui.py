@@ -120,7 +120,8 @@ def test_tts_en_convert(session_context, ebook_path, tmp_path):
         "language_iso1": "en",
         "tts_engine": TTS_ENGINES['XTTSv2'],
         # "speaker_wav": os.path.join(voices_dir, "zho", "adult", "male", "yunjian_24000.wav"),
-        "final_name": 'one-sentense.flac'
+        "final_name": 'one-sentense.flac',
+        "offline_mode": True,
     }
     # update session with args
     session.update(args)
