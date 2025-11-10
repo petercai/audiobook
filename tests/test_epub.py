@@ -124,7 +124,7 @@ def test_process_epub_en_mps(session_context, ebook_path, tmp_path):
         # "voice_dir": os.path.join(voices_dir, '__sessions', "test_voice"),
         # "speaker_wav": os.path.join(voices_dir, "zho", "adult", "male", "yunjian_24000.wav"),
         # "enable_text_splitting": True,
-        "output_format": "mb4",
+        "output_format": "m4b",
         "offline_mode": True
     }
     # update session with args

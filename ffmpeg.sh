@@ -5,7 +5,7 @@
 ffmpeg -i UnravelMe-c12.flac \
 -i metadata_part1.txt \
 -i UnravelMe-c12.vtt \
--i cover.jpg \
+-i UnravelMe-c12.jpg \
 -map 0:a \
 -map 3:v \
 -map_metadata 1 \
@@ -42,7 +42,7 @@ ffmpeg -i UnravelMe-c12.flac \
 ffmpeg -i UnravelMe-c12.flac \
 -i metadata_part1.txt \
 -i UnravelMe-c12.vtt \
--i cover.jpg \
+-i UnravelMe-c12.jpg \
 -map 0:a \
 -map 3:v \
 -map_metadata 1 \
