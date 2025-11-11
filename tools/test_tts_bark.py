@@ -66,7 +66,7 @@ def text_to_speech_bark(
 def main():
     # paths
     txt_path = "ebooks/god-1.txt"
-    speaker_wav = "voices/zho/adult/male/yunjian_24000.wav"
+    speaker_wav = "voices/zho/adult/male/yunjian.wav"
     output_wav = "c1_bark - yunjian.wav"
 
     text = load_text_file(txt_path)

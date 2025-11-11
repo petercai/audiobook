@@ -5,35 +5,25 @@
 # IS USED TO PRINT IT OUT TO THE TERMINAL, AND "CHAPTER" TO THE CODE
 # WHICH IS LESS GENERIC FOR THE DEVELOPERS
 
-import argparse, asyncio, csv, fnmatch, hashlib, io, json, math, os, platform, random, shutil, socket, subprocess, sys, tempfile, threading, time, traceback
-import unicodedata, urllib.request, uuid, ebooklib, gradio as gr, psutil, pymupdf4llm, regex as re, requests, stanza, torch, uvicorn
-
-from soynlp.tokenizer import LTokenizer
-from pythainlp.tokenize import word_tokenize
-from sudachipy import dictionary, tokenizer
-from PIL import Image
-from tqdm import tqdm
-from bs4 import BeautifulSoup, NavigableString, Tag
+import hashlib
+import math
+import shutil
+import subprocess
+import time
+import traceback
 from collections.abc import Mapping
-from collections.abc import MutableMapping
-from ebooklib import epub
-from glob import glob
-from iso639 import languages
-from markdown import markdown
-from multiprocessing import Pool, cpu_count
-from multiprocessing.managers import DictProxy, ListProxy
-from num2words import num2words
-from pydub.utils import mediainfo
-from queue import Queue, Empty
-from types import MappingProxyType
-from urllib.parse import urlparse
-from starlette.requests import ClientDisconnect
 from multiprocessing import Manager
+from multiprocessing.managers import DictProxy
+
+import gradio as gr
+import psutil
+import regex as re
+import unicodedata
+from bs4 import BeautifulSoup
+from num2words import num2words
 
 from lib import *
-from lib.classes.voice_extractor import VoiceExtractor
-from lib.classes.tts_manager import TTSManager
-from lib.ebook_audio import EbookAudio
+
 
 class DependencyError(Exception):
     def __init__(self, message=None):
@@ -285,53 +275,6 @@ def analyze_uploaded_file(zip_path, required_files):
         error = f"An error occurred: {e}"
         raise RuntimeError(error)
 
-def extract_custom_model(file_src, session, required_files=None):
-    try:
-        ebook_audio = EbookAudio()
-        is_gui_process = session.get("is_gui_process", False)
-        model_path = None
-        if required_files is None:
-            required_files = models[session['tts_engine']][default_fine_tuned]['files']
-        model_name = re.sub('.zip', '', os.path.basename(file_src), flags=re.IGNORECASE)
-        model_name = ebook_audio.get_sanitized(model_name)
-        with zipfile.ZipFile(file_src, 'r') as zip_ref:
-            files = zip_ref.namelist()
-            files_length = len(files)
-            tts_dir = session['tts_engine']
-            model_path = os.path.join(session['custom_model_dir'], tts_dir, model_name)
-            if os.path.exists(model_path):
-                print(f'{model_path} already exists, bypassing files extraction')
-                return model_path
-            os.makedirs(model_path, exist_ok=True)
-            required_files_lc = set(x.lower() for x in required_files)
-            with tqdm(total=files_length, unit='files') as t:
-                for f in files:
-                    base_f = os.path.basename(f).lower()
-                    if base_f in required_files_lc:
-                        out_path = os.path.join(model_path, base_f)
-                        with zip_ref.open(f) as src, open(out_path, 'wb') as dst:
-                            shutil.copyfileobj(src, dst)
-                    t.update(1)
-        if is_gui_process:
-            os.remove(file_src)
-        if model_path is not None:
-            msg = f'Extracted files to {model_path}'
-            print(msg)
-            return model_path
-        else:
-            error = f'An error occured when unzip {file_src}'
-            return None
-    except asyncio.exceptions.CancelledError as e:
-        DependencyError(e)
-        if is_gui_process:
-            os.remove(file_src)
-        return None       
-    except Exception as e:
-        DependencyError(e)
-        if is_gui_process:
-            os.remove(file_src)
-        return None
-        
 def hash_proxy_dict(proxy_dict):
     return hashlib.md5(str(proxy_dict).encode('utf-8')).hexdigest()
 

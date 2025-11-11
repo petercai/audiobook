@@ -13,16 +13,15 @@ from ebooklib import epub
 from iso639 import languages
 
 from lib.ebook_audio import EbookAudio
+from .classes.voice_extractor import VoiceExtractor
 from .functions import (
     NATIVE,
     TTS_ENGINES,
-    VoiceExtractor,
     analyze_uploaded_file,
     check_programs,
     default_engine_settings,
     default_gpu_wiki,
     default_output_split_hours,
-    extract_custom_model,
     get_compatible_tts_engines,
     get_vram,
     language_mapping,

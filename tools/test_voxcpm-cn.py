@@ -8,7 +8,7 @@ def voxcpm_config():
     return {
         "text_path": "ebooks/god-1.txt",
         "prompt_text": "无论是互联网巨头还是刚起步的创业公司都在竞相努力成为元宇宙这条充满无限可能性赛道的领先者事实确实这些平台除了产品发布发新闻稿时热度高很快就回归平静就像horizon world一样",
-        "prompt_wav_path": "voices/zho/adult/male/yunjian_24000.wav",
+        "prompt_wav_path": "voices/zho/adult/male/yunjian.wav",
         "output_wav": "yunjian_god-1.wav",
         "sample_rate": 16000,
     }
@@ -18,7 +18,7 @@ def voxcpm_config_yunxiao():
     return {
         "text_path": "ebooks/god-1.txt",
         "prompt_text": "无论是互联网巨头还是刚起步的创业公司都在竞相努力成为元宇宙这条充满无限可能性赛道的领先者事实确实这些平台除了产品发布发新闻稿时热度高很快就回归平静就像horizon world一样",
-        "prompt_wav_path": "voices/zho/adult/female/yunxiao_24000.wav",
+        "prompt_wav_path": "voices/zho/adult/female/yunxiao.wav",
         "output_wav": "yunxiao_god-1.wav",
         "sample_rate": 16000,
     }

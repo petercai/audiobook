@@ -44,7 +44,7 @@ def session_context(tmp_path):
             "fine_tuned": "internal",
             "voice": None,
             "voice_dir": os.path.join(voices_dir, '__sessions', "test_voice"),
-            # "speaker_wav": os.path.join(voices_dir, "zho", "adult", "male", "yunjian_24000.wav"),
+            # "speaker_wav": os.path.join(voices_dir, "zho", "adult", "male", "yunjian.wav"),
             # "temperature": 0.75,
             # "length_penalty": 1.0,
             # "num_beams": 5,
@@ -59,6 +59,7 @@ def session_context(tmp_path):
             "output_split": "by-chapter",
             "output_split_hours": 1,
             "is_gui_process": False,
+            "offline_mode": False,
             "script_mode": "native"
         }
     )
@@ -83,7 +84,7 @@ def test_tts_cn_convert(session_context, ebook_path, tmp_path):
         "tts_engine": TTS_ENGINES['XTTSv2'],
         "voice": None,
         "voice_dir": os.path.join(voices_dir, '__sessions', "test_voice"),
-        "speaker_wav": os.path.join(voices_dir, "zho", "adult", "male", "yunjian_24000.wav"),
+        "speaker_wav": os.path.join(voices_dir, "zho", "adult", "male", "yunjian.wav"),
     }
     # update session with args
     session.update(args)
@@ -119,7 +120,7 @@ def test_tts_en_convert(session_context, ebook_path, tmp_path):
         "language": "eng",
         "language_iso1": "en",
         "tts_engine": TTS_ENGINES['XTTSv2'],
-        # "speaker_wav": os.path.join(voices_dir, "zho", "adult", "male", "yunjian_24000.wav"),
+        # "speaker_wav": os.path.join(voices_dir, "zho", "adult", "male", "yunjian.wav"),
         "final_name": 'one-sentense.flac',
         "offline_mode": True,
     }

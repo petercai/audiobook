@@ -59,7 +59,7 @@ def test_list_languages(tts):
 
 def test_tts_cn(tts, tmp_path):
   text = "二愣子睁大着双眼，直直望着茅草和烂泥糊成的黑屋顶，身上盖着的旧棉被，已呈深黄色，看不出原来的本来面目，还若有若无的散发着淡淡的霉味。"
-  speaker_wav = "voices/zho/adult/male/yunjian_24000.wav"
+  speaker_wav = "voices/zho/adult/male/yunjian.wav"
   file_path = "c1_xtts - yunjian.wav" 
   tts.tts_to_file(
     text=text,
