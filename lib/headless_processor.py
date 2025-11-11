@@ -26,7 +26,6 @@ from .functions import (
     extract_custom_model,
     get_compatible_tts_engines,
     get_vram,
-    is_gui_process,
     language_mapping,
     models,
     models_dir,
@@ -35,7 +34,6 @@ from .functions import (
     show_alert,
     tmp_dir,
     voices_dir,
-    context,
 )
 from lib.epub import EPubProcessor
 
@@ -132,7 +130,7 @@ class EBookProcessor:
                 session, id = self.init_session(args, context)
 
                 # 3. Process custom models and voices if running in headless mode.
-                if not is_gui_process:
+                if not args.get("is_gui_process", False):
                     error = self._process_custom_model(session)
                     if error is None:
                         error = self._process_voice(session)
@@ -154,7 +152,7 @@ class EBookProcessor:
                         # Prepare session-specific cache directories.
                         if self.prepare_session_cache(args, session):
                             # 7. Check GPU availability and configure the processing device.
-                            self.gpu_check(is_gui_process, session)
+                            self.gpu_check(self.is_gui_process, session)
 
                             # 8. Convert the source ebook to EPUB format, which is the standard for processing.
                             epub_processor = EPubProcessor()
@@ -174,7 +172,7 @@ class EBookProcessor:
             if session and session.get("cancellation_requested"):
                 error = "Cancelled"
 
-            if not is_gui_process and id is not None:
+            if not self.is_gui_process and id is not None:
                 error += f"\n*********** Session: {id} **************\nStore it in case of interruption, crash, reuse of custom model or custom voice,\nyou can resume the conversion with --session option"
 
             print(error)
@@ -325,7 +323,7 @@ class EBookProcessor:
         if ctx is not None:
             context = ctx
 
-        is_gui_process = args["is_gui_process"]
+        self.is_gui_process = args["is_gui_process"]
         id = args["session"] if args["session"] is not None else str(uuid.uuid4())
 
         session = context.get_session(id)
@@ -344,7 +342,7 @@ class EBookProcessor:
         )
         session["custom_model"] = (
             args["custom_model"]
-            if not is_gui_process or args["custom_model"] is None
+            if not self.is_gui_process or args["custom_model"] is None
             else os.path.join(session["custom_model_dir"], args["custom_model"])
         )
         session["fine_tuned"] = args["fine_tuned"]
@@ -445,7 +443,7 @@ class EBookProcessor:
                and os.path.isdir(os.path.join(session["process_dir"], dir_name))
         ]
         shutil.rmtree(os.path.join(session["voice_dir"], "proc"), ignore_errors=True)
-        if is_gui_process:
+        if self.is_gui_process:
             if len(chapters_dirs) > 1:
                 if os.path.exists(session["chapters_dir"]):
                     shutil.rmtree(session["chapters_dir"], ignore_errors=True)

@@ -36,22 +36,6 @@ from lib.classes.voice_extractor import VoiceExtractor
 from lib.classes.tts_manager import TTSManager
 from lib.ebook_audio import EbookAudio
 
-# from lib.ebook_audio import EbookAudio
-
-# from .headless_processor import convert_ebook, convert_ebook_batch
-#from lib.classes.redirect_console import RedirectConsole
-#from lib.classes.argos_translator import ArgosTranslator
-
-# context = None
-is_gui_process = False
-active_sessions = set()
-
-#import logging
-#logging.basicConfig(
-#    level=logging.INFO, # DEBUG for more verbosity
-#    format="%(asctime)s [%(levelname)s] %(message)s"
-#)
-
 class DependencyError(Exception):
     def __init__(self, message=None):
         super().__init__(message)
@@ -66,8 +50,8 @@ class DependencyError(Exception):
         error = f'Caught DependencyError: {self}'
         print(error)    
         # Exit the script if it's not a web process
-        if not is_gui_process:
-            sys.exit(1)
+        # if not is_gui_process:
+        #     sys.exit(1)
 
 
 
@@ -307,6 +291,7 @@ def analyze_uploaded_file(zip_path, required_files):
 def extract_custom_model(file_src, session, required_files=None):
     try:
         ebook_audio = EbookAudio()
+        is_gui_process = session.get("is_gui_process", False)
         model_path = None
         if required_files is None:
             required_files = models[session['tts_engine']][default_fine_tuned]['files']
