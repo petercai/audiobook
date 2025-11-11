@@ -74,7 +74,7 @@ class VoiceExtractor:
         try:
             msg = 'Detecting any background noise or music...'
             print(msg)
-            detector = BackgroundDetector(wav_file=self.wav_file)
+            detector = BackgroundDetector(self.session, wav_file=self.wav_file)
             status, report = detector.detect(vad_ratio_thresh=0.15)
             print(report)
             if status:

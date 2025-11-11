@@ -20,6 +20,15 @@
       "program": "app.py",
       "console": "integratedTerminal",
       "args": [
+      ],
+    },
+    {
+      "name": "GUI - Offline Mode",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "app.py",
+      "console": "integratedTerminal",
+      "args": [
         "--offline_mode"
       ],
     },

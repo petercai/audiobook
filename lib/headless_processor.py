@@ -56,7 +56,7 @@ class EBookProcessor:
                         print(f"Conversion failed: {progress_status}")
                         sys.exit(1)
                     args["ebook_list"].remove(file)
-            reset_ebook_session(args["session"])
+            reset_ebook_session(ctx, args["session"])
             return progress_status, passed
         else:
             print(f"the ebooks source is not a list!")

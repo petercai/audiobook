@@ -34,13 +34,15 @@ from starlette.requests import ClientDisconnect
 from lib import *
 from lib.classes.voice_extractor import VoiceExtractor
 from lib.classes.tts_manager import TTSManager
+from lib.ebook_audio import EbookAudio
+
 # from lib.ebook_audio import EbookAudio
 
 # from .headless_processor import convert_ebook, convert_ebook_batch
 #from lib.classes.redirect_console import RedirectConsole
 #from lib.classes.argos_translator import ArgosTranslator
 
-context = None
+# context = None
 is_gui_process = False
 active_sessions = set()
 
@@ -888,7 +890,7 @@ def restore_session_from_data(data, session):
     except Exception as e:
         DependencyError(e)
 
-def reset_ebook_session(id):
+def reset_ebook_session(context, id):
     session = context.get_session(id)
     data = {
         "ebook": None,
