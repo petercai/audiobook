@@ -533,14 +533,14 @@ class EBookProcessor:
             if not session["cover"]:
                 return "get_cover() failed!", False
             # Get the table of contents and chapters from the EPUB book
-            session["toc"], session["chapters"] = epub_processor.get_chapters(epubBook, session)
+            session["toc"], session["chapters"] = epub_processor.get_chapters_in_sentenses(epubBook, session)
             # Set the final name of the output file
             session["final_name"] = self.ebook_audio.get_sanitized(
                 session["metadata"]["title"] + "." + session["output_format"]
             )
             # If the chapters don't exist, return an error
             if session["chapters"] is None:
-                return "get_chapters() failed!", False
+                return "get_chapters_in_sentenses() failed!", False
             # Return None for the error message and True for success
             return None, True
         except Exception as e:

@@ -344,7 +344,7 @@ def test_get_chapters_en(session_context, ebook_path, tmp_path):
     epubBook = epub.read_epub(ebook_, {"ignore_ncx": True})
 
     processor = EPubProcessor()
-    toc, chapters = processor.get_chapters(epubBook, session)
+    toc, chapters = processor.get_chapters_in_sentenses(epubBook, session)
     # Assertions
     assert toc
     print(toc)
@@ -371,7 +371,34 @@ def test_get_chapters_cn(session_context, ebook_path, tmp_path):
     epubBook = epub.read_epub(ebook_, {"ignore_ncx": True})
 
     processor = EPubProcessor()
-    toc, chapters = processor.get_chapters(epubBook, session)
+    toc, chapters = processor.get_chapters_in_sentenses(epubBook, session)
+    # Assertions
+    assert toc
+    print(toc)
+    assert chapters
+    for chapter in chapters:
+        for i, sentence in enumerate(chapter, 1):
+            print(f"{i}: {sentence}")
+
+def test_get_epub_chapters_cn(session_context, ebook_path, tmp_path):
+    context, session_id, session = session_context
+    # Setup arguments for EBookProcessor
+    args = {
+        "ebook": os.path.join(ebook_path, "god-c12.epub"),
+        "device": "cpu",
+        "language": "zho",
+        "language_iso1": 'zh',
+        "tts_engine": TTS_ENGINES['VOXCPM'],
+    }
+
+    # update session with args
+    session.update(args)
+
+    ebook_ = session["ebook"]
+    epubBook = epub.read_epub(ebook_, {"ignore_ncx": True})
+
+    processor = EPubProcessor()
+    toc, chapters = processor.get_epub_chapters(epubBook, "zho")
     # Assertions
     assert toc
     print(toc)
