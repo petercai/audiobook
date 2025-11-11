@@ -6,7 +6,7 @@
 # WHICH IS LESS GENERIC FOR THE DEVELOPERS
 
 import argparse, asyncio, csv, fnmatch, hashlib, io, json, math, os, platform, random, shutil, socket, subprocess, sys, tempfile, threading, time, traceback
-import unicodedata, urllib.request, uuid, zipfile, ebooklib, gradio as gr, psutil, pymupdf4llm, regex as re, requests, stanza, torch, uvicorn
+import unicodedata, urllib.request, uuid, ebooklib, gradio as gr, psutil, pymupdf4llm, regex as re, requests, stanza, torch, uvicorn
 
 from soynlp.tokenizer import LTokenizer
 from pythainlp.tokenize import word_tokenize
@@ -14,7 +14,6 @@ from sudachipy import dictionary, tokenizer
 from PIL import Image
 from tqdm import tqdm
 from bs4 import BeautifulSoup, NavigableString, Tag
-from collections import Counter
 from collections.abc import Mapping
 from collections.abc import MutableMapping
 from ebooklib import epub
@@ -22,7 +21,6 @@ from glob import glob
 from iso639 import languages
 from markdown import markdown
 from multiprocessing import Pool, cpu_count
-from multiprocessing import Manager, Event
 from multiprocessing.managers import DictProxy, ListProxy
 from num2words import num2words
 from pydub.utils import mediainfo
@@ -30,6 +28,7 @@ from queue import Queue, Empty
 from types import MappingProxyType
 from urllib.parse import urlparse
 from starlette.requests import ClientDisconnect
+from multiprocessing import Manager
 
 from lib import *
 from lib.classes.voice_extractor import VoiceExtractor
@@ -47,8 +46,6 @@ class DependencyError(Exception):
         # Print the full traceback of the exception
         traceback.print_exc()      
         # Print the exception message
-        error = f'Caught DependencyError: {self}'
-        print(error)    
         # Exit the script if it's not a web process
         # if not is_gui_process:
         #     sys.exit(1)

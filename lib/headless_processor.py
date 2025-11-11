@@ -22,7 +22,6 @@ from .functions import (
     default_engine_settings,
     default_gpu_wiki,
     default_output_split_hours,
-    ebook_formats,
     extract_custom_model,
     get_compatible_tts_engines,
     get_vram,
@@ -32,6 +31,7 @@ from .functions import (
     prepare_dirs,
     reset_ebook_session,
     show_alert,
+    ebook_formats,
     tmp_dir,
     voices_dir,
 )
@@ -575,7 +575,7 @@ class EBookProcessor:
                 if analyze_uploaded_file(
                     session["custom_model"], required_files
                 ):
-                    model = extract_custom_model(session["custom_model"], session)
+                    model = self.ebook_audio.extract_custom_model(session["custom_model"], session)
                     if model is not None:
                         session["custom_model"] = model
                     else:

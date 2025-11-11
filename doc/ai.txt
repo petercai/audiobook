@@ -26,8 +26,11 @@ refactor epub.py to a class EPubProcessor
 - convert2epub() is class method
 - update all impacted python files when required
 
-move convert_chapters2audio() into class EPubProcessor in   epub.py
+move extract_custom_model() in functions.py into class EbookAudio in ebook_audio.py
 - update all impacted python files when required
+- don't change existing logic
+- try best to add detailed docstring and inline comments
+
 
 move functions below in functions.py into class EPubProcessor
 - filter_chapter

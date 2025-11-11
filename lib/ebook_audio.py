@@ -6,6 +6,8 @@ import subprocess
 import sys
 import tempfile
 import traceback
+import zipfile
+from tqdm import tqdm
 from datetime import datetime
 from multiprocessing import cpu_count, Pool
 from pathlib import Path
@@ -13,7 +15,7 @@ from pathlib import Path
 from pydub import AudioSegment
 
 from lib import TTS_SML, default_audio_proc_format
-from lib.functions import DependencyError
+from lib.functions import DependencyError, models, default_fine_tuned
 
 class EbookAudio:
 
@@ -530,4 +532,78 @@ class EbookAudio:
                     return False
         except Exception as e:
             DependencyError(e)
-            return False
+            return False                    
+
+    def extract_custom_model(self, file_src, session, required_files=None):
+        """
+        Extracts a custom TTS model from a ZIP archive and places it in the session's model directory.
+
+        This method handles the extraction of a user-provided ZIP file containing a fine-tuned model.
+        It validates the contents of the ZIP, creates a dedicated directory for the model,
+        and extracts only the required files. This ensures that custom models are organized
+        and ready for use by the TTS engine.
+
+        Args:
+            file_src (str): The file path of the ZIP archive containing the custom model.
+            session (dict): The session object, which contains configuration details like
+                            'tts_engine' and 'custom_model_dir'.
+            required_files (list, optional): A list of filenames that must be present in the
+                                             ZIP file for it to be considered a valid model.
+                                             If None, it defaults to the requirements of the
+                                             current TTS engine. Defaults to None.
+
+        Returns:
+            str or None: The path to the extracted model directory if successful, otherwise None.
+        """
+        try:
+            # Determine if running in GUI mode to decide whether to delete the source ZIP after extraction.
+            is_gui_process = session.get("is_gui_process", False)
+
+            model_path = None
+            # If no specific required files are provided, get them from the default model configuration.
+            if required_files is None:
+                required_files = models[session['tts_engine']][default_fine_tuned]['files']
+
+            # Generate a sanitized model name from the source filename.
+            model_name = re.sub('.zip', '', os.path.basename(file_src), flags=re.IGNORECASE)
+            model_name = self.get_sanitized(model_name)
+
+            # Open the ZIP file for processing.
+            with zipfile.ZipFile(file_src, 'r') as zip_ref:
+                files = zip_ref.namelist()
+                files_length = len(files)
+                tts_dir = session['tts_engine']
+                # Define the final path for the extracted model.
+                model_path = os.path.join(session['custom_model_dir'], tts_dir, model_name)
+
+                # If the model directory already exists, skip extraction.
+                if os.path.exists(model_path):
+                    print(f'{model_path} already exists, bypassing files extraction')
+                    return model_path
+
+                os.makedirs(model_path, exist_ok=True)
+                required_files_lc = set(x.lower() for x in required_files)
+
+                # Use tqdm for a progress bar during extraction.
+                with tqdm(total=files_length, unit='files') as t:
+                    for f in files:
+                        base_f = os.path.basename(f).lower()
+                        # Extract only the files that are required for the model.
+                        if base_f in required_files_lc:
+                            out_path = os.path.join(model_path, base_f)
+                            with zip_ref.open(f) as src, open(out_path, 'wb') as dst:
+                                shutil.copyfileobj(src, dst)
+                        t.update(1)
+
+            # In GUI mode, the uploaded temp file should be removed.
+            if is_gui_process:
+                os.remove(file_src)
+
+            print(f'Extracted files to {model_path}')
+            return model_path
+        except Exception as e:
+            DependencyError(e)
+            if is_gui_process and file_src and os.path.exists(file_src):
+                os.remove(file_src)
+            return None
+

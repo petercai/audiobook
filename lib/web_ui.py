@@ -56,7 +56,6 @@ from lib.functions import (
     restore_session_from_data,
     show_alert,
     analyze_uploaded_file,
-    extract_custom_model
 )
 from lib.headless_processor import EBookProcessor
 from lib.lang import (language_mapping,
@@ -110,7 +109,8 @@ class WebUI:
         self.is_gui_process = True
         self.src_label_file = 'Select a File'
         self.src_label_dir = 'Select a Directory'
-
+        self.ebook_audio = EbookAudio()
+        
     def cleanup_session(self, context, req: gr.Request):
         socket_hash = req.session_hash
         if any(socket_hash in session for session in context.sessions.values()):
@@ -1764,7 +1764,7 @@ class WebUI:
                     session['tts_engine'] = t
                     required_files = models[session['tts_engine']]['internal']['files']
                     if analyze_uploaded_file(f, required_files):
-                        model = extract_custom_model(f, session)
+                        model = self.ebook_audio.extract_custom_model(f, session)
                         if model is None:
                             error = f'Cannot extract custom model zip file {os.path.basename(f)}'
                             state['type'] = 'warning'
