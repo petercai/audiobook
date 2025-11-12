@@ -380,32 +380,28 @@ def test_get_chapters_cn(session_context, ebook_path, tmp_path):
         for i, sentence in enumerate(chapter, 1):
             print(f"{i}: {sentence}")
 
-def test_get_epub_chapters_cn(session_context, ebook_path, tmp_path):
-    context, session_id, session = session_context
-    # Setup arguments for EBookProcessor
-    args = {
-        "ebook": os.path.join(ebook_path, "god-c12.epub"),
-        "device": "cpu",
-        "language": "zho",
-        "language_iso1": 'zh',
-        "tts_engine": TTS_ENGINES['VOXCPM'],
-    }
-
-    # update session with args
-    session.update(args)
-
-    ebook_ = session["ebook"]
+def test_get_epub_chapters_en(ebook_path):
+    ebook_ = os.path.join(ebook_path, "UnravelMe-c12.epub")
     epubBook = epub.read_epub(ebook_, {"ignore_ncx": True})
-
     processor = EPubProcessor()
-    toc, chapters = processor.get_epub_chapters(epubBook, "zho")
-    # Assertions
+    docs, toc = processor.get_epub_chapters(epubBook, "eng")
     assert toc
     print(toc)
-    assert chapters
-    for chapter in chapters:
-        for i, sentence in enumerate(chapter, 1):
-            print(f"{i}: {sentence}")
+    assert docs
+    # for chapter in chapters:
+    #     for i, sentence in enumerate(chapter, 1):
+    #         print(f"{i}: {sentence}")
+def test_get_epub_chapters_cn(ebook_path):
+    ebook_ = os.path.join(ebook_path, "god-c12.epub")
+    epubBook = epub.read_epub(ebook_, {"ignore_ncx": True})
+    processor = EPubProcessor()
+    docs, toc = processor.get_epub_chapters(epubBook, "zho")
+    assert toc
+    print(toc)
+    assert docs
+    # for chapter in chapters:
+    #     for i, sentence in enumerate(chapter, 1):
+    #         print(f"{i}: {sentence}")
 
 def test_get_cover(session_context, ebook_path, tmp_path):
     context, session_id, session = session_context

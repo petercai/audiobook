@@ -13,6 +13,8 @@ TTS_ENGINES = {
     "VOXCPM": "voxcpm"
 }
 
+TOKENIZER_FREE_TTS = ["voxcpm"]
+
 TTS_VOICE_CONVERSION = {
     "freevc24": {"path": "voice_conversion_models/multilingual/vctk/freevc24", "samplerate": 24000},
     "knnvc": {"path": "voice_conversion_models/multilingual/multi-dataset/knnvc", "samplerate": 16000},

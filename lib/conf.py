@@ -12,7 +12,6 @@ tts_dir = os.path.join(models_dir, 'tts')
 os.environ['PYTHONUTF8'] = '1'
 os.environ['PYTHONIOENCODING'] = 'utf-8'
 os.environ['COQUI_TOS_AGREED'] = '1'
-os.environ['PYTHONIOENCODING'] = 'utf-8'
 os.environ['CALIBRE_NO_NATIVE_FILEDIALOGS'] = '1'
 os.environ['GRADIO_DEBUG'] = '1'
 os.environ['DO_NOT_TRACK'] = 'true'

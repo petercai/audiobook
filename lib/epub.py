@@ -23,7 +23,7 @@ from lib.lang import abbreviations_mapping, year_to_decades_languages, language_
     language_clock, language_math_phonemes, default_language_code, roman_numbers_tuples, emojis_list, \
     punctuation_switch, punctuation_split_hard_set, punctuation_list_set, punctuation_split_soft_set, \
     specialchars_mapping
-from lib.models import TTS_SML
+from lib.models import TOKENIZER_FREE_TTS, TTS_SML
 
 is_gui_process = False
 
@@ -262,10 +262,6 @@ class EPubProcessor:
             # Attempt to extract the book title for metadata
             title = self.get_ebook_title(epubBook, all_docs)
             
-            # Initialize the chapters list to store processed content
-            # todo: toc and chapter should be a list of dicts
-            chapters = []
-            
             # Initialize Stanza NLP pipeline for languages that require advanced processing
             # This is used for date recognition and other NLP tasks
             stanza_nlp = False
@@ -287,7 +283,11 @@ class EPubProcessor:
             # Inform user that numerical and mathematical content analysis is beginning
             msg = 'Analyzing numbers, maths signs, dates and time to convert in words...'
             print(msg)
-            
+
+            # Initialize the chapters list to store processed content
+            # todo: toc and chapter should be a list of dicts
+            chapters = []
+
             # Process each document (chapter) in the EPUB
             for doc in all_docs:
                 # Process the chapter content with various text transformations
@@ -358,7 +358,7 @@ class EPubProcessor:
         else:
             return self._math2words(m, lang, lang_iso1, None, is_num2words_compat)
 
-    def _tuple_row(self, node, last_text_char=None):
+    def _tuple_row(self, node, last_text_char=None, tokenizer_tts=True):
         try:
             for child in node.children:
                 if isinstance(child, NavigableString):
@@ -381,7 +381,7 @@ class EPubProcessor:
                     else:
                         return_data = False
                         if name in self.proc_tags:
-                            for inner in self._tuple_row(child, last_text_char):
+                            for inner in self._tuple_row(child, last_text_char, tokenizer_tts):
                                 return_data = True
                                 yield inner
                                 # Track last char if this is text or heading
@@ -391,13 +391,13 @@ class EPubProcessor:
                             if return_data:
                                 if name in self.break_tags:
                                     # Only yield break if last char is NOT alnum or space
-                                    if not (last_text_char and (last_text_char.isalnum() or last_text_char.isspace())):
+                                    if tokenizer_tts and not (last_text_char and (last_text_char.isalnum() or last_text_char.isspace())):
                                         yield ("break", TTS_SML['break'])
-                                elif name in self.heading_tags or name in self.pause_tags:
+                                elif tokenizer_tts and name in self.heading_tags or name in self.pause_tags:
                                     yield ("pause", TTS_SML['pause'])
 
                         else:
-                            yield from self._tuple_row(child, last_text_char)
+                            yield from self._tuple_row(child, last_text_char, tokenizer_tts)
 
         except Exception as e:
             error = f'filter_chapter() tuple_row() error: {e}'
@@ -455,6 +455,7 @@ class EPubProcessor:
                 "acknowledgments", "dedication", "glossary", "index",
                 "appendix", "bibliography", "copyright-page", "landmark"
             }
+            is_tokenizer_tts = tts_engine not in TOKENIZER_FREE_TTS
             # If the epub_type contains any excluded terms, skip this chapter
             if any(part in epub_type for part in excluded):
                 return []
@@ -463,7 +464,7 @@ class EPubProcessor:
                 tag.decompose()
             # Recursively traverse the HTML body to extract content into a structured list of tuples.
             # Each tuple contains a type identifier and the corresponding content.
-            tuples_list = list(self._tuple_row(content_root))
+            tuples_list = list(self._tuple_row(content_root, is_tokenizer_tts))
             if not tuples_list:
                 error = 'No tuples_list from content_root created!'
                 print(error)
@@ -478,9 +479,9 @@ class EPubProcessor:
                     text_list.append(payload.strip())
                 elif typ == "break":
                     # Avoid adding multiple consecutive break tokens which could cause unwanted pauses
-                    if prev_typ != 'break':
+                    if prev_typ != 'break' and is_tokenizer_tts :
                         text_list.append(TTS_SML['break'])
-                elif typ == 'pause':
+                elif typ == 'pause' and is_tokenizer_tts:
                     # Avoid adding multiple consecutive pause tokens which could cause unwanted pauses
                     if prev_typ != 'pause':
                         text_list.append(TTS_SML['pause'])
