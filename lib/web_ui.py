@@ -1186,7 +1186,7 @@ class WebUI:
                     ''',
                 outputs=[gr_read_data],
             )
-            app.unload(lambda req: self.cleanup_session(context, req))
+            app.unload(lambda req: self.cleanup_session(self.context, req))
         try:
             all_ips = get_all_ip_addresses()
             msg = f'IPs available for connection:\n{all_ips}\nNote: 0.0.0.0 is not the IP to connect. Instead use an IP above to connect.'
@@ -2048,21 +2048,36 @@ class WebUI:
 
     def change_gr_read_data(self, data, state, req: gr.Request):
         try:
+            # This function is the entry point for creating and managing user sessions.
+            # It's triggered when the frontend loads and sends back any session data stored in the browser's localStorage.
+
             msg = 'Error while loading saved session. Please try to delete your cookies and refresh the page'
+            
+            # Step 1: Check for existing session data.
             if data is None or 'id' not in data:
+                # If no session data or session ID is found, create a new session.
+                # A unique session ID is generated using UUID.
                 session = self.context.get_session(str(uuid.uuid4()))
                 if data is not None:
+                    # If there's some data but no ID, try to restore from it.
                     restore_session_from_data(data, session)
                 data = session
             else:
+                # If a session ID is found, retrieve the existing session from the context.
                 session = self.context.get_session(data['id'])
+
+            # Restore session data from the provided data object.
             if data.get('tab_id') == session.get('tab_id') or len(active_sessions) == 0:
                 restore_session_from_data(data, session)
                 session['status'] = None
+
+            # Step 2: Start tracking the session to manage its lifecycle.
             if not ctx_tracker.start_session(session['id'], self.context):
+                # If the session is already active elsewhere, show an error.
                 error = "Your session is already active.<br>If it's not the case please close your browser and relaunch it."
                 return gr.update(), gr.update(), gr.update(value=''), self.update_gr_glass_mask(str=error)
             else:
+                # If the session is new or inactive, add it to the active sessions set.
                 active_sessions.add(req.session_hash)
                 session[req.session_hash] = req.session_hash
                 session['cancellation_requested'] = False
