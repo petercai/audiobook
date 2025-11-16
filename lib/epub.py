@@ -448,7 +448,10 @@ class EPubProcessor:
             if not epub_type:
                 section_tag = content_root.find("section")
                 if section_tag:
-                    epub_type = section_tag.get("epub:type", "").lower()
+                    epub_type = (section_tag.get("epub:type", "") or section_tag.get("epub_type", "") or "").lower()
+                nav_tag = content_root.find("nav")
+                if nav_tag:
+                    epub_type = (nav_tag.get("epub:type", "") or nav_tag.get("epub_type", "") or "").lower()
             # Define a set of excluded content types that shouldn't be processed
             excluded = {
                 "frontmatter", "backmatter", "toc", "titlepage", "colophon",
