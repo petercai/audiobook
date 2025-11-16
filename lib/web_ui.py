@@ -1391,13 +1391,49 @@ class WebUI:
         )
 
     def change_gr_audiobook_list(self, selected, id):
+        """
+        Handles changes in the audiobook selection dropdown.
+
+        This method is triggered when a user selects a different audiobook from the list.
+        It updates the session with the selected audiobook, retrieves its metadata,
+        and updates the UI components accordingly, such as the audio player and VTT data.
+
+        Args:
+            selected (str): The file path of the selected audiobook.
+            id (str): The session ID to retrieve the correct session context.
+
+        Returns:
+            tuple: A tuple of Gradio updates for various UI components, including
+                   the download button, audio player, VTT data, and the visibility
+                   of the audiobook list group.
+        """
+        # Retrieve the current session using the provided ID.
         session = self.context.get_session(id)
+        
+        # Update the 'audiobook' key in the session with the selected file path.
         session['audiobook'] = selected
+        
+        # If an audiobook is selected (not None), get its media information.
         if selected is not None:
+            # Use mediainfo to get metadata from the audio file.
             audio_info = mediainfo(selected)
-            session['duration'] = float(audio_info['duration'])
+            # Store the duration of the audiobook in the session.
+            try:
+                session['duration'] = float(audio_info['duration'])
+            except (ValueError, TypeError, KeyError):
+                session['duration'] = 0.0
+        
+        # Determine if the audiobook list group should be visible.
+        # It is visible only if there are audiobooks in the options list.
         visible = True if len(self.audiobook_options) else False
-        return gr.update(value=selected), gr.update(value=selected), gr.update(value=self.load_vtt_data(selected)), gr.update(visible=visible)
+        
+        # Return a series of Gradio updates to refresh the UI.
+        return (
+            gr.update(value=selected),  # Update the value of the download button.
+            gr.update(value=selected),  # Update the audio player with the new source.
+            gr.update(value=self.load_vtt_data(selected)),  # Load and update the VTT data.
+            gr.update(visible=visible)  # Set the visibility of the audiobook list group.
+        )
     
     def update_gr_glass_mask(self, str='Initialization, please wait...', attr=''):
         return gr.update(value=f'<div id="glass-mask" {attr}>{str}</div>')
@@ -1587,7 +1623,7 @@ class WebUI:
                 elif method == 'confirm_audiobook_del':
                     selected_name = Path(audiobook).stem
                     if os.path.isdir(audiobook):
-                        shutil.rmtree(selected, ignore_errors=True)
+                        shutil.rmtree(audiobook, ignore_errors=True)
                     elif os.path.exists(audiobook):
                         os.remove(audiobook)
                     vtt_path = Path(audiobook).with_suffix('.vtt')
