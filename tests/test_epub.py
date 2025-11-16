@@ -28,7 +28,7 @@ def session_context(tmp_path):
         {
             "session": session_id,
             'cancellation_requested': False,
-            # "ebook": os.path.join(ebook_path, "UnravelMe-c12.epub"),
+            # "ebook": os.path.join(ebook_path, "jane-eyre-c12.epub"),
             # "chapters_dir": os.path.join(process_dir, "chapters"),
             # "chapters_dir_sentences": os.path.join(process_dir, "chapters", "sentences"),
             "ebook_list": None,
@@ -120,7 +120,7 @@ def test_process_epub_en(session_context, ebook_path, tmp_path):
 
     # Setup arguments for EBookProcessor
     args = {
-        "ebook": os.path.join(ebook_path, "UnravelMe-c12.epub"),
+        "ebook": os.path.join(ebook_path, "jane-eyre-c12.epub"),
         "device": "cpu",
         "language": "eng",
         "language_iso1": "en",
@@ -155,7 +155,7 @@ def test_process_epub_en_mps(session_context, ebook_path, tmp_path):
 
     # Setup arguments for EBookProcessor
     args = {
-        "ebook": os.path.join(ebook_path, "UnravelMe-c12.epub"),
+        "ebook": os.path.join(ebook_path, "jane-eyre-c12.epub"),
         "device": "mps",
         "language": "eng",
         "language_iso1": "en",
@@ -225,7 +225,7 @@ def test_process_epub_chapters_en(session_context, ebook_path, tmp_path):
     context, session_id, session = session_context
     # Setup arguments for EBookProcessor
     args = {
-        "ebook": os.path.join(ebook_path, "UnravelMe-c12.epub"),
+        "ebook": os.path.join(ebook_path, "jane-eyre-c12.epub"),
         "ebook_list": None,
         "device": "cpu",
         "language": "eng",
@@ -298,7 +298,7 @@ def test_process_epub_metadata_en(session_context, ebook_path, tmp_path):
     args = {
         "session": session_id,
         'cancellation_requested': False,
-        "ebook": os.path.join(ebook_path, "UnravelMe-c12.epub"),
+        "ebook": os.path.join(ebook_path, "jane-eyre-c12.epub"),
         "device": "cpu",
         "language": "eng",
         "language_iso1": 'en',
@@ -333,7 +333,7 @@ def test_get_chapters_en(session_context, ebook_path, tmp_path):
     context, session_id, session = session_context
     # Setup arguments for EBookProcessor
     args = {
-        "ebook": os.path.join(ebook_path, "UnravelMe-c12.epub"),
+        "ebook": os.path.join(ebook_path, "jane-eyre-c12.epub"),
         "device": "cpu",
         "language": "eng",
         "language_iso1": 'en',
@@ -384,7 +384,7 @@ def test_get_chapters_cn(session_context, ebook_path, tmp_path):
             print(f"{i}: {sentence}")
 
 def test_get_epub_chapters_en(ebook_path):
-    ebook_ = os.path.join(ebook_path, "UnravelMe-c12.epub")
+    ebook_ = os.path.join(ebook_path, "jane-eyre-c12.epub")
     epubBook = epub.read_epub(ebook_, {"ignore_ncx": True})
     processor = EPubProcessor()
     docs, toc = processor.get_epub_chapters(epubBook, "eng")

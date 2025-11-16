@@ -31,7 +31,7 @@ def session_context(tmp_path):
         {
             "session": session_id,
             'cancellation_requested': False,
-            # "ebook": os.path.join(ebook_path, "UnravelMe-c12.epub"),
+            # "ebook": os.path.join(ebook_path, "jane-eyre-c12.epub"),
             # "chapters_dir": os.path.join(process_dir, "chapters"),
             # "chapters_dir_sentences": os.path.join(process_dir, "chapters", "sentences"),
             "ebook_list": None,
@@ -113,7 +113,7 @@ def test_tts_en_convert(session_context, ebook_path, tmp_path):
 
     # Setup arguments for EBookProcessor
     args = {
-        # "ebook": os.path.join(ebook_path, "UnravelMe-c12.epub"),
+        # "ebook": os.path.join(ebook_path, "jane-eyre-c12.epub"),
         # "chapters_dir": os.path.join(session['process_dir'], "chapters"),
         # "chapters_dir_sentences": os.path.join(session['process_dir'], "chapters", "sentences"),
         "device": "cpu",
