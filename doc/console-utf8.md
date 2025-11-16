@@ -1,3 +1,233 @@
+# 0 
+This error means:
+
+### **pytest → VS Code Test Explorer runs Python in cp1252 (Windows default), not UTF-8**,
+
+so `print("第二章…")` fails when the output is captured.
+
+This is **not your code’s fault** — it’s an encoding issue in the test runner environment.
+
+---
+
+# ✅ **THE FIX (works 100% in VS Code + pytest on Windows)**
+
+## **Add UTF-8 environment for pytest inside VS Code**
+
+Open your VS Code `settings.json` and add this:
+
+```json
+{
+    "python.testing.pytestEnabled": true,
+    "python.testing.pytestArgs": [
+        "-s"
+    ],
+    "python.testing.env": {
+        "PYTHONIOENCODING": "utf-8",
+        "PYTHONUTF8": "1"
+    }
+}
+```
+
+### Why this works
+
+* `PYTHONUTF8=1` → forces Python to run in UTF-8 mode
+* `PYTHONIOENCODING=utf-8` → forces print() and captured output to UTF-8
+* `-s` → disables pytest capture (so the console doesn’t try cp1252)
+
+---
+
+# If you run pytest manually from terminal
+
+Also set:
+
+```
+set PYTHONUTF8=1
+set PYTHONIOENCODING=utf-8
+```
+
+Then:
+
+```
+pytest -s
+```
+
+---
+
+# ⚠ Why VS Code Test Explorer fails
+
+VS Code launches test runs in a **non-terminal environment**, which inherits:
+
+* Windows default console code page → cp1252
+* No UTF-8 override
+
+So Python tries to encode Chinese using cp1252 → fails → `UnicodeEncodeError`.
+
+---
+
+# Optional: Add to pytest.ini
+
+To ensure consistency:
+
+**pytest.ini**
+
+```ini
+[pytest]
+addopts = -s
+```
+
+---
+
+# 🔧 If still failing, apply the ultimate fix (rare case <- **this one works**)
+
+Add this at the top of the test file:
+
+```python
+import sys
+sys.stdout.reconfigure(encoding="utf-8")
+```
+
+This force-patches the output stream.
+
+---
+
+# ✅ If you send me your VS Code settings.json, I can fix it precisely.
+
+Would you like me to generate a working minimal config for your project?
+
+
+# 1
+To make **print() output Chinese characters correctly in VS Code’s “Test Results” panel on Windows when running pytest**, you need to ensure three things:
+
+1. **Python outputs UTF-8**
+2. **pytest captures output in UTF-8**
+3. **VS Code’s test adapter shows UTF-8 correctly**
+
+Below is the reliable setup.
+
+---
+
+# ✅ **Solution (Recommended & Most Stable)**
+
+## **1. Force Python to use UTF-8**
+
+Create or edit a file:
+
+### **`pyproject.toml`**
+
+```toml
+[tool.pytest.ini_options]
+addopts = "-s"
+```
+
+### OR use `pytest.ini`
+
+```ini
+[pytest]
+addopts = -s
+```
+
+This ensures pytest prints output directly (no encoding loss).
+
+Then set Python UTF-8 mode permanently on Windows:
+
+### **Method A: Set environment variable**
+
+In Windows:
+
+```
+PYTHONUTF8=1
+```
+
+**VS Code method:**
+`settings.json` → add:
+
+```json
+"terminal.integrated.env.windows": {
+    "PYTHONUTF8": "1"
+}
+```
+
+This is the easiest and safest fix.
+
+---
+
+## **2. Add UTF-8 encoding header to your test file**
+
+At the top of your test file:
+
+```python
+# -*- coding: utf-8 -*-
+
+def test_print():
+    print("中文输出测试")
+    assert True
+```
+
+While Python 3 handles UTF-8 source by default, **Windows consoles sometimes still mis-handle output unless UTF-8 mode is forced**.
+
+---
+
+## **3. Configure VS Code Python test adapter to use UTF-8**
+
+Open **Settings → search “python testing cwd”** and set:
+
+```
+"python.testing.cwd": "${workspaceFolder}"
+```
+
+Then set UTF-8 environment during tests:
+
+### **settings.json**
+
+```json
+"python.testing.pytestEnabled": true,
+"python.testing.pytestArgs": [
+    "-s"
+],
+"python.testing.env": {
+    "PYTHONIOENCODING": "utf-8",
+    "PYTHONUTF8": "1"
+}
+```
+
+---
+
+# ✔ After doing this, you should see:
+
+**Test Results panel:**
+
+```
+中文输出测试
+PASSED
+```
+
+No garbled text like `????` or mojibake.
+
+---
+
+# 📌 Why this works
+
+Windows’ default code page is often **CP936 (GBK)** or **CP1252**, while pytest test explorer in VS Code expects **UTF-8**. These steps force:
+
+* Python → output UTF-8
+* pytest → doesn’t strip or recode output
+* VS Code test runner → receives UTF-8
+
+---
+
+# If you still see garbled characters
+
+Tell me:
+
+* Your VS Code version
+* Your Python version
+* What the “Test Results” panel displays
+* The content of your `settings.json`
+
+I can give an exact fix.
+
+
+
 # 1
 Let's break down that UnicodeEncodeError. This is a classic issue when dealing with non-English characters, especially on Windows.
 

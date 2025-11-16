@@ -1,0 +1,391 @@
+
+# tx3g
+
+**tx3g** is a **subtitle (text) codec used inside MP4/M4V/M4B files**, defined in the MPEG-4 specification. It stands for **Timed Text (3GPP)**.
+
+It is the **standard embedded subtitle format** for MP4 containers (along with WebVTT in newer specs).
+
+---
+
+# ✅ **What tx3g Is**
+
+* A **text-based subtitle format inside MP4** container
+* Officially called **MPEG-4 Timed Text** (also known as **3GPP Timed Text**)
+* Appears in MP4 files as a subtitle track with codec name:
+
+  ```
+  tx3g
+  ```
+* Supported by many players (QuickTime, iOS, Android ExoPlayer, VLC, mpv, ffmpeg, etc.)
+
+---
+
+# 🧩 **Characteristics of tx3g**
+
+| Feature                         | Support                                    |
+| ------------------------------- | ------------------------------------------ |
+| **Text-based**                  | Yes                                        |
+| **Styling**                     | Basic styling: font, size, color, position |
+| **Unicode support**             | Yes (UTF-8/UTF-16)                         |
+| **Stored inside MP4 container** | Yes                                        |
+| **Supports chapters?**          | No — only subtitles                        |
+
+---
+
+# 📦 **Where tx3g Is Commonly Used**
+
+* **iTunes movies** (.m4v)
+* **Audiobooks** (.m4b) if they embed subtitles or synchronized text
+* **Mobile video** (3GP/MP4)
+* **MP4 downloads from streaming services**
+* **YouTube downloaded MP4 with embedded captions** (sometimes)
+
+---
+
+# 🎬 Example: How tx3g appears in FFmpeg
+
+```
+Stream #0:2(eng): Subtitle: mov_text (tx3g)
+```
+
+In FFprobe:
+
+```
+Stream #0:2: Subtitle: mov_text (tx3g)
+```
+
+---
+
+# 🔧 How to Convert tx3g Subtitles
+
+### **Extract tx3g → SRT**
+
+```bash
+ffmpeg -i input.mp4 -map 0:s:0 subtitles.srt
+```
+
+### **Extract tx3g → WebVTT**
+
+```bash
+ffmpeg -i input.mp4 -map 0:s:0 subtitles.vtt
+```
+
+### **Add external subtitles → tx3g**
+
+```bash
+ffmpeg -i input.mp4 -i subs.srt -c copy -c:s mov_text output.mp4
+```
+
+(The MP4 subtitle codec is called `mov_text`, equivalent to tx3g.)
+
+---
+
+# 📚 Extra Detail (Advanced)
+
+* **‘tx3g’** is the FourCC identifier used by MP4.
+* The actual codec is named **mov_text** in FFmpeg.
+* Apple originally pushed this format for iPod/iPhone video.
+
+---
+
+# ✔ Summary
+
+**tx3g = MP4 embedded subtitle track using MPEG-4 Timed Text.**
+It’s lightweight, Unicode, and widely supported, but less flexible than VTT or ASS.
+
+---
+
+If you want, I can also explain **difference between tx3g vs VTT**, or help you convert subtitles.
+
+
+# tx3g vs. VTT
+
+Here is the **clear difference between tx3g and WebVTT**, and when to use each.
+
+---
+
+# ✅ **tx3g vs WebVTT — Full Comparison**
+
+| Feature                                | **tx3g (mov_text)**                                                 | **WebVTT (.vtt)**                                                |
+| -------------------------------------- | ------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| **Type**                               | MP4 internal subtitle format                                        | External web subtitle format                                     |
+| **Container**                          | **Only inside MP4/M4V/M4B** files                                   | Stand-alone .vtt file (or inside WebM)                           |
+| **Use case**                           | Embedded subtitles in MP4 (mobile, iTunes, iOS, Android, QuickTime) | HTML5 video, YouTube, streaming players                          |
+| **Timestamp format**                   | MP4 time units; no external text timestamps                         | `00:00:01.000 --> 00:00:02.000`                                  |
+| **Styling**                            | Basic (font/color/size/position)                                    | Rich (CSS-style, regions, alignment, positioning, italics, bold) |
+| **Unicode**                            | Yes                                                                 | Yes                                                              |
+| **Metadata**                           | Minimal                                                             | Extensive (NOTE, STYLE, REGION, headers)                         |
+| **Supports animation/advanced layout** | No                                                                  | Yes (regions + CSS)                                              |
+| **Compatibility**                      | Excellent inside MP4 players (VLC, mpv, iOS, Android)               | Best for browsers; some players ignore styling                   |
+| **Editing difficulty**                 | Hard (embedded binary text track inside MP4)                        | Easy (plaintext file)                                            |
+
+---
+
+# 🎬 **1. What is tx3g really?**
+
+* Used as MP4's official subtitle standard
+* Identified as **‘tx3g’** FourCC
+* Known in FFmpeg as `mov_text`
+* Stored directly **inside** the MP4 container (not a separate file)
+
+Example (ffprobe):
+
+```
+Stream #0:2(eng): Subtitle: mov_text (tx3g)
+```
+
+⚠️ Very limited styling → only simple rendering.
+
+---
+
+# 🌐 **2. What is WebVTT?**
+
+* Plain text subtitle file
+* Standard subtitle format for **HTML5 video**
+* Used by modern streaming and web video
+
+Example:
+
+```
+WEBVTT
+
+00:00:01.000 --> 00:00:04.000
+Hello <b>world</b>!
+```
+
+Supports:
+
+* Bold/italic/underline
+* Colors
+* Regions
+* Alignment
+* Positioning
+* Comments
+
+---
+
+# 🧰 **3. Conversion Between Them**
+
+### Convert tx3g → WebVTT
+
+```bash
+ffmpeg -i input.mp4 -map 0:s:0 subtitles.vtt
+```
+
+### Convert WebVTT → tx3g (embed inside MP4)
+
+```bash
+ffmpeg -i video.mp4 -i subs.vtt -c:v copy -c:a copy -c:s mov_text output.mp4
+```
+
+### Extract tx3g raw text
+
+```bash
+ffmpeg -i input.mp4 -map 0:s:0 -c:s mov_text output.srt
+```
+
+---
+
+# 📱 **4. When to Use Which**
+
+### **Use tx3g if:**
+
+* You want subtitles **embedded** inside an MP4 video
+* You’re targeting:
+
+  * iOS/iPadOS
+  * Android ExoPlayer
+  * QuickTime
+  * VLC, mpv
+* You don’t need fancy styling
+* You want maximum compatibility with portable players
+
+### **Use WebVTT if:**
+
+* You are delivering subtitles on:
+
+  * HTML5 `<video>`
+  * Web players
+  * Streaming apps
+* You need:
+
+  * Rich formatting
+  * Custom positions
+  * Regions
+  * Comments
+* You want an easy-to-edit text format
+
+---
+
+# 📝 **5. Quick Example: Same Subtitle in Both Formats**
+
+### **tx3g (inside MP4, no external file)**
+
+Text stored as timed MP4 atoms, not human-readable.
+
+### **WebVTT (external .vtt file)**
+
+```
+WEBVTT
+
+00:00:10.000 --> 00:00:12.500
+字幕测试 (Subtitle test)
+```
+
+---
+
+If you want, I can also compare **tx3g vs SRT**, or help with **extracting, editing, or embedding tx3g subtitles**.
+
+
+# VTT vs. SRT
+Here’s a clear and practical comparison **VTT vs SRT**—what they are, how they differ, and when to use which.
+
+---
+
+# ✅ **Summary: Main Differences**
+
+| Feature              | **WebVTT (.vtt)**                                               | **SubRip (.srt)**                                      |
+| -------------------- | --------------------------------------------------------------- | ------------------------------------------------------ |
+| **Standard**         | Modern web standard (HTML5)                                     | Oldest/most common subtitle format                     |
+| **Timestamp format** | Uses `.` for milliseconds                                       | Uses `,` for milliseconds                              |
+| **Metadata**         | Supports metadata (title, kind, language), styling, positioning | No metadata support                                    |
+| **Styling**          | Rich styling: color, italics, bold, ruby, region, alignment     | Very limited styling                                   |
+| **Position control** | Supports region & cue-level positioning                         | No positioning (unless extended by player)             |
+| **Comments**         | Allows notes starting with `NOTE`                               | No structured comments                                 |
+| **Browser support**  | Native HTML5 video subtitle format                              | Not natively supported in browsers (must be converted) |
+| **File complexity**  | More modern & feature-rich                                      | Simpler and widely compatible                          |
+| **Use case**         | Web video, modern players (YouTube, HTML5 video)                | TV, apps, editors, legacy players                      |
+
+---
+
+# 📝 **1. Timestamp Differences**
+
+### **SRT**
+
+```
+1
+00:00:01,000 --> 00:00:04,000
+Hello world!
+```
+
+* Uses **comma** `,` for milliseconds
+
+### **VTT**
+
+```
+WEBVTT
+
+00:00:01.000 --> 00:00:04.000
+Hello world!
+```
+
+* Uses **dot** `.` for milliseconds
+* Requires a **`WEBVTT` header** at top
+
+---
+
+# 🎨 **2. Styling Differences**
+
+### **VTT supports CSS-like styling**
+
+* Bold `<b>`
+* Italics `<i>`
+* Underline `<u>`
+* Color
+* Positioning (`align:`, `position:`, `line:`)
+* Regions (fixed areas on screen)
+
+Example:
+
+```
+00:00:05.000 --> 00:00:10.000 line:90% position:50% align:center
+<b><i>Hello world!</i></b>
+```
+
+### **SRT styling is very limited**
+
+Some players support minimal HTML-like tags:
+
+```
+<i>Hello world!</i>
+```
+
+But **many players ignore styling entirely**.
+
+---
+
+# 🗂 **3. Metadata, Notes, Regions**
+
+### **VTT**
+
+```
+WEBVTT
+
+NOTE This is a comment block
+This will not be shown.
+
+STYLE
+::cue {
+  background: rgba(0,0,0,0.4);
+}
+```
+
+### **SRT**
+
+* Supports **none** of this
+* Only index + timestamps + text
+
+---
+
+# 🌐 **4. Browser & App Support**
+
+### **VTT is the default format for HTML5 video tags**
+
+```
+<track kind="subtitles" src="subs.vtt" srclang="en" />
+```
+
+### **SRT requires conversion**
+
+Browsers don’t support it directly; must convert to VTT.
+
+---
+
+# 🧠 When should you use which?
+
+### **Choose VTT if:**
+
+* You’re developing for the web (HTML5 video)
+* You need modern styling or positioning
+* You want comments, notes, or metadata
+* Your subtitle editor or platform expects VTT
+
+### **Choose SRT if:**
+
+* You need maximum compatibility with:
+
+  * TVs
+  * Video editors
+  * Old players
+  * Hardware players
+* You don’t care about advanced styling
+
+---
+
+# ⚙️ Can you convert between them?
+
+Yes — conversion is very easy.
+
+### **SRT → VTT**
+
+Just change `,` to `.` and add `WEBVTT` header.
+
+### **VTT → SRT**
+
+Remove headers, convert `.` → `,`, remove styling blocks.
+
+I can generate a converter script for you in Python if you want.
+
+---
+
+If you'd like, I can also show **side-by-side real examples**, or help you convert your specific VTT or SRT file.
