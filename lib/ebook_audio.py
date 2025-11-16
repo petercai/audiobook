@@ -445,12 +445,37 @@ class EbookAudio:
             return False
 
     def assemble_chunks(self, txt_file, out_file):
+        """
+        Assembles audio chunks using ffmpeg's concat protocol.
+
+        This method takes a text file containing a list of audio files to be concatenated
+        and uses ffmpeg to merge them into a single output file. It's a low-level
+        utility function used for combining smaller audio segments, such as sentences
+        or chapter batches, into larger audio files.
+
+        Args:
+            txt_file (str): The path to a text file where each line is `file '/path/to/audio.flac'`.
+            out_file (str): The path to the output audio file.
+
+        Returns:
+            bool: True if the assembly was successful, False otherwise.
+        """
         try:
+            # Construct the ffmpeg command for concatenation.
+            # -hide_banner, -nostats: Suppress unnecessary console output.
+            # -y: Overwrite output file if it exists.
+            # -safe 0: Required for using file paths in the concat file that are not in the same directory.
+            # -f concat: Use the concat demuxer to read the list of files.
+            # -i txt_file: The input text file listing the audio chunks.
+            # -c:a default_audio_proc_format: Use the default audio processing format for the output codec.
+            # -map_metadata -1: Do not copy metadata from the source files.
+            # -threads 1: Use a single thread to avoid potential issues with multithreaded concatenation.
             ffmpeg_cmd = [
                 shutil.which('ffmpeg'), '-hide_banner', '-nostats', '-y',
                 '-safe', '0', '-f', 'concat', '-i', txt_file,
                 '-c:a', default_audio_proc_format, '-map_metadata', '-1', '-threads', '1', out_file
             ]
+            # Execute the ffmpeg command as a subprocess.
             process = subprocess.Popen(
                 ffmpeg_cmd,
                 env={},
@@ -459,20 +484,26 @@ class EbookAudio:
                 encoding='utf-8',
                 errors='ignore'
             )
+            # Print ffmpeg's output in real-time.
             for line in process.stdout:
                 print(line, end='')  # Print each line of stdout
+            # Wait for the process to complete.
             process.wait()
+            # Check if ffmpeg executed successfully.
             if process.returncode == 0:
                 return True
             else:
+                # If ffmpeg fails, print the return code and the command for debugging.
                 error = process.returncode
                 print(error, ffmpeg_cmd)
                 return False
         except subprocess.CalledProcessError as e:
+            # Handle errors specific to subprocess execution.
             DependencyError(e)
             return False
         except Exception as e:
-            error = f"assemble_chanks() Error: Failed to process {txt_file} → {out_file}: {e}"
+            # Handle any other exceptions that may occur.
+            error = f"assemble_chunks() Error: Failed to process {txt_file} → {out_file}: {e}"
             print(error)
             return False
 
@@ -606,4 +637,3 @@ class EbookAudio:
             if is_gui_process and file_src and os.path.exists(file_src):
                 os.remove(file_src)
             return None
-
