@@ -1972,7 +1972,7 @@ class WebUI:
                         session['status'] = 'ready'
                     else:
                         show_alert({"type": "success", "msg": progress_status})
-                        reset_ebook_session(args['session'])
+                        reset_ebook_session(self.context, args['session'])
                         msg = 'Conversion successful!'
                         return gr.update(value=msg)
             if error is not None:
