@@ -516,8 +516,9 @@ class EBookProcessor:
             session["metadata"] = metadata
             try:
                 # If the language in the metadata is 2 characters long, convert it to 3 characters
-                if len(session["metadata"]["language"]) == 2:
-                    lang_array = languages.get(part1=session["language"])
+                meta_lan = session["metadata"]["language"]
+                if len(meta_lan) == 2:
+                    lang_array = languages.get(part1=meta_lan)
                     if lang_array:
                         session["metadata"]["language"] = lang_array.part3
             except Exception:
