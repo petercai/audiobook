@@ -1,3 +1,4 @@
+
 import inspect
 import os
 import pytest
@@ -8,6 +9,8 @@ from lib.epub import EPubProcessor
 from lib.headless_processor import EBookProcessor
 from lib.mock_session import SessionContextMock, set_process_dir
 
+import sys
+sys.stdout.reconfigure(encoding="utf-8")
 
 @pytest.fixture
 def tmp_path():

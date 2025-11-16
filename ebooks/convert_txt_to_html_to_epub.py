@@ -199,8 +199,6 @@ def build_and_run_ebook_convert(html_file, epub_file, title=None, author=None, c
            "--duplicate-links-in-toc",
            "--epub-version", "3",
            "--max-toc-links", "0",
-           "--epub-inline-toc",
-           "--epub-toc-at-end",
            "--no-default-epub-cover"]
     # 我们不强制 --level1-toc，使用内嵌 nav 更可靠
     if title:
