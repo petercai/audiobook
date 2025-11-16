@@ -254,11 +254,14 @@ class EbookAudio:
                         if audio:
                             audio.save()
 
-                # Move the generated VTT subtitle file to the final audiobooks directory
-                final_vtt = f"{Path(ffmpeg_final_file).stem}.vtt"
-                proc_vtt_path = os.path.join(session['process_dir'], final_vtt)
-                final_vtt_path = os.path.join(session['audiobooks_dir'], final_vtt)
-                shutil.move(proc_vtt_path, final_vtt_path)
+                # Move generated subtitle files to the final audiobooks directory
+                stem = Path(ffmpeg_final_file).stem
+                for ext in ['.vtt', '.srt', '.lrc']:
+                    subtitle_file = f"{stem}{ext}"
+                    proc_subtitle_path = os.path.join(session['process_dir'], subtitle_file)
+                    if os.path.exists(proc_subtitle_path):
+                        final_subtitle_path = os.path.join(session['audiobooks_dir'], subtitle_file)
+                        shutil.move(proc_subtitle_path, final_subtitle_path)
                 return True
             else:
                 # If ffmpeg fails, print the error code and the command for debugging
