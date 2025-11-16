@@ -57,7 +57,25 @@ def session_context(tmp_path):
             "output_split_hours": 1,
             "is_gui_process": False,
             "script_mode": "native",
-            "offline_mode": False
+            "offline_mode": False,
+        "metadata": {
+            "title": "", 
+            "creator": "",
+            "contributor": None,
+            "language": None,
+            "identifier": None,
+            "publisher": None,
+            "date": None,
+            "description": None,
+            "subject": None,
+            "rights": None,
+            "format": None,
+            "type": None,
+            "coverage": None,
+            "relation": None,
+            "Source": None,
+            "Modified": None,
+        }
         }
     )
     session = context.get_session(session_id)
