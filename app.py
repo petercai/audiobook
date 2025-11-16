@@ -221,6 +221,7 @@ def main():
         if args['headless']:
             start_headless(args, ctx)
         else:
+            args['script_mode'] = '' # not script mode
             start_ui(args, ctx)
 
 
