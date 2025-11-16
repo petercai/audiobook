@@ -1,4 +1,5 @@
 python app.py
+python app.py --offline_mode
 
 pip install -r requirements.txt --proxy http://webproxy.bns:8080 --trusted-host pypi.org --trusted-host files.pythonhosted.org
 pip install -r requirements.txt --proxy http://localhost:9000 --trusted-host pypi.org --trusted-host files.pythonhosted.org
