@@ -9,6 +9,7 @@ ebooks_dir = os.path.abspath('ebooks')
 voices_dir = os.path.abspath('voices')
 tts_dir = os.path.join(models_dir, 'tts')
 
+# os.environ['PYTHONWARNINGS'] = 'ignore::UserWarning:torchaudio'
 os.environ['PYTHONUTF8'] = '1'
 os.environ['PYTHONIOENCODING'] = 'utf-8'
 os.environ['COQUI_TOS_AGREED'] = '1'
