@@ -108,37 +108,26 @@ def test_tts_cn_convert(session_context, ebook_path, tmp_path):
     print(session['audiobook'])
     assert os.path.exists(session['audiobook'])
 
-def test_tts_en_convert(session_context, ebook_path, tmp_path):
+def test_tts_en_one_sentense(session_context, ebook_path, tmp_path):
     context, session_id, session = session_context
 
     # Setup arguments for EBookProcessor
     args = {
-        # "ebook": os.path.join(ebook_path, "jane-eyre-c12.epub"),
-        # "chapters_dir": os.path.join(session['process_dir'], "chapters"),
-        # "chapters_dir_sentences": os.path.join(session['process_dir'], "chapters", "sentences"),
         "device": "cpu",
         "language": "eng",
         "language_iso1": "en",
         "tts_engine": TTS_ENGINES['XTTSv2'],
-        # "speaker_wav": os.path.join(voices_dir, "zho", "adult", "male", "yunjian.wav"),
         "final_name": 'one-sentense.flac',
         "offline_mode": True,
     }
     # update session with args
     session.update(args)
     # Create necessary directories
-    # func_name = inspect.currentframe().f_code.co_name
-    set_process_dir(session, "test_UnravelMe_c12")
+    process_dir = inspect.currentframe().f_code.co_name
+    set_process_dir(session, process_dir)
 
-
-    # Instantiate EBookProcessor
-    # ebook_processor = EBookProcessor()
-    # session["epub_path"] = session["ebook"]
-    # epubBook = epub.read_epub(session["ebook"], {"ignore_ncx": True})
-    # basename = os.path.basename(session["ebook"])
-    # name_splits = os.path.splitext(basename)
-    # session["filename_noext"] = name_splits[0]
 
     tts_manager = TTSManager(session)
     result = tts_manager.convert_sentence2audio(0, "Compute or retrieve speaker latents.")
-    assert result
+    # audio file in $process_dir/chapters/sentenses/0.flac
+    assert result # Ture or False
