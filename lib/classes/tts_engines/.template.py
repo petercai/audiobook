@@ -6,6 +6,11 @@ import subprocess
 import tempfile
 import threading
 import uuid
+import warnings
+# warnings.filterwarnings("ignore", category=FutureWarning, module="torchaudio")
+# warnings.filterwarnings("ignore", category=UserWarning, module="torchaudio")
+# warnings.filterwarnings("ignore", category=DeprecationWarning, module="torchaudio")
+warnings.filterwarnings("ignore")
 
 import numpy as np
 import regex as re
@@ -77,7 +82,7 @@ class Coqui:
             unload_tts(device, [self.tts_key, self.tts_vc_key])
             with lock:
                 tts = NEW_TTS(model_path)
-                if tts
+                if tts:
                     if device == 'cuda':
                         NEW_TTS.WITH_CUDA
                     else:

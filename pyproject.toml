@@ -49,6 +49,7 @@ dependencies = [
 	"unidic-lite",
 	"voxcpm",
 	"huggingface-hub[hf-xet]",
+	"pipdeptree>=2.30.0",
 ]
 readme = "README.md"
 requires-python = ">=3.12,<3.13"

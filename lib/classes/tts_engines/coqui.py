@@ -1,4 +1,8 @@
-import hashlib, math, os, shutil, subprocess, tempfile, threading, uuid
+import hashlib, math, os, shutil, subprocess, tempfile, threading, uuid, warnings
+# warnings.filterwarnings("ignore", category=FutureWarning, module="torchaudio")
+# warnings.filterwarnings("ignore", category=UserWarning, module="torchaudio")
+# warnings.filterwarnings("ignore", category=DeprecationWarning, module="torchaudio")
+warnings.filterwarnings("ignore")
 import numpy as np, regex as re, soundfile as sf, torch, torchaudio
 
 from huggingface_hub import hf_hub_download
@@ -112,7 +116,7 @@ class Coqui:
                             filename=xtt_sv_files_[4],
                             cache_dir=self.cache_dir,
                             local_files_only=self.session['offline_mode'])
-                        xtts_builtin_speakers_list = torch.load(self.speakers_path, map_location=self.session['device'])
+                        xtts_builtin_speakers_list = torch.load(self.speakers_path, map_location=self.session['device'], weights_only=False)
                     except Exception as e:
                         if self.session['offline_mode']:
                             print(f"Offline mode: Failed to load XTTSv2 speakers file. Expected in '{self.cache_dir}'.")
@@ -949,7 +953,7 @@ class Coqui:
                             if self.sentence_idx:
                                 torchaudio.save(final_sentence_file, audio_tensor, settings['samplerate'], format=default_audio_proc_format)
                                 del audio_tensor
-                        
+
                         # Reset audio segments for the next sentence.
                         self.audio_segments = []
                         

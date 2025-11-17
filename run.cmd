@@ -32,9 +32,13 @@ pip install --no-cache-dir torch torchvision torchaudio --index-url https://down
 # For CUDA 12.1
 pip install --no-cache-dir torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
 
+pipdeptree > deps.txt
+uv pip list --outdated > outdated.txt
+uv pip list > list.txt
 
-
-uv pip install --upgrade coqui-tts
+uv pip install -U  coqui-tts torch torchaudio torchvision pyannote.audio transformers speechbrain
+uv pip show coqui-tts torch torchaudio torchvision pyannote.audio transformers speechbrain
+uv pip install -U gradio
 
 
 

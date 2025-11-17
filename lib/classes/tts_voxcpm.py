@@ -1,6 +1,12 @@
 import os
 from pathlib import Path
 import re
+import warnings
+# warnings.filterwarnings("ignore", category=FutureWarning, module="torchaudio")
+# warnings.filterwarnings("ignore", category=UserWarning, module="torchaudio")
+# warnings.filterwarnings("ignore", category=DeprecationWarning, module="torchaudio")
+warnings.filterwarnings("ignore")
+
 import torch
 import numpy as np
 import soundfile as sf
