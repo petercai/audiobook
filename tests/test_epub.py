@@ -347,7 +347,7 @@ def test_process_epub_metadata_en(session_context, ebook_path, tmp_path):
     for key, value in metadata.items():
         print(f"{key}: {value}")
 
-def test_get_chapters_en(session_context, ebook_path, tmp_path):
+def test_show_chapters_and_sentences_en(session_context, ebook_path, tmp_path):
     context, session_id, session = session_context
     # Setup arguments for EBookProcessor
     args = {
@@ -365,7 +365,7 @@ def test_get_chapters_en(session_context, ebook_path, tmp_path):
     epubBook = epub.read_epub(ebook_, {"ignore_ncx": True})
 
     processor = EPubProcessor()
-    toc, chapters = processor.get_chapters_in_sentences(epubBook, session)
+    toc, chapters = processor.get_chapters_in_sentences(epubBook, session, 7)
     # Assertions
     assert toc
     print(toc)

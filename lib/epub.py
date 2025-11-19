@@ -218,7 +218,7 @@ class EPubProcessor:
             DependencyError(e)
             return False
 
-    def get_chapters_in_sentences(self, epubBook, session):
+    def get_chapters_in_sentences(self, epubBook, session, chapters_to_process=0):
         """
         Extract and process chapters from an EPUB book for text-to-speech conversion.
         
@@ -234,6 +234,7 @@ class EPubProcessor:
                 - 'language' (str): Full language code (e.g., 'eng', 'fra')
                 - 'tts_engine' (str): Text-to-speech engine identifier
                 - Other session-specific data
+            chapters_to_process (int): The number of chapters to process. If 0, all chapters are processed.
                 
         Returns:
             tuple: A tuple containing:
@@ -258,6 +259,10 @@ class EPubProcessor:
             all_docs, toc = self.get_epub_chapters(epubBook, language_)
             if not all_docs:
                 return [], []
+
+            # If chapters_to_process is specified, limit the documents and TOC to be processed
+            if chapters_to_process > 0:
+                all_docs = all_docs[:chapters_to_process]
                 
             # Attempt to extract the book title for metadata
             title = self.get_ebook_title(epubBook, all_docs)
@@ -289,7 +294,8 @@ class EPubProcessor:
             chapters = []
 
             # Process each document (chapter) in the EPUB
-            for doc in all_docs:
+            # The loop will iterate through all documents or a limited number if chapters_to_process is set
+            for i, doc in enumerate(all_docs):
                 # Process the chapter content with various text transformations
                 # This includes number conversion, punctuation handling, and sentence segmentation
                 sentences_list = self.filter_chapter(
@@ -308,7 +314,11 @@ class EPubProcessor:
                 elif len(sentences_list) > 0:
                     # If successfully processed and contains content, add to chapters
                     chapters.append(sentences_list)
-                    
+
+            # If chapters were limited, also limit the table of contents accordingly
+            if chapters_to_process > 0:
+                toc = toc[:len(chapters)]
+
             # Verify that at least one chapter was successfully processed
             if len(chapters) == 0:
                 error = 'No chapters found!'
