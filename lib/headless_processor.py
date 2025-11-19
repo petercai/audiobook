@@ -21,7 +21,7 @@ from .functions import (
     check_programs,
     default_engine_settings,
     default_gpu_wiki,
-    default_output_split_hours,
+    default_output_split_minutes,
     get_compatible_tts_engines,
     get_vram,
     language_mapping,
@@ -362,7 +362,7 @@ class EBookProcessor:
         session["output_split_hours"] = (
             args["output_split_hours"]
             if args["output_split_hours"] is not None
-            else default_output_split_hours
+            else default_output_split_minutes
         )
         session["offline_mode"] = args.get("offline_mode", False)
         return dict(session), id
