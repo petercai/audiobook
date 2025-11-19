@@ -365,7 +365,7 @@ def test_get_chapters_en(session_context, ebook_path, tmp_path):
     epubBook = epub.read_epub(ebook_, {"ignore_ncx": True})
 
     processor = EPubProcessor()
-    toc, chapters = processor.get_chapters_in_sentenses(epubBook, session)
+    toc, chapters = processor.get_chapters_in_sentences(epubBook, session)
     # Assertions
     assert toc
     print(toc)
@@ -392,7 +392,7 @@ def test_get_chapters_cn(session_context, ebook_path, tmp_path):
     epubBook = epub.read_epub(ebook_, {"ignore_ncx": True})
 
     processor = EPubProcessor()
-    toc, chapters = processor.get_chapters_in_sentenses(epubBook, session)
+    toc, chapters = processor.get_chapters_in_sentences(epubBook, session)
     # Assertions
     assert toc
     print(toc)

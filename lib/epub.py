@@ -218,7 +218,7 @@ class EPubProcessor:
             DependencyError(e)
             return False
 
-    def get_chapters_in_sentenses(self, epubBook, session):
+    def get_chapters_in_sentences(self, epubBook, session):
         """
         Extract and process chapters from an EPUB book for text-to-speech conversion.
         
