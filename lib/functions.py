@@ -102,7 +102,7 @@ class SessionContext:
                 "final_name": None,
                 "output_format": default_output_format,
                 "output_split": default_output_split,
-                "output_split_hours": default_output_split_minutes,
+                "output_split_minutes": default_output_split_minutes,
                 "metadata": {
                     "title": None, 
                     "creator": None,

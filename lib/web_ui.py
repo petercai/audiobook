@@ -1375,7 +1375,7 @@ class WebUI:
                 gr.update(value=bool(session['denoise'])), gr.update(value=bool(session['retry_badcase'])), gr.update(value=int(session['retry_badcase_max_times'])),
                 gr.update(value=float(session['retry_badcase_ratio_threshold'])),
                 self.update_gr_voice_list(id),
-                gr.update(value=session['output_split']), gr.update(value=session['output_split_hours']), gr.update(active=True)
+                gr.update(value=session['output_split']), gr.update(value=session['output_split_minutes']), gr.update(active=True)
             )
         except Exception as e:
             error = f'restore_interface(): {e}'
@@ -1887,7 +1887,7 @@ class WebUI:
 
     def change_gr_output_split_hours(self, selected, id):
         session = self.context.get_session(id)
-        session['output_split_hours'] = selected
+        session['output_split_minutes'] = selected
         return
 
     def change_gr_audiobook_player_playback_time(self, str, id):
@@ -1920,7 +1920,7 @@ class WebUI:
             length_penalty, num_beams, repetition_penalty, top_k, top_p, speed, enable_text_splitting, text_temp, waveform_temp,
             cfg_value, inference_timesteps, normalize, denoise, retry_badcase, retry_badcase_max_times, retry_badcase_ratio_threshold,
             prompt_text,
-            output_split, output_split_hours
+            output_split, output_split_minutes
         ):
         try:
             session = self.context.get_session(id)
@@ -1958,7 +1958,7 @@ class WebUI:
                 "retry_badcase_ratio_threshold": float(retry_badcase_ratio_threshold),
                 "prompt_text": prompt_text,
                 "output_split": output_split,
-                "output_split_hours": output_split_hours
+                "output_split_minutes": output_split_minutes
             }
             error = None
             if args['ebook'] is None and args['ebook_list'] is None:

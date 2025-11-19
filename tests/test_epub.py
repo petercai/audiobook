@@ -54,7 +54,7 @@ def session_context(tmp_path):
             # "waveform_temp": 0.7,
             "audiobooks_dir": tmp_path,
             "output_split": "by-chapter",
-            "output_split_hours": 1,
+            "output_split_minutes": 30,
             "is_gui_process": False,
             "script_mode": "native",
             "offline_mode": False,

@@ -314,7 +314,7 @@ class EBookProcessor:
         - audiobooks_dir: The directory for the audiobooks, either None or a path.
         - output_format: The output format, either None or a string.
         - output_split: A boolean indicating whether to split the output into multiple files.
-        - output_split_hours: The number of hours to split the output into, either None or an integer.
+        - output_split_minutes: The number of minutes to split the output into, either None or an integer.
 
         Returns:
             A dictionary containing the updated session fields and the session ID.
@@ -359,9 +359,9 @@ class EBookProcessor:
         session["audiobooks_dir"] = args["audiobooks_dir"]
         session["output_format"] = args["output_format"]
         session["output_split"] = args["output_split"]
-        session["output_split_hours"] = (
-            args["output_split_hours"]
-            if args["output_split_hours"] is not None
+        session["output_split_minutes"] = (
+            args["output_split_minutes"]
+            if args["output_split_minutes"] is not None
             else default_output_split_minutes
         )
         session["offline_mode"] = args.get("offline_mode", False)

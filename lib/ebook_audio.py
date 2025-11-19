@@ -328,9 +328,9 @@ class EbookAudio:
                 cur_part = []             # Current part's file list
                 cur_indices = []          # Current part's chapter indices
                 cur_duration = 0          # Current part's total duration
-                max_part_duration = session['output_split_hours'] * 3600  # Max duration per part in seconds
+                max_part_duration = session['output_split_minutes'] * 60  # Max duration per part in seconds
                 # Determine if splitting is actually needed based on total duration
-                needs_split = total_duration > (int(session['output_split_hours']) * 2) * 3600
+                needs_split = total_duration > (int(session['output_split_minutes']) * 2) * 60
                 
                 # Distribute chapters into parts based on duration limits
                 for idx, (file, dur) in enumerate(zip(chapter_files, durations)):
