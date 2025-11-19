@@ -112,10 +112,11 @@ class WebUI:
         self.ebook_audio = EbookAudio()
         
     def cleanup_session(self, context, req: gr.Request):
-        socket_hash = req.session_hash
-        if any(socket_hash in session for session in context.sessions.values()):
-            session_id = context.find_id_by_hash(socket_hash)
-            ctx_tracker.end_session(session_id, socket_hash, context)
+        if req:
+            socket_hash = req.session_hash
+            if any(socket_hash in session for session in context.sessions.values()):
+                session_id = context.find_id_by_hash(socket_hash)
+                ctx_tracker.end_session(session_id, socket_hash, context)
 
     def load_vtt_data(self, path):
         if not path or not os.path.exists(path):
@@ -1332,7 +1333,7 @@ class WebUI:
             session = self.context.get_session(id)
             socket_hash = req.session_hash
             if not session.get(socket_hash):
-                outputs = tuple([gr.update() for _ in range(24)])
+                outputs = tuple([gr.update() for _ in range(31)])
                 return outputs
             session = self.context.get_session(id)
             ebook_data = None
@@ -1380,7 +1381,7 @@ class WebUI:
         except Exception as e:
             error = f'restore_interface(): {e}'
             self.alert_exception(error)
-            outputs = tuple([gr.update() for _ in range(24)])
+            outputs = tuple([gr.update() for _ in range(31)])
             return outputs
 
     def refresh_interface(self, id):
