@@ -681,7 +681,7 @@ class WebUI:
                 outputs=gr_output_split_minutes
             )
             gr_output_split_minutes.change(
-                fn=self.change_gr_output_split_hours,
+                fn=self.change_gr_output_split_minutes,
                 inputs=[gr_output_split_minutes, gr_session],
                 outputs=None
             )
@@ -1885,7 +1885,7 @@ class WebUI:
         session['output_split'] = bool
         return gr.update(visible=bool)
 
-    def change_gr_output_split_hours(self, selected, id):
+    def change_gr_output_split_minutes(self, selected, id):
         session = self.context.get_session(id)
         session['output_split_minutes'] = selected
         return
