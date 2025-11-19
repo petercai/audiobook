@@ -2068,9 +2068,8 @@ class WebUI:
                 session = self.context.get_session(data['id'])
 
             # Restore session data from the provided data object.
-            if data.get('tab_id') == session.get('tab_id') or len(active_sessions) == 0:
-                restore_session_from_data(data, session)
-                session['status'] = None
+            restore_session_from_data(data, session)
+            session['status'] = None
 
             # Step 2: Start tracking the session to manage its lifecycle.
             if not ctx_tracker.start_session(session['id'], self.context):
