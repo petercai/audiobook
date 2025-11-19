@@ -139,7 +139,7 @@ class WebUI:
         glass_mask_msg = 'Initialization, please wait...'
         ebook_src = None
         language_options = [(f"{details['name']} - {details['native_name']}" if details['name'] != details['native_name'] else details['name'], lang) for lang, details in language_mapping.items()]
-        options_output_split_minutes = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12']
+        options_output_split_minutes = ['10', '15', '20', '30', '45', '60', '90', '120']
         
         
         
@@ -385,7 +385,7 @@ class WebUI:
                                 with gr.Row(elem_id='gr_row_output_format'):
                                     gr_output_format_list = gr.Dropdown(label='Output Format', elem_id='gr_output_format_list', choices=output_formats, type='value', value=default_output_format, interactive=True, scale=2)
                                     gr_output_split = gr.Checkbox(label='Split Output File', elem_id='gr_output_split', value=default_output_split, interactive=True, scale=1)
-                                    gr_output_split_hours = gr.Dropdown(label='Max hours / part', elem_id='gr_output_split_hours', choices=options_output_split_minutes, type='value', value=default_output_split_minutes, interactive=True, visible=False, scale=2)
+                                    gr_output_split_minutes = gr.Dropdown(label='Max minutes / part', elem_id='gr_output_split_minutes', choices=options_output_split_minutes, type='value', value=default_output_split_minutes, interactive=True, visible=False, scale=2)
                             gr_session = gr.Textbox(label='Session', elem_id='gr_session', interactive=False)
                 gr_tab_xtts_params = gr.TabItem('XTTSv2 Fine Tuned Parameters', elem_id='gr_tab_xtts_params', elem_classes='tab_item', visible=visible_gr_tab_xtts_params)           
                 with gr_tab_xtts_params:
@@ -678,11 +678,11 @@ class WebUI:
             gr_output_split.change(
                 fn=self.change_gr_output_split,
                 inputs=[gr_output_split, gr_session],
-                outputs=gr_output_split_hours
+                outputs=gr_output_split_minutes
             )
-            gr_output_split_hours.change(
+            gr_output_split_minutes.change(
                 fn=self.change_gr_output_split_hours,
-                inputs=[gr_output_split_hours, gr_session],
+                inputs=[gr_output_split_minutes, gr_session],
                 outputs=None
             )
             gr_audiobook_vtt.change(
@@ -840,7 +840,7 @@ class WebUI:
                     gr_voxcpm_cfg_value, gr_voxcpm_inference_timesteps, gr_voxcpm_normalize, gr_voxcpm_denoise,
                     gr_voxcpm_retry_badcase, gr_voxcpm_retry_badcase_max_times, gr_voxcpm_retry_badcase_ratio_threshold,
                     gr_voxcpm_prompt_text,
-                    gr_output_split, gr_output_split_hours
+                    gr_output_split, gr_output_split_minutes
                 ],
                 outputs=[gr_tab_progress]
             ).then(
@@ -888,7 +888,7 @@ class WebUI:
                     gr_bark_waveform_temp,
                     gr_voxcpm_cfg_value, gr_voxcpm_inference_timesteps, gr_voxcpm_normalize, gr_voxcpm_denoise,
                     gr_voxcpm_retry_badcase, gr_voxcpm_retry_badcase_max_times, gr_voxcpm_retry_badcase_ratio_threshold,
-                    gr_voice_list, gr_output_split, gr_output_split_hours, gr_timer
+                    gr_voice_list, gr_output_split, gr_output_split_minutes, gr_timer
                 ]
             ).then(
                 fn=lambda session: self.update_gr_glass_mask(attr='class="hide"') if session else gr.update(),
