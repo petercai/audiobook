@@ -334,7 +334,7 @@ class EbookAudio:
                 # Determine if splitting is actually needed based on total duration
                 needs_split = total_duration > (split_mins_ * 2) * 60
 
-                subtitle_file_base = os.path.join(self.session['process_dir'], Path(self.session['final_name']).stem)
+                subtitle_file_base = os.path.join(session['process_dir'], Path(session['final_name']).stem)
 
                 # Distribute chapters into parts based on duration limits
                 for idx, (file, dur) in enumerate(zip(chapter_files, chapter_durations)):
