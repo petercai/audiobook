@@ -311,11 +311,11 @@ class EbookAudio:
                 return None
             
             # Calculate total duration of all chapters
-            durations = []
+            chapter_durations = []
             for file in chapter_files:
                 filepath = os.path.join(session['chapters_dir'], file)
-                durations.append(self._get_audio_duration(filepath))
-            total_duration = sum(durations)
+                chapter_durations.append(self._get_audio_duration(filepath))
+            total_duration = sum(chapter_durations)
             
             # Initialize list to track exported files
             exported_files = []
@@ -325,6 +325,7 @@ class EbookAudio:
                 # Initialize variables for splitting chapters into parts
                 part_files = []           # List to hold file lists for each part
                 part_chapter_indices = [] # List to hold chapter indices for each part
+                part_time_info = []         # item: [start, end, duration]
                 cur_part = []             # Current part's file list
                 cur_indices = []          # Current part's chapter indices
                 cur_duration = 0          # Current part's total duration
@@ -332,9 +333,11 @@ class EbookAudio:
                 max_part_duration = split_mins_ * 60  # Max duration per part in seconds
                 # Determine if splitting is actually needed based on total duration
                 needs_split = total_duration > (split_mins_ * 2) * 60
-                
+
+                subtitle_file_base = os.path.join(self.session['process_dir'], Path(self.session['final_name']).stem)
+
                 # Distribute chapters into parts based on duration limits
-                for idx, (file, dur) in enumerate(zip(chapter_files, durations)):
+                for idx, (file, dur) in enumerate(zip(chapter_files, chapter_durations)):
                     # Start a new part if adding this chapter would exceed the max duration
                     if cur_part and (cur_duration + dur > max_part_duration):
                         part_files.append(cur_part)
@@ -405,12 +408,21 @@ class EbookAudio:
                         self._generate_ffmpeg_metadata(part_chapters, session, metadata_file, default_audio_proc_format)
 
                         # Determine final output file path
+                        final_file_base = os.path.join(
+                            session['audiobooks_dir'],
+                            f"{session['final_name'].rsplit('.', 1)[0]}_part{part_idx+1}" if needs_split else session['final_name']
+                        )
+
+                        # split subtitle file
+                        for ext in ['.vtt', '.srt', '.lrc']:
+                            subtitle_file = f"{session['final_name']}{ext}"
+                            # time period
+
+                        # Export the final file with metadata and add to exported files list
                         final_file = os.path.join(
                             session['audiobooks_dir'],
-                            f"{session['final_name'].rsplit('.', 1)[0]}_part{part_idx+1}.{session['output_format']}" if needs_split else session['final_name']
+                            f"{final_file_base}.{session['output_format']}"
                         )
-                        
-                        # Export the final file with metadata and add to exported files list
                         if self._export_audio(combined_chapters_file, metadata_file, final_file, session):
                             exported_files.append(final_file)
             else:
