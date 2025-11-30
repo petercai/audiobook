@@ -24,7 +24,21 @@ def unload_tts(device, reserved_keys=None, tts_key=None):
         error = f'unload_tts() error: {e}'
         print(error)
         return False
-        
+
+def format_vtt_timestamp(seconds):
+    m, s = divmod(seconds, 60)
+    h, m = divmod(m, 60)
+    return f"{int(h):02}:{int(m):02}:{s:06.3f}"
+
+def format_srt_timestamp(seconds):
+    m, s = divmod(seconds, 60)
+    h, m = divmod(m, 60)
+    return f"{int(h):02}:{int(m):02}:{int(s):02},{int((s % 1) * 1000):03}"
+
+def format_lrc_timestamp(seconds):
+    m, s = divmod(seconds, 60)
+    return f"[{int(m):02}:{s:05.2f}]"
+
 def append_sentence2vtt(sentence_obj, path):
     """
     Appends a sentence object to VTT, SRT, and LRC subtitle files.
@@ -45,20 +59,6 @@ def append_sentence2vtt(sentence_obj, path):
     base_path, _ = os.path.splitext(path)
     srt_path = base_path + ".srt"
     lrc_path = base_path + ".lrc"
-
-    def format_vtt_timestamp(seconds):
-        m, s = divmod(seconds, 60)
-        h, m = divmod(m, 60)
-        return f"{int(h):02}:{int(m):02}:{s:06.3f}"
-
-    def format_srt_timestamp(seconds):
-        m, s = divmod(seconds, 60)
-        h, m = divmod(m, 60)
-        return f"{int(h):02}:{int(m):02}:{int(s):02},{int((s % 1) * 1000):03}"
-
-    def format_lrc_timestamp(seconds):
-        m, s = divmod(seconds, 60)
-        return f"[{int(m):02}:{s:05.2f}]"
 
     try:
         index = 1
