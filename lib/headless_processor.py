@@ -417,7 +417,7 @@ class EBookProcessor:
                 return "combine_audio_chapters() error: exported_files not created!", False
 
             # Clean up temporary directories and files used during processing
-            self.session_cache_cleanup(session)
+            # self.session_cache_cleanup(session)
             
             # Generate success message with names of created audiobook files
             progress_status = f'Audiobook(s) {", ".join(os.path.basename(f) for f in exported_files)} created!'
