@@ -413,10 +413,28 @@ class EbookAudio:
                             f"{session['final_name'].rsplit('.', 1)[0]}_part{part_idx+1}" if needs_split else session['final_name']
                         )
 
-                        # split subtitle file
+                        # Split subtitle file for this part
                         for ext in ['.vtt', '.srt', '.lrc']:
-                            subtitle_file = f"{session['final_name']}{ext}"
-                            # time period
+                            original_subtitle_file = os.path.join(session['process_dir'], f"{Path(session['final_name']).stem}{ext}")
+                            if os.path.exists(original_subtitle_file):
+                                # Calculate start and end times for this part
+                                start_time_sec = sum(chapter_durations[:indices[0]])
+                                end_time_sec = sum(chapter_durations[:indices[-1] + 1])
+
+                                # Output filename for the split subtitle, aligned with the audio part
+                                part_subtitle_file = f"{final_file_base}{ext}"
+
+                                # ffmpeg command to split subtitle file
+                                ffmpeg_split_cmd = [
+                                    shutil.which('ffmpeg'), '-y', '-i', original_subtitle_file,
+                                    '-ss', str(start_time_sec), '-to', str(end_time_sec),
+                                    '-c', 'copy', part_subtitle_file
+                                ]
+                                try:
+                                    subprocess.run(ffmpeg_split_cmd, check=True, capture_output=True, text=True)
+                                    print(f"Successfully created subtitle part: {part_subtitle_file}")
+                                except subprocess.CalledProcessError as e:
+                                    print(f"Error splitting subtitle file {original_subtitle_file}: {e.stderr}")
 
                         # Export the final file with metadata and add to exported files list
                         final_file = os.path.join(
