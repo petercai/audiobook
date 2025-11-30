@@ -188,8 +188,21 @@ class EbookAudio:
                 # For formats that support metadata chapters, add the metadata file
                 ffmpeg_cmd += ['-f', 'ffmetadata', '-i', ffmpeg_metadata_file, '-map', '0:a']
                 if session['output_format'] in ['m4a', 'm4b', 'mp4', 'mov']:
+                    book_cover = session["cover"]
+                    subtitle_file = os.path.join(session['process_dir'], f"{Path(session['final_name']).stem}.vtt")
+
+                    if book_cover and os.path.exists(book_cover):
+                        ffmpeg_cmd += ['-loop', '1', '-framerate', '1', '-i', book_cover]
+                        ffmpeg_cmd += ['-c:v', 'libx264', '-preset', 'ultrafast', '-tune', 'stillimage', '-pix_fmt', 'yuv420p']
+                        if os.path.exists(subtitle_file):
+                            # Use absolute path for subtitle file to be safe
+                            subtitle_path_for_filter = Path(subtitle_file).resolve().as_posix().replace(":", "\\:")
+                            ffmpeg_cmd += ['-vf', f"subtitles='{subtitle_path_for_filter}'"]
+                        ffmpeg_cmd += ['-shortest']
+
                     # AAC codec for MP4-based containers
                     ffmpeg_cmd += ['-c:a', 'aac', '-b:a', '192k', '-ar', '44100', '-movflags', '+faststart+use_metadata_tags']
+
                 elif session['output_format'] == 'mp3':
                     # MP3 codec using libmp3lame
                     ffmpeg_cmd += ['-c:a', 'libmp3lame', '-b:a', '192k', '-ar', '44100']
