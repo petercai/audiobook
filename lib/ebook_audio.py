@@ -418,8 +418,8 @@ class EbookAudio:
                             original_subtitle_file = os.path.join(session['process_dir'], f"{Path(session['final_name']).stem}{ext}")
                             if os.path.exists(original_subtitle_file):
                                 # Calculate start and end times for this part
-                                start_time_sec = sum(chapter_durations[:indices[0]])
-                                end_time_sec = sum(chapter_durations[:indices[-1] + 1])
+                                start_time_sec = int(sum(chapter_durations[:indices[0]]) * 100) / 100
+                                end_time_sec = int(sum(chapter_durations[:indices[-1] + 1]) * 100) / 100
 
                                 # Output filename for the split subtitle, aligned with the audio part
                                 part_subtitle_file = f"{final_file_base}{ext}"
