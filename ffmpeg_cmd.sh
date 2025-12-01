@@ -1,0 +1,27 @@
+/Users/s6704851/apps/homebrew/bin/ffmpeg \
+  -hide_banner \
+  -nostats \
+  -i /Users/s6704851/workspace/github/audiobook_uv/tmp/Hunger_Games_01_-_The_Hunger_Games/Hunger_Games_01_-_The_Hunger_Games/_part2.flac \
+  -f ffmetadata \
+  -i /Users/s6704851/workspace/github/audiobook_uv/tmp/Hunger_Games_01_-_The_Hunger_Games/Hunger_Games_01_-_The_Hunger_Games/metadata_part2.txt \
+  -loop 1 \
+  -framerate 1 \
+  -i "/Users/s6704851/workspace/github/audiobook_uv/tmp/Hunger_Games_01_-_The_Hunger_Games/Hunger_Games_01_-_The_Hunger_Games/The Hunger Games-2008 - The Hunger Games Suzanne Collins .jpg" \
+  -c:v libx264 \
+  -preset ultrafast \
+  -tune stillimage \
+  -pix_fmt yuv420p \
+  -vf "subtitles=/Users/s6704851/workspace/github/audiobook_uv/tmp/Hunger_Games_01_-_The_Hunger_Games_part2.vtt:force_style='Fontsize=12,PrimaryColour=&H00FFFF00,OutlineColour=&H00000000,BorderStyle=1,Outline=3,Shadow=0',scale=796:1200" \
+  -shortest \
+  -map 2:v \
+  -map 0:a \
+  -map_metadata 1 \
+  -c:a aac \
+  -b:a 192k \
+  -ar 44100 \
+  -movflags +faststart+use_metadata_tags \
+  -af loudnorm=I=-16:LRA=11:TP=-1.5,afftdn=nf=-70 \
+  -strict \
+  experimental \
+  -threads 1 \
+  -y /Users/s6704851/workspace/github/audiobook_uv/tmp/Hunger_Games_01_-_The_Hunger_Games_part2.mp4

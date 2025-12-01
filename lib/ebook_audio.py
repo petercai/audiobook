@@ -186,10 +186,10 @@ class EbookAudio:
                 ffmpeg_cmd += ['-c:a', 'flac', '-compression_level', '5', '-ar', '44100', '-sample_fmt', 's16']
             else:
                 # For formats that support metadata chapters, add the metadata file
-                ffmpeg_cmd += ['-f', 'ffmetadata', '-i', ffmpeg_metadata_file, '-map', '0:a']
+                ffmpeg_cmd += ['-f', 'ffmetadata', '-i', ffmpeg_metadata_file]
                 if session['output_format'] in ['m4a', 'm4b', 'mp4', 'mov']:
                     book_cover = session["cover"]
-                    subtitle_file = os.path.join(session['process_dir'], f"{Path(session['final_name']).stem}.vtt")
+                    subtitle_file = Path(ffmpeg_final_file).with_suffix(".vtt")
 
                     if book_cover and os.path.exists(book_cover):
                         ffmpeg_cmd += ['-loop', '1', '-framerate', '1', '-i', book_cover]
@@ -197,21 +197,23 @@ class EbookAudio:
                         if os.path.exists(subtitle_file):
                             # Use absolute path for subtitle file to be safe
                             subtitle_path_for_filter = Path(subtitle_file).resolve().as_posix().replace(":", "\\:")
-                            ffmpeg_cmd += ['-vf', f"subtitles='{subtitle_path_for_filter}'"]
+                            ffmpeg_cmd += ['-vf', f"subtitles='{subtitle_path_for_filter}':force_style='Fontsize=12,PrimaryColour=&H00FFFF00,OutlineColour=&H00000000,BorderStyle=1,Outline=3,Shadow=0',scale=796:1200"]
                         ffmpeg_cmd += ['-shortest']
+                        # map the video to the output file
+                        ffmpeg_cmd += ['-map', '2:v']
 
                     # AAC codec for MP4-based containers
-                    ffmpeg_cmd += ['-c:a', 'aac', '-b:a', '192k', '-ar', '44100', '-movflags', '+faststart+use_metadata_tags']
+                    ffmpeg_cmd += ['-map', '0:a', '-c:a', 'aac', '-b:a', '192k', '-ar', '44100', '-movflags', '+faststart+use_metadata_tags']
 
                 elif session['output_format'] == 'mp3':
                     # MP3 codec using libmp3lame
-                    ffmpeg_cmd += ['-c:a', 'libmp3lame', '-b:a', '192k', '-ar', '44100']
+                    ffmpeg_cmd += ['-map', '0:a', '-c:a', 'libmp3lame', '-b:a', '192k', '-ar', '44100']
                 elif session['output_format'] == 'webm':
                     # Opus codec for WebM container, 48kHz sample rate for better quality
-                    ffmpeg_cmd += ['-c:a', 'libopus', '-b:a', '192k', '-ar', '48000']
+                    ffmpeg_cmd += ['-map', '0:a', '-c:a', 'libopus', '-b:a', '192k', '-ar', '48000']
                 elif session['output_format'] == 'ogg':
                     # Opus codec for Ogg container
-                    ffmpeg_cmd += ['-c:a', 'libopus', '-compression_level', '0', '-b:a', '192k', '-ar', '48000']
+                    ffmpeg_cmd += ['-map', '0:a', '-c:a', 'libopus', '-compression_level', '0', '-b:a', '192k', '-ar', '48000']
                 # Map the metadata from the metadata file to the output file
                 ffmpeg_cmd += ['-map_metadata', '1']
 
