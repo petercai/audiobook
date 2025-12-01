@@ -273,7 +273,7 @@ class EbookAudio:
                                 if part_match:
                                     part_number = int(part_match.group(1))
                                     # Stamp part number on the cover image
-                                    cover_data = self.stampe_on_image(cover_data, str(part_number))
+                                    cover_data = self.stamp_on_image_data(cover_data, str(part_number))
 
                                 audio["covr"] = [MP4Cover(cover_data, imageformat=MP4Cover.FORMAT_JPEG)]
                         
@@ -331,7 +331,7 @@ class EbookAudio:
         print("⚠ No system font found, using default font (fixed size).")
         return ImageFont.load_default()
 
-    def stampe_on_image(self, image_data: bytes, text: str) -> bytes:
+    def stamp_on_image_data(self, image_data: bytes, text: str) -> bytes:
         try:
             img = Image.open(io.BytesIO(image_data))
             draw = ImageDraw.Draw(img)
@@ -356,6 +356,27 @@ class EbookAudio:
         except Exception as e:
             print(f"Could not stamp part number on cover: {e}")
         return image_data
+
+    def stamp_on_image_file(self, input_file: str, output_file: str, stamp_text: str) -> None:
+        try:
+            img = Image.open(input_file)
+            draw = ImageDraw.Draw(img)
+
+            # Define font size relative to image width
+            font_size = int(img.width / 2)
+            font = self.get_font(font_size)
+
+            text_bbox = draw.textbbox((0, 0), stamp_text, font=font)
+            text_width = text_bbox[2] - text_bbox[0]
+
+            # Position text in the top-right corner with a margin
+            margin = int(img.width * 0.05)
+            position = (img.width - text_width - margin, margin)
+            draw.text(position, stamp_text, font=font, fill=(255, 0, 0), stroke_width=5, stroke_fill=(0, 0, 0))
+
+            img.save(output_file, format='JPEG')
+        except Exception as e:
+            print(f"Could not stamp part number on cover: {e}")
 
     def combine_audio_chapters(self, session):
         """

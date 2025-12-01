@@ -193,7 +193,7 @@ def test_stamp_on_image(session_context, ebook_path, tmp_path):
     processor = EbookAudio()
     with open( session['cover'], 'rb') as f:
         cover_data = f.read()
-        cover_data = processor.stampe_on_image(cover_data, str(1))
+        cover_data = processor.stamp_on_image_data(cover_data, str(1))
         with open(new_cover, "wb") as wf:
             wf.write(cover_data)
 
