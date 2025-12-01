@@ -1,5 +1,6 @@
 import json
 import os
+import platform
 import re
 import shutil
 import subprocess
@@ -190,7 +191,7 @@ class EbookAudio:
                 # For formats that support metadata chapters, add the metadata file
                 ffmpeg_cmd += ['-f', 'ffmetadata', '-i', ffmpeg_metadata_file]
                 if session['output_format'] in ['m4a', 'm4b', 'mp4', 'mov']:
-                    book_cover = session["cover"]
+                    book_cover = session['cover']
                     subtitle_file = Path(ffmpeg_final_file).with_suffix(".vtt")
 
                     if book_cover and os.path.exists(book_cover):
@@ -272,31 +273,7 @@ class EbookAudio:
                                 if part_match:
                                     part_number = int(part_match.group(1))
                                     # Stamp part number on the cover image
-                                    try:
-                                        img = Image.open(io.BytesIO(cover_data))
-                                        draw = ImageDraw.Draw(img)
-                                        
-                                        # Define font size relative to image width
-                                        font_size = int(img.width / 10)
-                                        try:
-                                            font = ImageFont.truetype("arial.ttf", font_size)
-                                        except IOError:
-                                            font = ImageFont.load_default()
-
-                                        text = f"Part {part_number}"
-                                        text_bbox = draw.textbbox((0, 0), text, font=font)
-                                        text_width = text_bbox[2] - text_bbox[0]
-                                        
-                                        # Position text in the top-right corner with a margin
-                                        margin = int(img.width * 0.05)
-                                        position = (img.width - text_width - margin, margin)
-                                        draw.text(position, text, font=font, fill=(255, 255, 255), stroke_width=2, stroke_fill=(0, 0, 0))
-                                        
-                                        with io.BytesIO() as output:
-                                            img.save(output, format='JPEG')
-                                            cover_data = output.getvalue()
-                                    except Exception as e:
-                                        print(f"Could not stamp part number on cover: {e}")
+                                    cover_data = self.stampe_on_image(cover_data, str(part_number))
 
                                 audio["covr"] = [MP4Cover(cover_data, imageformat=MP4Cover.FORMAT_JPEG)]
                         
@@ -322,6 +299,63 @@ class EbookAudio:
             # Handle any other exceptions, possibly dependency-related
             DependencyError(e)
             return False
+
+
+    def get_font(self, size=40):
+        # Common fonts by OS
+        font_paths = []
+        system = platform.system()
+
+        if system == "Windows":
+            font_paths = [
+                "C:\\Windows\\Fonts\\arial.ttf",
+                "C:\\Windows\\Fonts\\segoeui.ttf"
+            ]
+        elif system == "Darwin":  # macOS
+            font_paths = [
+                "/System/Library/Fonts/Supplemental/Helvetica.ttf",
+                "/System/Library/Fonts/Supplemental/Arial.ttf"
+            ]
+        else:  # Linux
+            font_paths = [
+                "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+                "/usr/share/fonts/truetype/freefont/FreeSans.ttf"
+            ]
+
+        # Try each font path
+        for path in font_paths:
+            if os.path.exists(path):
+                return ImageFont.truetype(path, size)
+
+        # Fallback
+        print("⚠ No system font found, using default font (fixed size).")
+        return ImageFont.load_default()
+
+    def stampe_on_image(self, image_data: bytes, text: str) -> bytes:
+        try:
+            img = Image.open(io.BytesIO(image_data))
+            draw = ImageDraw.Draw(img)
+
+            # Define font size relative to image width
+            font_size = int(img.width / 2)
+            font = self.get_font(font_size)
+
+
+            # text = f"Part {text}"
+            text_bbox = draw.textbbox((0, 0), text, font=font)
+            text_width = text_bbox[2] - text_bbox[0]
+
+            # Position text in the top-right corner with a margin
+            margin = int(img.width * 0.05)
+            position = (img.width - text_width - margin, margin)
+            draw.text(position, text, font=font, fill=(255, 0, 0), stroke_width=5, stroke_fill=(0, 0, 0))
+
+            with io.BytesIO() as output:
+                img.save(output, format='JPEG')
+                image_data = output.getvalue()
+        except Exception as e:
+            print(f"Could not stamp part number on cover: {e}")
+        return image_data
 
     def combine_audio_chapters(self, session):
         """

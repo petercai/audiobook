@@ -157,3 +157,43 @@ def test_combine_audio_chapters(session_context, ebook_path, tmp_path):
     # assert audio_files
     for file in audio_files:
         print(file)
+
+def test_stamp_on_image(session_context, ebook_path, tmp_path):
+    """Test successful processing of an EPUB file."""
+    context, session_id, session = session_context
+
+    # Setup arguments for EBookProcessor
+    args = {
+        "session": "34580d40b4f8e9a591f0ee19dc51a4f4",
+        "ebook": os.path.join(ebook_path, "The_Hunger_Games.epub"),
+        "device": "cpu",
+        "language": "eng",
+        "language_iso1": "en",
+        "tts_engine": TTS_ENGINES['XTTSv2'],
+        "output_format": "mp4",
+        "output_split": True,
+        "output_split_minutes": 30,
+        "final_name": "Hunger_Games_01_-_The_Hunger_Games",
+        "offline_mode": True
+    }
+    # update session with args
+    session.update(args)
+    # Create necessary directories
+    func_name = inspect.currentframe().f_code.co_name
+    set_process_dir(session, "Hunger_Games_01_-_The_Hunger_Games/Hunger_Games_01_-_The_Hunger_Games")
+    session['epub_path'] = session['ebook']
+    session['cover'] = os.path.join(session['process_dir'], 'The Hunger Games-2008 - The Hunger Games Suzanne Collins .jpg')
+
+    basename = os.path.basename(session["ebook"])
+    name_splits = os.path.splitext(basename)
+    session["filename_noext"] = name_splits[0]
+    new_cover = os.path.join(tmp_dir, f"{basename}_part{1:02d}.jpg")
+
+    # Instantiate EBookProcessor
+    processor = EbookAudio()
+    with open( session['cover'], 'rb') as f:
+        cover_data = f.read()
+        cover_data = processor.stampe_on_image(cover_data, str(1))
+        with open(new_cover, "wb") as wf:
+            wf.write(cover_data)
+
