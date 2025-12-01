@@ -425,7 +425,7 @@ class EbookAudio:
                         # Determine final output file path
                         final_file_base = os.path.join(
                             session['audiobooks_dir'],
-                            f"{session['final_name'].rsplit('.', 1)[0]}_part{part_idx+1}" if needs_split else session['final_name']
+                            f"{session['final_name'].rsplit('.', 1)[0]}_part{part_idx+1:02d}" if needs_split else session['final_name']
                         )
 
                         # Split subtitle file for this part
