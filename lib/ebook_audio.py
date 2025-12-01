@@ -198,7 +198,7 @@ class EbookAudio:
                         part_match = re.search(r'_part(\d+)', ffmpeg_final_file, re.IGNORECASE)
                         if part_match:
                             part_number = int(part_match.group(1))
-                            cover_path = self.stamp_on_image_file(cover_path, ffmpeg_combined_audio.with_suffix(".jpg"),str(part_number))
+                            cover_path = self.stamp_on_image_file(cover_path, Path(ffmpeg_combined_audio).with_suffix(".jpg"),str(part_number))
                         ffmpeg_cmd += ['-loop', '1', '-framerate', '1', '-i', cover_path]
                         ffmpeg_cmd += ['-c:v', 'libx264', '-preset', 'ultrafast', '-tune', 'stillimage', '-pix_fmt', 'yuv420p']
                         if os.path.exists(subtitle_file):
