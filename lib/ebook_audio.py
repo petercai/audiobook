@@ -7,11 +7,13 @@ import sys
 import tempfile
 import traceback
 import zipfile
+import io
 from tqdm import tqdm
 from datetime import datetime
 from multiprocessing import cpu_count, Pool
 from pathlib import Path
 
+from PIL import Image, ImageDraw, ImageFont
 from pydub import AudioSegment
 
 from lib import TTS_SML, default_audio_proc_format
@@ -261,9 +263,42 @@ class EbookAudio:
                         elif session['output_format'] in ['mp4', 'm4a', 'm4b']:
                             from mutagen.mp4 import MP4, MP4Cover
                             audio = MP4(ffmpeg_final_file)
+
                             with open(cover_path, 'rb') as f:
                                 cover_data = f.read()
-                            audio["covr"] = [MP4Cover(cover_data, imageformat=MP4Cover.FORMAT_JPEG)]
+
+                                # Extract part number from ffmpeg_final_file (e.g., xxx_part01.mp4)
+                                part_match = re.search(r'_part(\d+)', ffmpeg_final_file, re.IGNORECASE)
+                                if part_match:
+                                    part_number = int(part_match.group(1))
+                                    # Stamp part number on the cover image
+                                    try:
+                                        img = Image.open(io.BytesIO(cover_data))
+                                        draw = ImageDraw.Draw(img)
+                                        
+                                        # Define font size relative to image width
+                                        font_size = int(img.width / 10)
+                                        try:
+                                            font = ImageFont.truetype("arial.ttf", font_size)
+                                        except IOError:
+                                            font = ImageFont.load_default()
+
+                                        text = f"Part {part_number}"
+                                        text_bbox = draw.textbbox((0, 0), text, font=font)
+                                        text_width = text_bbox[2] - text_bbox[0]
+                                        
+                                        # Position text in the top-right corner with a margin
+                                        margin = int(img.width * 0.05)
+                                        position = (img.width - text_width - margin, margin)
+                                        draw.text(position, text, font=font, fill=(255, 255, 255), stroke_width=2, stroke_fill=(0, 0, 0))
+                                        
+                                        with io.BytesIO() as output:
+                                            img.save(output, format='JPEG')
+                                            cover_data = output.getvalue()
+                                    except Exception as e:
+                                        print(f"Could not stamp part number on cover: {e}")
+
+                                audio["covr"] = [MP4Cover(cover_data, imageformat=MP4Cover.FORMAT_JPEG)]
                         
                         # Save the file with the embedded cover
                         if audio:
