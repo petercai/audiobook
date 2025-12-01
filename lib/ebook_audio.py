@@ -176,7 +176,8 @@ class EbookAudio:
 
             # Initialize the base ffmpeg command
             ffmpeg_cmd = [shutil.which('ffmpeg'), '-hide_banner', '-nostats', '-i', ffmpeg_combined_audio]
-
+            # if session['cover'] is not None:
+            cover_path = session.get('cover', None)
             # Configure codecs and parameters based on the selected output format
             if session['output_format'] == 'wav':
                 # Simple WAV output with specific audio format
@@ -191,11 +192,14 @@ class EbookAudio:
                 # For formats that support metadata chapters, add the metadata file
                 ffmpeg_cmd += ['-f', 'ffmetadata', '-i', ffmpeg_metadata_file]
                 if session['output_format'] in ['m4a', 'm4b', 'mp4', 'mov']:
-                    book_cover = session['cover']
                     subtitle_file = Path(ffmpeg_final_file).with_suffix(".vtt")
-
-                    if book_cover and os.path.exists(book_cover):
-                        ffmpeg_cmd += ['-loop', '1', '-framerate', '1', '-i', book_cover]
+                    if cover_path and os.path.exists(cover_path):
+                        # Extract part number from ffmpeg_final_file (e.g., xxx_part01.mp4)
+                        part_match = re.search(r'_part(\d+)', ffmpeg_final_file, re.IGNORECASE)
+                        if part_match:
+                            part_number = int(part_match.group(1))
+                            cover_path = self.stamp_on_image_file(cover_path, ffmpeg_combined_audio.with_suffix(".jpg"),str(part_number))
+                        ffmpeg_cmd += ['-loop', '1', '-framerate', '1', '-i', cover_path]
                         ffmpeg_cmd += ['-c:v', 'libx264', '-preset', 'ultrafast', '-tune', 'stillimage', '-pix_fmt', 'yuv420p']
                         if os.path.exists(subtitle_file):
                             # Use absolute path for subtitle file to be safe
@@ -244,8 +248,7 @@ class EbookAudio:
             if process.returncode == 0:
                 # If the output format supports embedded covers, add the cover image
                 if session['output_format'] in ['mp3', 'm4a', 'm4b', 'mp4']:
-                    if session['cover'] is not None:
-                        cover_path = session['cover']
+                    if cover_path is not None:
                         print(f'Adding cover {cover_path} into the final audiobook file...')
 
                         # Use mutagen to embed the cover image
@@ -267,14 +270,6 @@ class EbookAudio:
 
                             with open(cover_path, 'rb') as f:
                                 cover_data = f.read()
-
-                                # Extract part number from ffmpeg_final_file (e.g., xxx_part01.mp4)
-                                part_match = re.search(r'_part(\d+)', ffmpeg_final_file, re.IGNORECASE)
-                                if part_match:
-                                    part_number = int(part_match.group(1))
-                                    # Stamp part number on the cover image
-                                    cover_data = self.stamp_on_image_data(cover_data, str(part_number))
-
                                 audio["covr"] = [MP4Cover(cover_data, imageformat=MP4Cover.FORMAT_JPEG)]
                         
                         # Save the file with the embedded cover
@@ -357,7 +352,7 @@ class EbookAudio:
             print(f"Could not stamp part number on cover: {e}")
         return image_data
 
-    def stamp_on_image_file(self, input_file: str, output_file: str, stamp_text: str) -> None:
+    def stamp_on_image_file(self, input_file: str, output_file: str, stamp_text: str) -> str:
         try:
             img = Image.open(input_file)
             draw = ImageDraw.Draw(img)
@@ -375,8 +370,10 @@ class EbookAudio:
             draw.text(position, stamp_text, font=font, fill=(255, 0, 0), stroke_width=5, stroke_fill=(0, 0, 0))
 
             img.save(output_file, format='JPEG')
+            return output_file
         except Exception as e:
             print(f"Could not stamp part number on cover: {e}")
+            return None
 
     def combine_audio_chapters(self, session):
         """
