@@ -91,7 +91,7 @@ def test_convert2epub(session_context, ebook_path, tmp_path):
     func_name = inspect.currentframe().f_code.co_name
     set_process_dir(session, func_name)
 
-    input_file = os.path.join(ebook_path, "god-c12-short.epub")
+    input_file = os.path.join(ebook_path, "Dune.epub")
 
     session['ebook'] = str(input_file)
     session['epub_path'] = tmp_path+  "/book_gen.epub"
@@ -316,7 +316,7 @@ def test_process_epub_metadata_en(session_context, ebook_path, tmp_path):
     args = {
         "session": session_id,
         'cancellation_requested': False,
-        "ebook": os.path.join(ebook_path, "jane-eyre-c12.epub"),
+        "ebook": os.path.join(ebook_path, "Dune.epub"),
         "device": "cpu",
         "language": "eng",
         "language_iso1": 'en',
@@ -430,8 +430,8 @@ def test_get_cover(session_context, ebook_path, tmp_path):
     args = {
         "session": session_id,
         'cancellation_requested': False,
-        "ebook": os.path.join(ebook_path, "god-c12.epub"),
-        "filename_noext": "god-c12",
+        "ebook": os.path.join(ebook_path, "Dune.epub"),
+        "filename_noext": "Dune",
         "device": "cpu",
         "language": "zho",
         "language_iso1": 'zh',
@@ -440,7 +440,10 @@ def test_get_cover(session_context, ebook_path, tmp_path):
 
     # update session with args
     session.update(args)
-
+    # Create necessary directories
+    func_name = inspect.currentframe().f_code.co_name
+    set_process_dir(session, func_name)
+    
     ebook_ = session["ebook"]
     epubBook = epub.read_epub(ebook_, {"ignore_ncx": True})
 
@@ -448,6 +451,8 @@ def test_get_cover(session_context, ebook_path, tmp_path):
     result = processor.get_cover(epubBook, session)
     # Assertions
     assert result
+    print(result)
+
 
 def test_filter_chapter(session_context, ebook_path, tmp_path):
     context, session_id, session = session_context

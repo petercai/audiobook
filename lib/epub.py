@@ -194,10 +194,11 @@ class EPubProcessor:
             if session['cancellation_requested']:
                 msg = 'Cancel requested'
                 print(msg)
-                return False
+                return None
             cover_image = None
             cover_path = os.path.join(session['process_dir'], session['filename_noext'] + '.jpg')
-            for item in epubBook.get_items_of_type(ebooklib.ITEM_COVER):
+            cover_items = epubBook.get_items_of_type(ebooklib.ITEM_COVER)
+            for item in cover_items:
                 cover_image = item.get_content()
                 break
             if not cover_image:
@@ -213,10 +214,10 @@ class EPubProcessor:
                     image = image.convert('RGB')
                 image.save(cover_path, format='JPEG')
                 return cover_path
-            return True
+            return None
         except Exception as e:
             DependencyError(e)
-            return False
+            return None
 
     def get_chapters_in_sentences(self, epubBook, session, chapters_to_process=0):
         """
