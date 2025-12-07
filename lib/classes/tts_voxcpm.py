@@ -39,9 +39,10 @@ class TTSVoxCPM:
     def load_model(self):
         try:
             model_local_dir = os.path.join(models_dir, "tts", "models--openbmb--VoxCPM-0.5B","snapshots", "f67d35a3848e0bec0fdb8c33e6fc92cf293ee72f")
+            zipenhancer_model_path = os.path.join(models_dir, "zipenhancer", "iic", "speech_zipenhancer_ans_multiloss_16k_base")
             use_local_model = self.session['offline_mode']
             model_id = model_local_dir if use_local_model else "openbmb/VoxCPM-0.5B"
-            self.model = VoxCPM.from_pretrained(hf_model_id=model_id)
+            self.model = VoxCPM.from_pretrained(hf_model_id=model_id, zipenhancer_model_id=zipenhancer_model_path)
             return True
         except Exception as e:
             print(f"Error loading VoxCPM model: {e}")
