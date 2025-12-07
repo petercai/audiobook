@@ -701,6 +701,7 @@ dependencies = [
     { name = "pyopengl" },
     { name = "pypinyin" },
     { name = "pythainlp" },
+    { name = "pyyaml" },
     { name = "ray" },
     { name = "regex" },
     { name = "soynlp" },
@@ -751,6 +752,7 @@ requires-dist = [
     { name = "pyopengl" },
     { name = "pypinyin" },
     { name = "pythainlp" },
+    { name = "pyyaml", specifier = ">=6.0.2" },
     { name = "ray" },
     { name = "regex" },
     { name = "soynlp" },
@@ -2266,6 +2268,7 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/e9/00/3b96ca7ad0641e4f64cfaa2af153dc7da0998ff972280e1c1681b1fcc243/pyannote_audio-3.3.2.tar.gz", hash = "sha256:b2115e86b0db5faedb9f36ee1a150cebd07f7758e65e815accdac1a12ca9c777", size = 13664309 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/17/e6/76049470d90217f9a15a34abf3e92d782cabc3fb4ab27515c9baaa5495d1/pyannote.audio-3.3.2-py2.py3-none-any.whl", hash = "sha256:599c694acd5d193215147ff82d0bf638bb191204ed502bd9fde8ff582e20aa1c", size = 898707 },
+    { url = "https://files.pythonhosted.org/packages/b7/9a/98a8992727e762b031ed30451d5726ece46cf8bb7b872a9dba5cef011e5d/pyannote_audio-3.3.2-py2.py3-none-any.whl", hash = "sha256:23e0dcedda920cb2e154e146bcd9663289ee7942d0e012663dad76f2e571ebeb", size = 897827 },
 ]
 
 [[package]]

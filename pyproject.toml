@@ -67,4 +67,5 @@ scripts = { "ebook2audiobook" = "app:main" }
 dev = [
     "pytest",
     "ruff",
+		"pyyaml", # pytest -> hydra (as a plugin or dependency) -> omegaconf -> import yaml
 ]
