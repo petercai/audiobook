@@ -72,19 +72,16 @@ def session_context(tmp_path):
 
 def test_tts_cn_convert(session_context, ebook_path, tmp_path):
     context, session_id, session = session_context
-    # own process dir
-
-
     # Setup arguments for EBookProcessor
     args = {
         "ebook": os.path.join(ebook_path, "god-c12.epub"),
         "device": "cpu",
         "language": "zho",
         "language_iso1": "zh",
-        "tts_engine": TTS_ENGINES['XTTSv2'],
-        "voice": None,
+        "tts_engine": TTS_ENGINES['VOXCPM'],
         "voice_dir": os.path.join(voices_dir, '__sessions', "test_voice"),
-        "speaker_wav": os.path.join(voices_dir, "zho", "adult", "male", "yunjian.wav"),
+        "voice": os.path.join(voices_dir, "zho", "adult", "male", "yunjian.wav"),
+        "offline_mode": True
     }
     # update session with args
     session.update(args)

@@ -121,14 +121,19 @@ def test_process_epub_cn(session_context, ebook_path, tmp_path):
     func_name = inspect.currentframe().f_code.co_name
     set_process_dir(session, func_name)
     session['epub_path'] = session['ebook']
+    
+    basename = os.path.basename(session["ebook"])
+    name_splits = os.path.splitext(basename)
+    session["filename_noext"] = name_splits[0]
 
     # Instantiate EBookProcessor
     ebook_processor = EBookProcessor()
     # Process the EPUB
-    status, success = ebook_processor.process_epub(session_id, context)
+    status, success = ebook_processor.process_epub(session)
 
     # Assertions
-    assert success is True
+    print(status)
+    assert success
     assert "Audiobook(s)" in status
     assert os.path.exists(session['audiobook'])
     
@@ -430,8 +435,8 @@ def test_get_cover(session_context, ebook_path, tmp_path):
     args = {
         "session": session_id,
         'cancellation_requested': False,
-        "ebook": os.path.join(ebook_path, "Dune.epub"),
-        "filename_noext": "Dune",
+        "ebook": os.path.join(ebook_path, "思考,快与慢.epub"),
+        "filename_noext": "思考-快与慢",
         "device": "cpu",
         "language": "zho",
         "language_iso1": 'zh',

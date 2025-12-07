@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 
 from lib.models import TTS_ENGINES
 
@@ -70,9 +71,7 @@ class TTSManager:
         try:
             if self.session['tts_engine'] in TTS_ENGINES.values():
                 if self.session['tts_engine'] == TTS_ENGINES['VOXCPM']:
-                    # Assuming you have a way to get the prompt_wav_path and prompt_text
-                    prompt_wav_path = self.session.get('voice')
-                    prompt_text = "无论是互联网巨头还是刚起步的创业公司都在竞相努力成为元宇宙这条充满无限可能性赛道的领先者事实确实这些平台除了产品发布发新闻稿时热度高很快就回归平静就像horizon world一样"  # You might want to make this configurable
+                    prompt_wav_path, prompt_text = self.init_voice_info(self.session.get('voice'))
                     return self.tts.generate_audio(sentence_number, sentence, prompt_wav_path, prompt_text)
                 else:
                     return self.tts.convert(sentence_number, sentence)
@@ -82,3 +81,14 @@ class TTSManager:
             error = f'convert_sentence2audio(): {e}'
             raise ValueError(e)
         return False
+
+    def init_voice_info(self, voice_path):
+        prompt_text_path = Path(voice_path).with_suffix(".txt")
+        # prompt_text = "无论是互联网巨头还是刚起步的创业公司都在竞相努力成为元宇宙这条充满无限可能性赛道的领先者事实确实这些平台除了产品发布发新闻稿时热度高很快就回归平静就像horizon world一样"  # You might want to make this configurable
+        if prompt_text_path.exists():
+            with open(prompt_text_path, 'r', encoding='utf-8') as f:
+                prompt_text = f.read().strip()
+        else:
+            raise FileNotFoundError(f"Prompt text file not found: {prompt_text_path}")
+
+        return voice_path, prompt_text
