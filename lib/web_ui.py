@@ -112,7 +112,7 @@ class WebUI:
         self.ebook_audio = EbookAudio()
         
     def cleanup_session(self, context, req: gr.Request):
-        socket_hash = req.session_hash
+        socket_hash = req.session_hash if hasattr(req, "session_hash") else None
         if any(socket_hash in session for session in context.sessions.values()):
             session_id = context.find_id_by_hash(socket_hash)
             ctx_tracker.end_session(session_id, socket_hash, context)
