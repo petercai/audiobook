@@ -101,7 +101,8 @@ def test_tts_cn_convert(session_context, ebook_path, tmp_path):
     status, success = ebook_processor.process_epub_chapters(epubBook, session)
 
     # Assertions
-    assert success is True
+    print(status)
+    assert success
     print(session['audiobook'])
     assert os.path.exists(session['audiobook'])
 
