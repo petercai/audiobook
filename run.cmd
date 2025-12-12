@@ -36,11 +36,11 @@ pipdeptree > deps.txt
 uv pip list --outdated > outdated.txt
 uv pip list > list.txt
 
-uv pip install -U  coqui-tts torch torchaudio torchvision pyannote.audio transformers speechbrain
+uv pip install -U  coqui-tts torch torchaudio torchvision pyannote.audio pyannote-audio transformers speechbrain torchcodec numba==0.58.1 llvmlite==0.41.1
 uv pip show coqui-tts torch torchaudio torchvision pyannote.audio transformers speechbrain
 uv pip install -U gradio
 
-
+uv pip install numba==0.58.1 llvmlite==0.41.1
 
 pytest tests/test_epub.py::test_filter_chapter
 pytest tests/test_epub.py::test_process_epub_chapters_en

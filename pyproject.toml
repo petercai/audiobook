@@ -27,7 +27,7 @@ dependencies = [
 	"soynlp",
 	"pythainlp",
 	"pydub",
-	"pyannote-audio",
+	"pyannote-audio>=4.0.3",
 	"mutagen",
 	"nvidia-ml-py",
 	"PyOpenGL",
@@ -42,17 +42,18 @@ dependencies = [
 	"transformers",
 	"coqui-tts",
 	"torchvggish",
-	"numba",
-	"torch",
+	"numba>=0.60.0",
+	"torch==2.8.*",
 	"torchvision",
-	"torchaudio",
+	"torchaudio==2.8.*",
 	"unidic-lite",
 	"voxcpm",
 	"huggingface-hub[hf-xet]",
 	"pipdeptree>=2.30.0",
+	"scipy-stubs==1.16.3.3",
 ]
 readme = "README.md"
-requires-python = ">=3.12,<3.13"
+requires-python = ">=3.11,<3.12"
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
