@@ -33,3 +33,5 @@ sudachidict_core
 transformers
 coqui-tts[languages]
 torchvggish
+voxcpm
+indextts
