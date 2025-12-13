@@ -564,6 +564,52 @@ class WebUI:
                         elem_id='gr_voxcpm_prompt_text',
                         info='Reference text for the prompt speech.'
                     )
+                gr_tab_indextts_params = gr.TabItem('IndexTTS fine Tuned Parameters', elem_id='gr_tab_indextts_params', elem_classes='tab_item', visible=False)
+                with gr_tab_indextts_params:
+                    gr.Markdown(
+                        elem_id='gr_markdown_tab_indextts_params',
+                        value='''
+                        ### Customize IndexTTS Parameters
+                        Adjust the settings below to influence how the audio is generated.
+                        **Note**: IndexTTS does not officially support these parameters. They are placeholders for potential future compatibility or custom implementations.
+                        '''
+                    )
+                    gr_indextts_temperature = gr.Slider(
+                        label='Temperature',
+                        minimum=0.05,
+                        maximum=10.0,
+                        step=0.05,
+                        value=float(default_engine_settings[TTS_ENGINES['INDEXTTS']]['temperature']),
+                        elem_id='gr_indextts_temperature',
+                        info='Higher values lead to more creative, unpredictable outputs. Lower values make it more monotone.'
+                    )
+                    gr_indextts_top_k = gr.Slider(
+                        label='Top-k Sampling',
+                        minimum=10,
+                        maximum=100,
+                        step=1,
+                        value=int(default_engine_settings[TTS_ENGINES['INDEXTTS']]['top_k']),
+                        elem_id='gr_indextts_top_k',
+                        info='Lower values restrict outputs to more likely words and increase speed at which audio generates.'
+                    )
+                    gr_indextts_top_p = gr.Slider(
+                        label='Top-p Sampling',
+                        minimum=0.1,
+                        maximum=1.0, 
+                        step=0.01,
+                        value=float(default_engine_settings[TTS_ENGINES['INDEXTTS']]['top_p']),
+                        elem_id='gr_indextts_top_p',
+                        info='Controls cumulative probability for word selection. Lower values make the output more predictable and increase speed at which audio generates.'
+                    )
+                    gr_indextts_speed = gr.Slider(
+                        label='Speed', 
+                        minimum=0.5, 
+                        maximum=3.0, 
+                        step=0.1, 
+                        value=float(default_engine_settings[TTS_ENGINES['INDEXTTS']]['speed']),
+                        elem_id='gr_indextts_speed',
+                        info='Adjusts how fast the narrator will speak.'
+                    )
             gr_state_update = gr.State(value={"hash": None})
             gr_read_data = gr.JSON(visible=False, elem_id='gr_read_data')
             gr_write_data = gr.JSON(visible=False, elem_id='gr_write_data')
@@ -635,7 +681,7 @@ class WebUI:
             gr_tts_engine_list.change(
                 fn=self.change_gr_tts_engine_list,
                 inputs=[gr_tts_engine_list, gr_session],
-                outputs=[gr_tts_rating, gr_tab_xtts_params, gr_tab_bark_params, gr_tab_voxcpm_params,
+                outputs=[gr_tts_rating, gr_tab_xtts_params, gr_tab_bark_params, gr_tab_voxcpm_params, gr_tab_indextts_params,
                          gr_group_custom_model, gr_fine_tuned_list, gr_custom_model_file, gr_custom_model_list]
             ).then(
                 fn=self.update_gr_voice_list,
@@ -809,6 +855,27 @@ class WebUI:
                 inputs=[gr_voxcpm_retry_badcase_ratio_threshold, gr_session],
                 outputs=None
             )
+            ########### IndexTTS Params
+            gr_indextts_temperature.change(
+                fn=lambda val, id: self.change_param('temperature', val, id),
+                inputs=[gr_indextts_temperature, gr_session],
+                outputs=None
+            )
+            gr_indextts_top_k.change(
+                fn=lambda val, id: self.change_param('top_k', val, id),
+                inputs=[gr_indextts_top_k, gr_session],
+                outputs=None
+            )
+            gr_indextts_top_p.change(
+                fn=lambda val, id: self.change_param('top_p', val, id),
+                inputs=[gr_indextts_top_p, gr_session],
+                outputs=None
+            )
+            gr_indextts_speed.change(
+                fn=lambda val, id: self.change_param('speed', val, id),
+                inputs=[gr_indextts_speed, gr_session],
+                outputs=None
+            )
             ############ Timer to save session to localStorage
             gr_timer = gr.Timer(9, active=False)
             gr_timer.tick(
@@ -840,6 +907,7 @@ class WebUI:
                     gr_voxcpm_cfg_value, gr_voxcpm_inference_timesteps, gr_voxcpm_normalize, gr_voxcpm_denoise,
                     gr_voxcpm_retry_badcase, gr_voxcpm_retry_badcase_max_times, gr_voxcpm_retry_badcase_ratio_threshold,
                     gr_voxcpm_prompt_text,
+                    gr_indextts_temperature, gr_indextts_top_k, gr_indextts_top_p, gr_indextts_speed,
                     gr_output_split, gr_output_split_minutes
                 ],
                 outputs=[gr_tab_progress]
@@ -888,6 +956,7 @@ class WebUI:
                     gr_bark_waveform_temp,
                     gr_voxcpm_cfg_value, gr_voxcpm_inference_timesteps, gr_voxcpm_normalize, gr_voxcpm_denoise,
                     gr_voxcpm_retry_badcase, gr_voxcpm_retry_badcase_max_times, gr_voxcpm_retry_badcase_ratio_threshold,
+                    gr_indextts_temperature, gr_indextts_top_k, gr_indextts_top_p, gr_indextts_speed,
                     gr_voice_list, gr_output_split, gr_output_split_minutes, gr_timer
                 ]
             ).then(
@@ -1364,6 +1433,11 @@ class WebUI:
             session['retry_badcase'] = session['retry_badcase'] if session['retry_badcase'] else default_engine_settings[TTS_ENGINES['VOXCPM']]['retry_badcase']
             session['retry_badcase_max_times'] = session['retry_badcase_max_times'] if session['retry_badcase_max_times'] else default_engine_settings[TTS_ENGINES['VOXCPM']]['retry_badcase_max_times']
             session['retry_badcase_ratio_threshold'] = session['retry_badcase_ratio_threshold'] if session['retry_badcase_ratio_threshold'] else default_engine_settings[TTS_ENGINES['VOXCPM']]['retry_badcase_ratio_threshold']
+            ### IndexTTS Params
+            session['temperature'] = session['temperature'] if session['temperature'] else default_engine_settings[TTS_ENGINES['INDEXTTS']]['temperature']
+            session['top_k'] = session['top_k'] if session['top_k'] else default_engine_settings[TTS_ENGINES['INDEXTTS']]['top_k']
+            session['top_p'] = session['top_p'] if session['top_p'] else default_engine_settings[TTS_ENGINES['INDEXTTS']]['top_p']
+            session['speed'] = session['speed'] if session['speed'] else default_engine_settings[TTS_ENGINES['INDEXTTS']]['speed']
             return (
                 gr.update(value=ebook_data), gr.update(value=session['ebook_mode']), gr.update(value=session['device']),
                 gr.update(value=session['language']), self.update_gr_tts_engine_list(id), self.update_gr_custom_model_list(id),
@@ -1374,6 +1448,7 @@ class WebUI:
                 gr.update(value=float(session['cfg_value'])), gr.update(value=int(session['inference_timesteps'])), gr.update(value=bool(session['normalize'])),
                 gr.update(value=bool(session['denoise'])), gr.update(value=bool(session['retry_badcase'])), gr.update(value=int(session['retry_badcase_max_times'])),
                 gr.update(value=float(session['retry_badcase_ratio_threshold'])),
+                gr.update(value=float(session['temperature'])), gr.update(value=int(session['top_k'])), gr.update(value=float(session['top_p'])), gr.update(value=float(session['speed'])),
                 self.update_gr_voice_list(id),
                 gr.update(value=session['output_split']), gr.update(value=session['output_split_minutes']), gr.update(active=True)
             )
@@ -1835,6 +1910,7 @@ class WebUI:
         xtts_visible = False
         bark_visible = False
         voxcpm_visible = False
+        indextts_visible = False
         if session['tts_engine'] == TTS_ENGINES['XTTSv2']:
             xtts_visible = True
             visible_custom_model = True
@@ -1842,7 +1918,7 @@ class WebUI:
                 visible_custom_model = False
             return (
                    gr.update(value=self.show_rating(session['tts_engine'])), 
-                   gr.update(visible=xtts_visible), gr.update(visible=bark_visible), gr.update(visible=voxcpm_visible),
+                   gr.update(visible=xtts_visible), gr.update(visible=bark_visible), gr.update(visible=voxcpm_visible), gr.update(visible=indextts_visible),
                    gr.update(visible=visible_custom_model), self.update_gr_fine_tuned_list(id),
                    gr.update(label=f"*Upload {session['tts_engine']} Model (Should be a ZIP file with {', '.join(models[session['tts_engine']][default_fine_tuned]['files'])})"),
                    gr.update(label=f"My {session['tts_engine']} custom models")
@@ -1852,9 +1928,11 @@ class WebUI:
                 bark_visible = True
             elif session['tts_engine'] == TTS_ENGINES['VOXCPM']:
                 voxcpm_visible = True
+            elif session['tts_engine'] == TTS_ENGINES['INDEXTTS']:
+                indextts_visible = True
             return (
                     gr.update(value=self.show_rating(session['tts_engine'])), gr.update(visible=xtts_visible), gr.update(visible=bark_visible),
-                    gr.update(visible=voxcpm_visible),
+                    gr.update(visible=voxcpm_visible), gr.update(visible=indextts_visible),
                     gr.update(visible=False), self.update_gr_fine_tuned_list(id), gr.update(label=f"*Upload Fine Tuned Model not available for {session['tts_engine']}"), gr.update(label='')
             )
             
