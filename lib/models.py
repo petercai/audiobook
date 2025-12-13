@@ -10,10 +10,11 @@ TTS_ENGINES = {
     "FAIRSEQ": "fairseq", 
     "TACOTRON2": "tacotron", 
     "YOURTTS": "yourtts",
-    "VOXCPM": "voxcpm"
+    "VOXCPM": "voxcpm",
+    "INDEXTTS": "indextts"
 }
 
-TOKENIZER_FREE_TTS = ["voxcpm"]
+TOKENIZER_FREE_TTS = ["voxcpm", "indextts"]
 
 TTS_VOICE_CONVERSION = {
     "freevc24": {"path": "voice_conversion_models/multilingual/vctk/freevc24", "samplerate": 24000},
@@ -169,8 +170,18 @@ default_engine_settings = {
         "files": [],
         "voices": {},
         "rating": {"GPU VRAM": 4, "CPU": 3, "RAM": 8, "Realism": 4}
+    },
+    TTS_ENGINES['INDEXTTS']: {
+        "samplerate": 24000,
+        "temperature": 0.75,
+        "top_p": 0.85,
+        "top_k": 50,
+        "speed": 1.0,
+        "files": [],
+        "voices": {},
+        "rating": {"GPU VRAM": 4, "CPU": 3, "RAM": 8, "Realism": 4}
+        }
     }
-}
 models = {
     TTS_ENGINES['XTTSv2']: {
         "internal": {
@@ -523,6 +534,17 @@ models = {
             "files": default_engine_settings[TTS_ENGINES['VOXCPM']]['files'],
             "samplerate": default_engine_settings[TTS_ENGINES['VOXCPM']]['samplerate']
         }
+    },
+    TTS_ENGINES['INDEXTTS']: {
+        "internal": {
+            "lang": "multi",
+            "repo": "",
+            "sub": "",
+            "voice": os.path.join(voices_dir, "zho", "adult", "male", "yunyang.wav"),
+            "files": default_engine_settings[TTS_ENGINES['INDEXTTS']]['files'],
+            "samplerate": default_engine_settings[TTS_ENGINES['INDEXTTS']]['samplerate']
+        }
     }
 }
+    
 
