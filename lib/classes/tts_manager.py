@@ -55,6 +55,9 @@ class TTSManager:
             elif self.session['tts_engine'] == TTS_ENGINES['VOXCPM']:
                 from lib.classes.tts_voxcpm import TTSVoxCPM
                 self.tts = TTSVoxCPM(self.session)
+            elif self.session['tts_engine'] == TTS_ENGINES['INDEXTTS']:
+                from lib.classes.tts_indextts import TTSIndexTTS
+                self.tts = TTSIndexTTS(self.session)
             #elif self.session['tts_engine'] in [TTS_ENGINES['NEW_TTS']]:
             #    from lib.classes.tts_engines.new_tts import NewTts
             #    self.tts = NewTts(self.session)
@@ -73,6 +76,10 @@ class TTSManager:
                 if self.session['tts_engine'] == TTS_ENGINES['VOXCPM']:
                     prompt_wav_path, prompt_text = self.init_voice_info(self.session.get('voice'))
                     return self.tts.generate_audio(sentence_number, sentence, prompt_wav_path, prompt_text)
+                elif self.session['tts_engine'] == TTS_ENGINES['INDEXTTS']:
+                    prompt_wav_path = self.session.get('voice')
+                    final_sentence_file = os.path.join(self.session['chapters_dir_sentences'], f'{sentence_number}.{default_audio_proc_format}')
+                    return self.tts.synthesize(sentence, prompt_wav_path, final_sentence_file)
                 else:
                     return self.tts.convert(sentence_number, sentence)
             else:
