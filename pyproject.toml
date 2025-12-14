@@ -48,7 +48,6 @@ dependencies = [
 	"torchaudio==2.8.*",
 	"unidic-lite",
 	"voxcpm",
-	"indextts",
 	"huggingface-hub[hf-xet]",
 	"pipdeptree>=2.30.0",
 	"scipy-stubs==1.16.3.3",
