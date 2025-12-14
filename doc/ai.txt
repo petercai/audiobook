@@ -69,3 +69,18 @@ enhance the app to support offline_mode for stanza, hf_hub_download, torch.load(
 - if there is fialure cannot move forward, print out the details about failed on wich file and its expected location
 - only need to check py files in /lib folder
 - don't change existing logic
+
+
+- break down whole task into smaller tasks steps, avoid to reach gemini rate limiting
+add indexTTS support to the project that similar to voxcpm for both UI and all processors:
+- add IndexTTS to TTS_ENGINES in models.py like voxcpm, the default voice is yunyang.wav
+- add indextts support in language_tts, same as voxcpm, it only need to support en and zh-CN
+- try best to map xtts tune up parameters such as temperature, top_k, top_p, speed to index TTS ones
+- try best to add detailed docstring and inline comments
+- add IndexTTS UI support in web_ui.py like voxcpm
+- add new tts class TTSIndexTTS to initialize IndexTTS2 like example indextts-test.py with 
+  a. model_dir is project's model_dir, 
+  b. the cfg_path is project's model_dir
+  c. take offline_mode value from command line, default value is True if not specified
+
+why there are 2 class Coqui in coqui.py and .template.py?  what're difference? can I remove the duplicate one?
