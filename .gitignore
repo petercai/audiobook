@@ -4,3 +4,5 @@ models
 /voices/__sessions/
 .venv
 audiobooks/*
+.idea
+ebook2audiobook.egg-info
