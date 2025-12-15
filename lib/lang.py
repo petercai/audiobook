@@ -41,7 +41,7 @@ language_tts = {
     "yourtts": {"eng": "en", "fra": "fr", "por": "pt"}
 }
 
-year_to_decades_languages = ['eng', 'deu', 'nld', 'nob', 'dan', 'swe', 'zho']
+year_to_decades_languages = ['eng', 'deu', 'nld', 'nob', 'dan', 'swe']
 
 punctuation_switch = {
     # Quotes causing hallucinations in some TTS engines
