@@ -72,6 +72,7 @@ enhance the app to support offline_mode for stanza, hf_hub_download, torch.load(
 
 
 - break down whole task into smaller tasks steps, avoid to reach gemini rate limiting
+
 add indexTTS support to the project that similar to voxcpm for both UI and all processors:
 - add IndexTTS to TTS_ENGINES in models.py like voxcpm, the default voice is yunyang.wav
 - add indextts support in language_tts, same as voxcpm, it only need to support en and zh-CN
@@ -83,4 +84,14 @@ add indexTTS support to the project that similar to voxcpm for both UI and all p
   b. the cfg_path is project's model_dir
   c. take offline_mode value from command line, default value is True if not specified
 
-why there are 2 class Coqui in coqui.py and .template.py?  what're difference? can I remove the duplicate one?
+add CosyVoice support to the project that similar to XTTSv2 for both UI and all processors:
+- add CosyVoice to TTS_ENGINES， default_engine_settings in models.py like XTTSv2
+- refer to tools\zero_short_speak_id.py and tools\sft_test.py, CosyVoice has 2 available modles in tts_dir by default
+  - CosyVoice2-0.5B is default one, zero shot model,the default voice is yunyang.wav
+  - CosyVoice-300M-SFT is fine-tuned one, has 5 support speaker_id (voice): '中文女', '中文男', '粤语女', '英文女', '英文男'
+- add CosyVoice support in language_tts, same as XTTSv2, it only need to support en and zh-CN
+- try best to map xtts tune up parameters such as temperature, top_k, top_p, speed to CosyVoice ones
+- try best to add detailed docstring and inline comments
+- add CosyVoice UI support in web_ui.py like XTTS-v2
+
+
