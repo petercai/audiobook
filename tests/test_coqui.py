@@ -117,7 +117,7 @@ def test_tts_en_one_sentense_zeroshot(session_context, ebook_path, tmp_path):
         "language": "eng",
         "language_iso1": "en",
         "tts_engine": TTS_ENGINES['XTTSv2'],
-        # "final_name": 'one-sentense.flac',
+        "final_name": 'one-sentense.flac',
         "offline_mode": True,
     }
     # update session with args
@@ -128,12 +128,20 @@ def test_tts_en_one_sentense_zeroshot(session_context, ebook_path, tmp_path):
 
 
     tts_manager = TTSManager(session)
-    result = tts_manager.convert_sentence2audio(0, "Compute or retrieve speaker latents.")
+    result = tts_manager.convert_sentence2audio(1, tts_text)
     # audio file in $process_dir/chapters/sentenses/0.flac
     assert result # Ture or False
     
 def test_tts_en_one_sentense_ft(session_context, ebook_path, tmp_path):
     context, session_id, session = session_context
+
+    speaker_ids = [
+        "BryanCranston",
+        "DavidAttenborough",
+        "DermotCrowley",
+        "RafeBeckley",
+        "RosamundPike",
+        ]
 
     # Setup arguments for EBookProcessor
     args = {
@@ -145,10 +153,8 @@ def test_tts_en_one_sentense_ft(session_context, ebook_path, tmp_path):
         "final_name": 'one-sentense.flac',
         # "offline_mode": True,
     }
-    # for ft_key, _ in args['tts_engine']:
-    # iterate key value in args['tts_engine']
-    for ft_key, _ in models[TTS_ENGINES['XTTSv2']].items():
-        args['fine_tuned'] = ft_key
+    for speaker in speaker_ids:
+        args['fine_tuned'] = speaker
         
         # update session with args
         session.update(args)
@@ -157,6 +163,6 @@ def test_tts_en_one_sentense_ft(session_context, ebook_path, tmp_path):
         set_process_dir(session, process_dir)
 
         tts_manager = TTSManager(session)
-        # result = tts_manager.convert_sentence2audio(0, tts_text)
-        # # audio file in $process_dir/chapters/sentenses/0.flac
-        # assert result # Ture or False
+        result = tts_manager.convert_sentence2audio(speaker, tts_text)
+        # audio file in $process_dir/chapters/sentenses/{speaker}.flac
+        assert result # Ture or False
