@@ -23,21 +23,13 @@ def ebook_path():
 def session_context(tmp_path):
     """Fixture to create a temporary session context for tests."""
 
-    # # Create necessary directories
-    # process_dir = os.path.join(tmp_path,  "test_process")
-    # os.makedirs(process_dir, exist_ok=True)
-    # session['process_dir'] = str(process_dir)
-
     session_id = "test-session"
     context = SessionContextMock(
         {
             "session": session_id,
             'cancellation_requested': False,
-            # "ebook": os.path.join(ebook_path, "jane-eyre-c12.epub"),
-            # "chapters_dir": os.path.join(process_dir, "chapters"),
-            # "chapters_dir_sentences": os.path.join(process_dir, "chapters", "sentences"),
             "ebook_list": None,
-            "device": "cpu",
+            "device": "mps",
             "language": "eng",
             "language_iso1": "en",
             "tts_engine": TTS_ENGINES['XTTSv2'],
@@ -61,8 +53,10 @@ def session_context(tmp_path):
             "output_split": "by-chapter",
             "output_split_minutes": 30,
             "is_gui_process": False,
-            "offline_mode": False,
-            "script_mode": "native"
+            "offline_mode": True,
+            "script_mode": "native",
+            "final_name": 'one-sentence.flac',
+
         }
     )
     session = context.get_session(session_id)
@@ -77,13 +71,10 @@ def test_tts_cn_convert(session_context, ebook_path, tmp_path):
     # Setup arguments for EBookProcessor
     args = {
         "ebook": os.path.join(ebook_path, "god-c12.epub"),
-        "device": "cpu",
         "language": "zho",
         "language_iso1": "zh",
         "tts_engine": TTS_ENGINES['VOXCPM'],
-        "voice_dir": os.path.join(voices_dir, '__sessions', "test_voice"),
         "voice": os.path.join(voices_dir, "zho", "adult", "male", "yunjian.wav"),
-        "offline_mode": True
     }
     # update session with args
     session.update(args)
@@ -108,20 +99,9 @@ def test_tts_cn_convert(session_context, ebook_path, tmp_path):
     print(session['audiobook'])
     assert os.path.exists(session['audiobook'])
 
-def test_tts_en_one_sentense_zeroshot(session_context, ebook_path, tmp_path):
+def test_tts_en_zeroshot(session_context, ebook_path, tmp_path):
     context, session_id, session = session_context
 
-    # Setup arguments for EBookProcessor
-    args = {
-        "device": "cpu",
-        "language": "eng",
-        "language_iso1": "en",
-        "tts_engine": TTS_ENGINES['XTTSv2'],
-        "final_name": 'one-sentense.flac',
-        "offline_mode": True,
-    }
-    # update session with args
-    session.update(args)
     # Create necessary directories
     process_dir = inspect.currentframe().f_code.co_name
     set_process_dir(session, process_dir)
@@ -132,37 +112,67 @@ def test_tts_en_one_sentense_zeroshot(session_context, ebook_path, tmp_path):
     # audio file in $process_dir/chapters/sentenses/0.flac
     assert result # Ture or False
     
-def test_tts_en_one_sentense_ft(session_context, ebook_path, tmp_path):
+def test_tts_en_ft_RosamundPike(session_context, ebook_path, tmp_path):
     context, session_id, session = session_context
+    speaker = "RosamundPike"
+    session.update({ "fine_tuned": speaker })
+    # Create necessary directories
+    process_dir = inspect.currentframe().f_code.co_name
+    set_process_dir(session, process_dir)
 
-    speaker_ids = [
-        "BryanCranston",
-        "DavidAttenborough",
-        "DermotCrowley",
-        "RafeBeckley",
-        "RosamundPike",
-        ]
+    tts_manager = TTSManager(session)
+    result = tts_manager.convert_sentence2audio(speaker, tts_text)
+    # audio file in $process_dir/chapters/sentenses/{speaker}.flac
+    assert result # Ture or False
+    
+def test_tts_en_ft_RafeBeckley(session_context, ebook_path, tmp_path):
+    context, session_id, session = session_context
+    speaker = "RafeBeckley"
+    session.update({ "fine_tuned": speaker })
+    # Create necessary directories
+    process_dir = inspect.currentframe().f_code.co_name
+    set_process_dir(session, process_dir)
 
-    # Setup arguments for EBookProcessor
-    args = {
-        "device": "cpu",
-        "language": "eng",
-        "language_iso1": "en",
-        "tts_engine": TTS_ENGINES['XTTSv2'],
-        "fine_tuned": 'AiExplained',
-        "final_name": 'one-sentense.flac',
-        # "offline_mode": True,
-    }
-    for speaker in speaker_ids:
-        args['fine_tuned'] = speaker
-        
-        # update session with args
-        session.update(args)
-        # Create necessary directories
-        process_dir = inspect.currentframe().f_code.co_name
-        set_process_dir(session, process_dir)
+    tts_manager = TTSManager(session)
+    result = tts_manager.convert_sentence2audio(speaker, tts_text)
+    # audio file in $process_dir/chapters/sentenses/{speaker}.flac
+    assert result # Ture or False
+    
+def test_tts_en_ft_DermotCrowley(session_context, ebook_path, tmp_path):
+    context, session_id, session = session_context
+    speaker = "DermotCrowley"
+    session.update({ "fine_tuned": speaker })
+    # Create necessary directories
+    process_dir = inspect.currentframe().f_code.co_name
+    set_process_dir(session, process_dir)
 
-        tts_manager = TTSManager(session)
-        result = tts_manager.convert_sentence2audio(speaker, tts_text)
-        # audio file in $process_dir/chapters/sentenses/{speaker}.flac
-        assert result # Ture or False
+    tts_manager = TTSManager(session)
+    result = tts_manager.convert_sentence2audio(speaker, tts_text)
+    # audio file in $process_dir/chapters/sentenses/{speaker}.flac
+    assert result # Ture or False
+    
+def test_tts_en_ft_DavidAttenborough(session_context, ebook_path, tmp_path):
+    context, session_id, session = session_context
+    speaker = "DavidAttenborough"
+    session.update({ "fine_tuned": speaker })
+    # Create necessary directories
+    process_dir = inspect.currentframe().f_code.co_name
+    set_process_dir(session, process_dir)
+
+    tts_manager = TTSManager(session)
+    result = tts_manager.convert_sentence2audio(speaker, tts_text)
+    # audio file in $process_dir/chapters/sentenses/{speaker}.flac
+    assert result # Ture or False
+    
+def test_tts_en_ft_BryanCranston(session_context, ebook_path, tmp_path):
+    context, session_id, session = session_context
+    speaker = "BryanCranston"
+    session.update({ "fine_tuned": speaker })
+    # Create necessary directories
+    process_dir = inspect.currentframe().f_code.co_name
+    set_process_dir(session, process_dir)
+
+    tts_manager = TTSManager(session)
+    result = tts_manager.convert_sentence2audio(speaker, tts_text)
+    # audio file in $process_dir/chapters/sentenses/{speaker}.flac
+    assert result # Ture or False
