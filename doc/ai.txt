@@ -93,6 +93,7 @@ add CosyVoice support to the project that similar to XTTSv2 for both UI and all 
 - try best to map xtts tune up parameters such as temperature, top_k, top_p, speed to CosyVoice ones
 - try best to add detailed docstring and inline comments
 - add CosyVoice UI support in web_ui.py like XTTS-v2
+- update web_ui submit_conver_button to support CosyVoice's tune-up parameters slider
 
 
 - extract a method for each tts engine such as XTTSv2, bark, vtis, etc. so that it's easy to add more engine support

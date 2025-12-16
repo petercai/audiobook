@@ -1994,14 +1994,20 @@ class WebUI:
         return
 
     def submit_convert_btn(
-            self, id, device, ebook_file, tts_engine, language, voice, custom_model, fine_tuned, output_format, temperature, 
+            self, id, device, ebook_file, tts_engine, language, voice, custom_model, fine_tuned, output_format, temperature,
             length_penalty, num_beams, repetition_penalty, top_k, top_p, speed, enable_text_splitting, text_temp, waveform_temp,
-            cfg_value, inference_timesteps, normalize, denoise, retry_badcase, retry_badcase_max_times, retry_badcase_ratio_threshold,
-            prompt_text,
+            cfg_value, inference_timesteps, normalize, denoise, retry_badcase, retry_badcase_max_times,
+            retry_badcase_ratio_threshold, prompt_text,
+            indextts_temperature, indextts_top_k, indextts_top_p, indextts_speed,
             output_split, output_split_minutes
         ):
         try:
             session = self.context.get_session(id)
+            # IndexTTS has its own sliders; use them when that engine is selected, otherwise keep XTTS values.
+            effective_temperature = float(indextts_temperature if tts_engine == TTS_ENGINES['INDEXTTS'] else temperature)
+            effective_top_k = int(indextts_top_k if tts_engine == TTS_ENGINES['INDEXTTS'] else top_k)
+            effective_top_p = float(indextts_top_p if tts_engine == TTS_ENGINES['INDEXTTS'] else top_p)
+            effective_speed = float(indextts_speed if tts_engine == TTS_ENGINES['INDEXTTS'] else speed)
             args = {
                 "is_gui_process": self.is_gui_process,
                 "session": id,
@@ -2017,13 +2023,13 @@ class WebUI:
                 "custom_model": custom_model,
                 "fine_tuned": fine_tuned,
                 "output_format": output_format,
-                "temperature": float(temperature),
+                "temperature": effective_temperature,
                 "length_penalty": float(length_penalty),
                 "num_beams": session['num_beams'],
                 "repetition_penalty": float(repetition_penalty),
-                "top_k": int(top_k),
-                "top_p": float(top_p),
-                "speed": float(speed),
+                "top_k": effective_top_k,
+                "top_p": effective_top_p,
+                "speed": effective_speed,
                 "enable_text_splitting": enable_text_splitting,
                 "text_temp": float(text_temp),
                 "waveform_temp": float(waveform_temp),
