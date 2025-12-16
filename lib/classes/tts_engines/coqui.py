@@ -722,6 +722,160 @@ class Coqui:
         sf.write(tmp_path, wav_numpy, expected_sr, subtype="PCM_16")
         return tmp_path
 
+    def _synth_handlers(self):
+        """
+        Returns a mapping between TTS engine keys and their synthesis callables.
+        This avoids long if/elif chains and makes it easy to plug in new engines.
+        """
+        return {
+            TTS_ENGINES['XTTSv2']: lambda tts, sentence, settings, speaker: self._synthesize_xtts(tts, sentence, settings, speaker),
+            TTS_ENGINES['BARK']: lambda tts, sentence, settings, speaker: self._synthesize_bark(tts, sentence, settings, speaker),
+            TTS_ENGINES['VITS']: lambda tts, sentence, settings, speaker: self._synthesize_vits_family(tts, sentence, settings, speaker, TTS_ENGINES['VITS']),
+            TTS_ENGINES['FAIRSEQ']: lambda tts, sentence, settings, speaker: self._synthesize_vits_family(tts, sentence, settings, speaker, TTS_ENGINES['FAIRSEQ']),
+            TTS_ENGINES['TACOTRON2']: lambda tts, sentence, settings, speaker: self._synthesize_vits_family(tts, sentence, settings, speaker, TTS_ENGINES['TACOTRON2']),
+            TTS_ENGINES['YOURTTS']: lambda tts, sentence, settings, speaker: self._synthesize_yourtts(tts, sentence, settings, speaker),
+        }
+
+    def _synthesize_xtts(self, tts, sentence, settings, speaker):
+        trim_audio_buffer = 0.008
+        if settings['voice_path'] is not None and settings['voice_path'] in settings['latent_embedding'].keys():
+            settings['gpt_cond_latent'], settings['speaker_embedding'] = settings['latent_embedding'][settings['voice_path']]
+        else:
+            msg = 'Computing speaker latents...'
+            print(msg)
+            if speaker in default_engine_settings[TTS_ENGINES['XTTSv2']]['voices'].keys():
+                settings['gpt_cond_latent'], settings['speaker_embedding'] = xtts_builtin_speakers_list[default_engine_settings[TTS_ENGINES['XTTSv2']]['voices'][speaker]].values()
+            else:
+                settings['gpt_cond_latent'], settings['speaker_embedding'] = tts.get_conditioning_latents(audio_path=[settings['voice_path']])
+            settings['latent_embedding'][settings['voice_path']] = settings['gpt_cond_latent'], settings['speaker_embedding']
+
+        fine_tuned_params = {
+            key: cast_type(self.session[key])
+            for key, cast_type in {
+                "temperature": float, "length_penalty": float, "num_beams": int,
+                "repetition_penalty": float, "top_k": int, "top_p": float,
+                "speed": float, "enable_text_splitting": bool
+            }.items() if self.session.get(key) is not None
+        }
+
+        with torch.no_grad():
+            result = tts.inference(
+                text=sentence.replace('.', ' —'),
+                language=self.session['language_iso1'],
+                gpt_cond_latent=settings['gpt_cond_latent'],
+                speaker_embedding=settings['speaker_embedding'],
+                **fine_tuned_params
+            )
+        audio_sentence = result.get('wav')
+        return audio_sentence.tolist() if is_audio_data_valid(audio_sentence) else None, trim_audio_buffer
+
+    def _synthesize_bark(self, tts, sentence, settings, speaker):
+        trim_audio_buffer = 0.002
+        if speaker in default_engine_settings[self.session['tts_engine']]['voices'].keys():
+            bark_dir = default_engine_settings[self.session['tts_engine']]['speakers_path']
+        else:
+            bark_dir = os.path.join(os.path.dirname(settings['voice_path']), 'bark')
+            if not self._check_bark_npz(settings['voice_path'], bark_dir, speaker, self.session['device']):
+                print('Could not create npz file!')
+                return None, trim_audio_buffer
+
+        npz_file = os.path.join(bark_dir, speaker, f'{speaker}.npz')
+        fine_tuned_params = {
+            key: cast_type(self.session[key])
+            for key, cast_type in {"text_temp": float, "waveform_temp": float}.items()
+            if self.session.get(key) is not None
+        }
+        if self.npz_path is None or self.npz_path != npz_file:
+            self.npz_path = npz_file
+            self.npz_data = np.load(self.npz_path, allow_pickle=True)
+
+        history_prompt = [
+            self.npz_data["semantic_prompt"],
+            self.npz_data["coarse_prompt"],
+            self.npz_data["fine_prompt"]
+        ]
+
+        with torch.no_grad():
+            torch.manual_seed(67878789)
+            audio_sentence, _ = tts.generate_audio(
+                sentence,
+                history_prompt=history_prompt,
+                silent=True,
+                **fine_tuned_params
+            )
+        return audio_sentence.tolist() if is_audio_data_valid(audio_sentence) else None, trim_audio_buffer
+
+    def _synthesize_vits_family(self, tts, sentence, settings, speaker, engine_key):
+        trim_audio_buffer = 0.004
+        speaker_argument = {}
+        if engine_key == TTS_ENGINES['VITS']:
+            if self.session['language'] == 'eng' and 'vctk/vits' in models[self.session['tts_engine']]['internal']['sub']:
+                speaker_argument = {"speaker": 'p262'}
+            elif self.session['language'] == 'cat' and 'custom/vits' in models[self.session['tts_engine']]['internal']['sub']:
+                speaker_argument = {"speaker": '09901'}
+
+        if settings['voice_path'] is not None:
+            proc_dir = os.path.join(self.session['voice_dir'], 'proc')
+            os.makedirs(proc_dir, exist_ok=True)
+            tmp_in_wav = os.path.join(proc_dir, f"{uuid.uuid4()}.wav")
+            tmp_out_wav = os.path.join(proc_dir, f"{uuid.uuid4()}.wav")
+
+            processed_sentence = sentence
+            if engine_key == TTS_ENGINES['FAIRSEQ']:
+                processed_sentence = re.sub(re.compile(r"[.:—]"), ' ', sentence)
+            elif engine_key == TTS_ENGINES['TACOTRON2']:
+                processed_sentence = re.sub(re.compile(r'["—]'), '', sentence)
+
+            tts.tts_to_file(text=processed_sentence, file_path=tmp_in_wav, **speaker_argument)
+
+            if settings['voice_path'] in settings['semitones'].keys():
+                semitones = settings['semitones'][settings['voice_path']]
+            else:
+                voice_path_gender = detect_gender(settings['voice_path'])
+                voice_builtin_gender = detect_gender(tmp_in_wav)
+                semitones = 0
+                if voice_builtin_gender != voice_path_gender:
+                    semitones = -4 if voice_path_gender == 'male' else 4
+                settings['semitones'][settings['voice_path']] = semitones
+
+            if semitones != 0:
+                try:
+                    cmd = [shutil.which('sox'), tmp_in_wav, "-r", str(settings['samplerate']), tmp_out_wav, "pitch", str(semitones * 100)]
+                    subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                except (subprocess.CalledProcessError, FileNotFoundError) as e:
+                    DependencyError(e)
+                    return None, trim_audio_buffer
+            else:
+                tmp_out_wav = tmp_in_wav
+
+            tts_vc = (loaded_tts.get(self.tts_vc_key) or {}).get('engine', False)
+            if tts_vc:
+                settings['samplerate'] = TTS_VOICE_CONVERSION[self.tts_vc_key]['samplerate']
+                source_wav = self._resample_wav(tmp_out_wav, settings['samplerate'])
+                target_wav = self._resample_wav(settings['voice_path'], settings['samplerate'])
+                audio_sentence = tts_vc.voice_conversion(source_wav=source_wav, target_wav=target_wav)
+            else:
+                return None, trim_audio_buffer
+
+            for f in [tmp_in_wav, tmp_out_wav, source_wav]:
+                if os.path.exists(f): os.remove(f)
+        else:
+            audio_sentence = tts.tts(text=sentence, **speaker_argument)
+
+        return audio_sentence, trim_audio_buffer
+
+    def _synthesize_yourtts(self, tts, sentence, settings, speaker):
+        trim_audio_buffer = 0.004
+        language = self.session['language_iso1'] if self.session['language_iso1'] in ['en', 'fr', 'pt'] else 'en'
+        if settings['voice_path'] is not None:
+            speaker_argument = {"speaker_wav": settings['voice_path']}
+        else:
+            speaker_argument = {"speaker": default_engine_settings[TTS_ENGINES['YOURTTS']]['voices']['ElectroMale-2']}
+
+        with torch.no_grad():
+            audio_sentence = tts.tts(text=sentence.replace('—', '').strip(), language=language, **speaker_argument)
+        return audio_sentence, trim_audio_buffer
+
     def convert(self, s_n, s):
         """
         Converts a single sentence to audio using the loaded TTS model.
@@ -793,164 +947,13 @@ class Coqui:
                     # Add a pause marker if the sentence ends with an alphanumeric character.
                     if sentence[-1].isalnum():
                         sentence = f'{sentence} —'
-                    
-                    # --- TTS Engine-Specific Synthesis ---
-                    if self.session['tts_engine'] == TTS_ENGINES['XTTSv2']:
-                        trim_audio_buffer = 0.008
-                        # Compute or retrieve speaker latents.
-                        if settings['voice_path'] is not None and settings['voice_path'] in settings['latent_embedding'].keys():
-                            settings['gpt_cond_latent'], settings['speaker_embedding'] = settings['latent_embedding'][settings['voice_path']]
-                        else:
-                            msg = 'Computing speaker latents...'
-                            print(msg)
-                            if speaker in default_engine_settings[TTS_ENGINES['XTTSv2']]['voices'].keys():
-                                settings['gpt_cond_latent'], settings['speaker_embedding'] = xtts_builtin_speakers_list[default_engine_settings[TTS_ENGINES['XTTSv2']]['voices'][speaker]].values()
-                            else:
-                                settings['gpt_cond_latent'], settings['speaker_embedding'] = tts.get_conditioning_latents(audio_path=[settings['voice_path']])  
-                            settings['latent_embedding'][settings['voice_path']] = settings['gpt_cond_latent'], settings['speaker_embedding']
-                        
-                        # Set fine-tuning parameters from the session.
-                        fine_tuned_params = {
-                            key: cast_type(self.session[key])
-                            for key, cast_type in {
-                                "temperature": float, "length_penalty": float, "num_beams": int,
-                                "repetition_penalty": float, "top_k": int, "top_p": float,
-                                "speed": float, "enable_text_splitting": bool
-                            }.items() if self.session.get(key) is not None
-                        }
-                        
-                        # Run TTS inference.
-                        with torch.no_grad():
-                            result = tts.inference(
-                                text=sentence.replace('.', ' —'),
-                                language=self.session['language_iso1'],
-                                gpt_cond_latent=settings['gpt_cond_latent'],
-                                speaker_embedding=settings['speaker_embedding'],
-                                **fine_tuned_params
-                            )
-                        audio_sentence = result.get('wav')
-                        if is_audio_data_valid(audio_sentence):
-                            audio_sentence = audio_sentence.tolist()
+                    handlers = self._synth_handlers()
+                    synth_func = handlers.get(self.session['tts_engine'])
+                    if synth_func is None:
+                        print(f"convert() error: Unsupported engine {self.session['tts_engine']}")
+                        return False
 
-                    elif self.session['tts_engine'] == TTS_ENGINES['BARK']:
-                        trim_audio_buffer = 0.002
-                        # Determine the appropriate Bark speaker directory.
-                        if speaker in default_engine_settings[self.session['tts_engine']]['voices'].keys():
-                            bark_dir = default_engine_settings[self.session['tts_engine']]['speakers_path']
-                        else:
-                            bark_dir = os.path.join(os.path.dirname(settings['voice_path']), 'bark')       
-                            if not self._check_bark_npz(settings['voice_path'], bark_dir, speaker, self.session['device']):
-                                error = 'Could not create npz file!'
-                                print(error)
-                                return False
-                        
-                        # Load or create the NPZ file for the speaker.
-                        npz_file = os.path.join(bark_dir, speaker, f'{speaker}.npz')
-                        fine_tuned_params = {
-                            key: cast_type(self.session[key])
-                            for key, cast_type in {"text_temp": float, "waveform_temp": float}.items()
-                            if self.session.get(key) is not None
-                        }
-                        if self.npz_path is None or self.npz_path != npz_file:
-                            self.npz_path = npz_file
-                            self.npz_data = np.load(self.npz_path, allow_pickle=True)
-                        
-                        # Set up the history prompt for Bark.
-                        history_prompt = [
-                            self.npz_data["semantic_prompt"],
-                            self.npz_data["coarse_prompt"],
-                            self.npz_data["fine_prompt"]
-                        ]
-                        
-                        # Generate audio with Bark.
-                        with torch.no_grad():
-                            torch.manual_seed(67878789)
-                            audio_sentence, _ = tts.generate_audio(
-                                sentence,
-                                history_prompt=history_prompt,
-                                silent=True,
-                                **fine_tuned_params
-                            )
-                        if is_audio_data_valid(audio_sentence):
-                            audio_sentence = audio_sentence.tolist()
-
-                    elif self.session['tts_engine'] in [TTS_ENGINES['VITS'], TTS_ENGINES['FAIRSEQ'], TTS_ENGINES['TACOTRON2']]:
-                        # --- Voice Conversion Logic for VITS, FAIRSEQ, TACOTRON2 ---
-                        speaker_argument = {}
-                        # Set speaker arguments for specific models and languages.
-                        if self.session['tts_engine'] == TTS_ENGINES['VITS']:
-                            if self.session['language'] == 'eng' and 'vctk/vits' in models[self.session['tts_engine']]['internal']['sub']:
-                                speaker_argument = {"speaker": 'p262'}
-                            elif self.session['language'] == 'cat' and 'custom/vits' in models[self.session['tts_engine']]['internal']['sub']:
-                                speaker_argument = {"speaker": '09901'}
-
-                        # If a custom voice is used, perform voice conversion.
-                        if settings['voice_path'] is not None:
-                            proc_dir = os.path.join(self.session['voice_dir'], 'proc')
-                            os.makedirs(proc_dir, exist_ok=True)
-                            tmp_in_wav = os.path.join(proc_dir, f"{uuid.uuid4()}.wav")
-                            tmp_out_wav = os.path.join(proc_dir, f"{uuid.uuid4()}.wav")
-                            
-                            # Pre-process sentence for specific engines.
-                            processed_sentence = sentence
-                            if self.session['tts_engine'] == TTS_ENGINES['FAIRSEQ']:
-                                processed_sentence = re.sub(re.compile(r"[.:—]"), ' ', sentence)
-                            elif self.session['tts_engine'] == TTS_ENGINES['TACOTRON2']:
-                                processed_sentence = re.sub(re.compile(r'["—]'), '', sentence)
-                            
-                            # Generate the base audio from the TTS model.
-                            tts.tts_to_file(text=processed_sentence, file_path=tmp_in_wav, **speaker_argument)
-                            
-                            # --- Pitch Adjustment based on Gender ---
-                            if settings['voice_path'] in settings['semitones'].keys():
-                                semitones = settings['semitones'][settings['voice_path']]
-                            else:
-                                voice_path_gender = detect_gender(settings['voice_path'])
-                                voice_builtin_gender = detect_gender(tmp_in_wav)
-                                semitones = 0
-                                if voice_builtin_gender != voice_path_gender:
-                                    semitones = -4 if voice_path_gender == 'male' else 4
-                                settings['semitones'][settings['voice_path']] = semitones
-                            
-                            # Apply pitch shift using SoX if necessary.
-                            if semitones != 0:
-                                try:
-                                    cmd = [shutil.which('sox'), tmp_in_wav, "-r", str(settings['samplerate']), tmp_out_wav, "pitch", str(semitones * 100)]
-                                    subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-                                except (subprocess.CalledProcessError, FileNotFoundError) as e:
-                                    DependencyError(e)
-                                    return False
-                            else:
-                                tmp_out_wav = tmp_in_wav
-                            
-                            # --- Voice Conversion ---
-                            tts_vc = (loaded_tts.get(self.tts_vc_key) or {}).get('engine', False)
-                            if tts_vc:
-                                settings['samplerate'] = TTS_VOICE_CONVERSION[self.tts_vc_key]['samplerate']
-                                source_wav = self._resample_wav(tmp_out_wav, settings['samplerate'])
-                                target_wav = self._resample_wav(settings['voice_path'], settings['samplerate'])
-                                audio_sentence = tts_vc.voice_conversion(source_wav=source_wav, target_wav=target_wav)
-                            else:
-                                return False
-                            
-                            # Clean up temporary files.
-                            for f in [tmp_in_wav, tmp_out_wav, source_wav]:
-                                if os.path.exists(f): os.remove(f)
-                        else:
-                            # Synthesize directly if no custom voice is used.
-                            audio_sentence = tts.tts(text=sentence, **speaker_argument)
-
-                    elif self.session['tts_engine'] == TTS_ENGINES['YOURTTS']:
-                        # --- YourTTS Synthesis ---
-                        speaker_argument = {}
-                        language = self.session['language_iso1'] if self.session['language_iso1'] in ['en', 'fr', 'pt'] else 'en'
-                        if settings['voice_path'] is not None:
-                            speaker_argument = {"speaker_wav": settings['voice_path']}
-                        else:
-                            speaker_argument = {"speaker": default_engine_settings[TTS_ENGINES['YOURTTS']]['voices']['ElectroMale-2']}
-                        
-                        with torch.no_grad():
-                            audio_sentence = tts.tts(text=sentence.replace('—', '').strip(), language=language, **speaker_argument)
+                    audio_sentence, trim_audio_buffer = synth_func(tts, sentence, settings, speaker)
                     
                     # --- Final Audio Processing ---
                     if is_audio_data_valid(audio_sentence):
