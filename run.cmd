@@ -43,6 +43,7 @@ uv pip install -U gradio
 uv pip install numba==0.58.1 llvmlite==0.41.1
 uv pip install gradio==5.42.0
 uv pip install protobuf==3.20.3
+uv pip install "gradio==5.42.0"
 
 pytest tests/test_epub.py::test_filter_chapter
 pytest tests/test_epub.py::test_process_epub_chapters_en
