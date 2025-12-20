@@ -49,7 +49,7 @@ class TTSManager:
  
     def _build(self):
         if self.session['tts_engine'] in TTS_ENGINES.values():
-            if self.session['tts_engine'] in [TTS_ENGINES['XTTSv2'], TTS_ENGINES['BARK'], TTS_ENGINES['VITS'], TTS_ENGINES['FAIRSEQ'], TTS_ENGINES['TACOTRON2'], TTS_ENGINES['YOURTTS']]:
+            if self.session['tts_engine'] in [TTS_ENGINES['XTTSv2'], TTS_ENGINES['BARK'], TTS_ENGINES['VITS'], TTS_ENGINES['FAIRSEQ'], TTS_ENGINES['TACOTRON2'], TTS_ENGINES['YOURTTS'], TTS_ENGINES['COSYVOICE']]:
                 from lib.classes.tts_engines.coqui import Coqui
                 self.tts = Coqui(self.session)
             elif self.session['tts_engine'] == TTS_ENGINES['VOXCPM']:

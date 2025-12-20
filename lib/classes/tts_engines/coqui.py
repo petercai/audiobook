@@ -71,7 +71,15 @@ class Coqui:
             self.npz_data = None
             self.sentences_total_time = 0.0
             self.sentence_idx = 1
-            self.params = {TTS_ENGINES['XTTSv2']: {"latent_embedding":{}}, TTS_ENGINES['BARK']: {},TTS_ENGINES['VITS']: {"semitones": {}}, TTS_ENGINES['FAIRSEQ']: {"semitones": {}}, TTS_ENGINES['TACOTRON2']: {"semitones": {}}, TTS_ENGINES['YOURTTS']: {}}  
+            self.params = {
+                TTS_ENGINES['XTTSv2']: {"latent_embedding": {}},
+                TTS_ENGINES['BARK']: {},
+                TTS_ENGINES['VITS']: {"semitones": {}},
+                TTS_ENGINES['FAIRSEQ']: {"semitones": {}},
+                TTS_ENGINES['TACOTRON2']: {"semitones": {}},
+                TTS_ENGINES['YOURTTS']: {},
+                TTS_ENGINES['COSYVOICE']: {"zero_shot_speakers": {}}
+            }
             self.params[self.session['tts_engine']]['samplerate'] = models[self.session['tts_engine']][self.session['fine_tuned']]['samplerate']
             self.vtt_path = os.path.join(self.session['process_dir'], Path(self.session['final_name']).stem + '.vtt')    
             self.resampler_cache = {}
@@ -131,6 +139,7 @@ class Coqui:
         does not match. This lets us chain handlers without a long if/elif block.
         """
         return [
+            lambda: self._handle_cosyvoice(fine_tuned_, tuned_files_, custom_model_),
             lambda: self._handle_xttsv2(fine_tuned_, tuned_files_, custom_model_, xtt_sv_files_),
             lambda: self._handle_bark(fine_tuned_, tuned_files_, custom_model_),
             lambda: self._handle_vits(fine_tuned_, custom_model_),
@@ -138,6 +147,50 @@ class Coqui:
             lambda: self._handle_tacotron2(fine_tuned_, custom_model_),
             lambda: self._handle_yourtts(fine_tuned_, custom_model_),
         ]
+
+    def _handle_cosyvoice(self, fine_tuned_, tuned_files_, custom_model_):
+        """
+        Load CosyVoice checkpoints (zero-shot or SFT) from the local tts_dir layout.
+
+        CosyVoice ships as two flavours:
+        - CosyVoice2-0.5B: zero-shot speaker cloning (needs a prompt wav + optional text).
+        - CosyVoice-300M-SFT: fine-tuned multi-speaker model with fixed speaker IDs.
+        """
+        if self.session['tts_engine'] != TTS_ENGINES['COSYVOICE']:
+            return False
+
+        if custom_model_ is not None:
+            print(f"{TTS_ENGINES['COSYVOICE']} custom model not implemented yet!")
+            return True
+
+        # Keep the tts_key unique per CosyVoice flavour to reuse cached models.
+        self.tts_key = f"{TTS_ENGINES['COSYVOICE']}-{fine_tuned_}"
+        if (loaded_tts.get(self.tts_key) or {}).get('engine'):
+            return True
+
+        repo = models[TTS_ENGINES['COSYVOICE']][fine_tuned_]['repo']
+        model_dir = os.path.join(tts_dir, repo)
+        unload_tts(self.session['device'], [self.tts_key, self.tts_vc_key])
+        try:
+            fp16=torch.cuda.is_available()
+            if fine_tuned_ == 'internal':
+                from cosyvoice.cli.cosyvoice import CosyVoice2
+                tts = CosyVoice2(model_dir, load_jit=False, load_trt=False, load_vllm=False, fp16=fp16)
+            else:
+                from cosyvoice.cli.cosyvoice import CosyVoice
+                tts = CosyVoice(model_dir, load_jit=False, load_trt=False, fp16=fp16)
+        except Exception as e:
+            print(f"{TTS_ENGINES['COSYVOICE']} load error: {e}")
+            return True
+
+        if tts:
+            self.params[TTS_ENGINES['COSYVOICE']]['samplerate'] = getattr(
+                tts, "sample_rate", self.params[TTS_ENGINES['COSYVOICE']]['samplerate']
+            )
+            loaded_tts[self.tts_key] = {"engine": tts, "config": None}
+            print(f'{fine_tuned_} Loaded!')
+            return True
+        return False
 
     def _ensure_xtts_speakers(self, xtt_sv_files_):
         global xtts_builtin_speakers_list
@@ -734,6 +787,7 @@ class Coqui:
             TTS_ENGINES['FAIRSEQ']: lambda tts, sentence, settings, speaker: self._synthesize_vits_family(tts, sentence, settings, speaker, TTS_ENGINES['FAIRSEQ']),
             TTS_ENGINES['TACOTRON2']: lambda tts, sentence, settings, speaker: self._synthesize_vits_family(tts, sentence, settings, speaker, TTS_ENGINES['TACOTRON2']),
             TTS_ENGINES['YOURTTS']: lambda tts, sentence, settings, speaker: self._synthesize_yourtts(tts, sentence, settings, speaker),
+            TTS_ENGINES['COSYVOICE']: lambda tts, sentence, settings, speaker: self._synthesize_cosyvoice(tts, sentence, settings, speaker),
         }
 
     def _synthesize_xtts(self, tts, sentence, settings, speaker):
@@ -876,6 +930,55 @@ class Coqui:
             audio_sentence = tts.tts(text=sentence.replace('—', '').strip(), language=language, **speaker_argument)
         return audio_sentence, trim_audio_buffer
 
+    def _synthesize_cosyvoice(self, tts, sentence, settings, speaker):
+        """
+        Run CosyVoice inference for either zero-shot (CosyVoice2) or SFT speakers.
+
+        The generator returns chunks; we concatenate them to keep behaviour consistent
+        with the other engines before trimming/saving in convert().
+        """
+        trim_audio_buffer = 0.004
+        try:
+            samplerate = settings.get('samplerate', default_engine_settings[TTS_ENGINES['COSYVOICE']]['samplerate'])
+            audio_chunks = []
+            if self.session['fine_tuned'] == 'CosyVoice-300M-SFT':
+                # Fine-tuned CosyVoice uses fixed speaker ids instead of reference audio.
+                speaker_id = speaker or models[TTS_ENGINES['COSYVOICE']][self.session['fine_tuned']]['voice']
+                for out in tts.inference_sft(sentence, speaker_id, stream=False):
+                    audio_chunks.append(out['tts_speech'])
+            else:
+                # Zero-shot CosyVoice2 path leverages a prompt wav + optional prompt text.
+                voice_path = settings.get('voice_path')
+                if voice_path is None or not os.path.exists(voice_path):
+                    print('CosyVoice zero-shot requires a valid reference voice file.')
+                    return None, trim_audio_buffer
+                from cosyvoice.utils.file_utils import load_wav
+                prompt_audio = load_wav(voice_path, 16000)
+                prompt_text = ''
+                prompt_text_file = Path(voice_path).with_suffix(".txt")
+                if prompt_text_file.exists():
+                    prompt_text = prompt_text_file.read_text(encoding="utf-8").strip()
+                zero_cache = settings.setdefault('zero_shot_speakers', {})
+                speaker_id = zero_cache.get(voice_path)
+                if speaker_id is None:
+                    speaker_id = f"cosy_{hashlib.md5(voice_path.encode('utf-8')).hexdigest()[:8]}"
+                    added = tts.add_zero_shot_spk(prompt_text, prompt_audio, speaker_id)
+                    if not added:
+                        print('Failed to register CosyVoice zero-shot speaker.')
+                        return None, trim_audio_buffer
+                    zero_cache[voice_path] = speaker_id
+                for out in tts.inference_zero_shot(sentence, prompt_text, prompt_audio, zero_shot_spk_id=speaker_id, stream=False):
+                    audio_chunks.append(out['tts_speech'])
+
+            if not audio_chunks:
+                return None, trim_audio_buffer
+            settings['samplerate'] = getattr(tts, "sample_rate", samplerate)
+            speech = torch.cat(audio_chunks, dim=1)
+            return speech.squeeze(0), trim_audio_buffer
+        except Exception as e:
+            print(f"_synthesize_cosyvoice() error: {e}")
+            return None, trim_audio_buffer
+
     def convert(self, s_n, s):
         """
         Converts a single sentence to audio using the loaded TTS model.
@@ -906,26 +1009,42 @@ class Coqui:
             settings = self.params[self.session['tts_engine']]
             final_sentence_file = os.path.join(self.session['chapters_dir_sentences'], f'{sentence_number}.{default_audio_proc_format}')
             
-            # --- Voice Path Determination ---
-            # Determine the path to the voice file to be used for synthesis.
-            settings['voice_path'] = (
-                self.session['voice'] if self.session['voice'] is not None 
-                else os.path.join(self.session['custom_model_dir'], self.session['tts_engine'], self.session['custom_model'], 'ref.wav') if self.session['custom_model'] is not None
-                else models[self.session['tts_engine']][self.session['fine_tuned']]['voice']
+            cosyvoice_sft = (
+                self.session['tts_engine'] == TTS_ENGINES['COSYVOICE']
+                and self.session['fine_tuned'] == 'CosyVoice-300M-SFT'
             )
-            
-            # --- Speaker and Voice Pre-processing ---
-            if settings['voice_path'] is not None:
-                # Extract the speaker name from the voice file path.
-                speaker = re.sub(r'\.wav$', '', os.path.basename(settings['voice_path']))
+            if cosyvoice_sft:
+                # SFT flavour uses speaker IDs instead of reference audio.
+                speaker = self.session['voice'] or models[self.session['tts_engine']][self.session['fine_tuned']]['voice']
+                if not speaker:
+                    # Fallback to the first declared CosyVoice speaker id.
+                    speaker = next(iter(default_engine_settings[TTS_ENGINES['COSYVOICE']]['voices'].values()), None)
+                settings['voice_path'] = None
+            else:
+                # --- Voice Path Determination ---
+                # Determine the path to the voice file to be used for synthesis.
+                settings['voice_path'] = (
+                    self.session['voice'] if self.session['voice'] is not None 
+                    else os.path.join(self.session['custom_model_dir'], self.session['tts_engine'], self.session['custom_model'], 'ref.wav') if self.session['custom_model'] is not None
+                    else models[self.session['tts_engine']][self.session['fine_tuned']]['voice']
+                )
                 
-                # Check if a built-in XTTS speaker needs to be converted to a different language.
-                if settings['voice_path'] not in default_engine_settings[TTS_ENGINES['BARK']]['voices'].keys() and os.path.basename(settings['voice_path']) != 'ref.wav':
-                    self.session['voice'] = settings['voice_path'] = self._check_xtts_builtin_speakers(settings['voice_path'], speaker, self.session['device'])
-                    if not settings['voice_path']:
-                        msg = f"Could not create the builtin speaker selected voice in {self.session['language']}"
-                        print(msg)
-                        return False
+                # --- Speaker and Voice Pre-processing ---
+                if settings['voice_path'] is not None:
+                    # Extract the speaker name from the voice file path.
+                    speaker = re.sub(r'\.wav$', '', os.path.basename(settings['voice_path']))
+                    
+                    # Check if a built-in XTTS speaker needs to be converted to a different language.
+                    if (
+                        self.session['tts_engine'] != TTS_ENGINES['COSYVOICE']
+                        and settings['voice_path'] not in default_engine_settings[TTS_ENGINES['BARK']]['voices'].keys()
+                        and os.path.basename(settings['voice_path']) != 'ref.wav'
+                    ):
+                        self.session['voice'] = settings['voice_path'] = self._check_xtts_builtin_speakers(settings['voice_path'], speaker, self.session['device'])
+                        if not settings['voice_path']:
+                            msg = f"Could not create the builtin speaker selected voice in {self.session['language']}"
+                            print(msg)
+                            return False
             
             # Get the loaded TTS engine from the cache.
             tts = (loaded_tts.get(self.tts_key) or {}).get('engine', False)

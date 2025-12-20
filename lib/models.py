@@ -11,7 +11,8 @@ TTS_ENGINES = {
     "TACOTRON2": "tacotron", 
     "YOURTTS": "yourtts",
     "VOXCPM": "voxcpm",
-    "INDEXTTS": "indextts"
+    "INDEXTTS": "indextts",
+    "COSYVOICE": "cosyvoice"
 }
 
 TOKENIZER_FREE_TTS = ["voxcpm", "indextts"]
@@ -78,6 +79,21 @@ default_engine_settings = {
             "FerranSimen": "Ferran Simen", "XavierHayasaka": "Xavier Hayasaka", "LuisMoray": "Luis Moray",
             "MarcosRudaski": "Marcos Rudaski"
         },
+        "rating": {"GPU VRAM": 4, "CPU": 3, "RAM": 8, "Realism": 4}
+    },
+    TTS_ENGINES['COSYVOICE']: {
+        # CosyVoice exposes XTTS-like decoding controls; defaults mirror XTTSv2 so UI sliders behave consistently.
+        "samplerate": 22050,
+        "temperature": 0.75,
+        "length_penalty": 1.0,
+        "num_beams": 1,
+        "repetition_penalty": 3.0,
+        "top_k": 50,
+        "top_p": 0.85,
+        "speed": 1.0,
+        "enable_text_splitting": False,
+        "files": [],
+        "voices": {"中文女": "中文女", "中文男": "中文男", "粤语女": "粤语女", "英文女": "英文女", "英文男": "英文男"},
         "rating": {"GPU VRAM": 4, "CPU": 3, "RAM": 8, "Realism": 4}
     },
     TTS_ENGINES['BARK']: {
@@ -449,6 +465,56 @@ models = {
             "samplerate": default_engine_settings[TTS_ENGINES['XTTSv2']]['samplerate']
         }
     },
+    TTS_ENGINES['COSYVOICE']: {
+        "internal": {
+            "lang": "multi",
+            "repo": "CosyVoice2-0.5B",
+            "sub": "",
+            "voice": os.path.join(voices_dir, "zho", "adult", "male", "yunyang.wav"),
+            "files": default_engine_settings[TTS_ENGINES['COSYVOICE']]['files'],
+            "samplerate": default_engine_settings[TTS_ENGINES['COSYVOICE']]['samplerate']
+        },
+        "中文女": {
+            "lang": "zho",
+            "repo": "CosyVoice-300M-SFT",
+            "sub": "",
+            "voice": "中文女",
+            "files": default_engine_settings[TTS_ENGINES['COSYVOICE']]['files'],
+            "samplerate": default_engine_settings[TTS_ENGINES['COSYVOICE']]['samplerate']
+        },
+        "中文男": {
+            "lang": "zho",
+            "repo": "CosyVoice-300M-SFT",
+            "sub": "",
+            "voice": "中文男",
+            "files": default_engine_settings[TTS_ENGINES['COSYVOICE']]['files'],
+            "samplerate": default_engine_settings[TTS_ENGINES['COSYVOICE']]['samplerate']
+        },
+        "粤语女": {
+            "lang": "zho",
+            "repo": "CosyVoice-300M-SFT",
+            "sub": "",
+            "voice": "粤语女",
+            "files": default_engine_settings[TTS_ENGINES['COSYVOICE']]['files'],
+            "samplerate": default_engine_settings[TTS_ENGINES['COSYVOICE']]['samplerate']
+        },
+        "英文女": {
+            "lang": "eng",
+            "repo": "CosyVoice-300M-SFT",
+            "sub": "",
+            "voice": "英文女",
+            "files": default_engine_settings[TTS_ENGINES['COSYVOICE']]['files'],
+            "samplerate": default_engine_settings[TTS_ENGINES['COSYVOICE']]['samplerate']
+        },
+        "英文男": {
+            "lang": "eng",
+            "repo": "CosyVoice-300M-SFT",
+            "sub": "",
+            "voice": "英文男",
+            "files": default_engine_settings[TTS_ENGINES['COSYVOICE']]['files'],
+            "samplerate": default_engine_settings[TTS_ENGINES['COSYVOICE']]['samplerate']
+        },
+    },
     TTS_ENGINES['BARK']: {
         "internal": {
             "lang": "multi",
@@ -555,4 +621,3 @@ models = {
     }
 }
     
-

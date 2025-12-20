@@ -345,7 +345,16 @@ class EBookProcessor:
             else os.path.join(session["custom_model_dir"], args["custom_model"])
         )
         session["fine_tuned"] = args["fine_tuned"]
+        if session["fine_tuned"] not in models.get(session["tts_engine"], {}):
+            available = list(models.get(session["tts_engine"], {}).keys())
+            session["fine_tuned"] = available[0] if available else session["fine_tuned"]
         session["voice"] = args["voice"]
+        if (
+            session["tts_engine"] == TTS_ENGINES["COSYVOICE"]
+            and session["fine_tuned"] == "CosyVoice-300M-SFT"
+            and session["voice"] is None
+        ):
+            session["voice"] = models[session["tts_engine"]][session["fine_tuned"]]["voice"]
         session["temperature"] = args["temperature"]
         session["length_penalty"] = args["length_penalty"]
         session["num_beams"] = args["num_beams"]

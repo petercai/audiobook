@@ -1602,6 +1602,9 @@ class WebUI:
         session['voice'] = next((value for label, value in self.voice_options if value == selected), None)
         visible = True if session['voice'] is not None else False
         min_width = 60 if session['voice'] is not None else 0
+        cosy_sft = session['tts_engine'] == TTS_ENGINES['COSYVOICE'] and session['fine_tuned'] == 'CosyVoice-300M-SFT'
+        if cosy_sft:
+            return gr.update(value=None, visible=False, min_width=0), gr.update(visible=False)
         return gr.update(value=session['voice'], visible=visible, min_width=min_width), gr.update(visible=visible)
 
     def click_gr_voice_del_btn(self, selected, id):
@@ -1722,6 +1725,13 @@ class WebUI:
     def update_gr_voice_list(self, id):
         try:
             session = self.context.get_session(id)
+            if session['tts_engine'] == TTS_ENGINES['COSYVOICE'] and session['fine_tuned'] == 'CosyVoice-300M-SFT':
+                cosy_speakers = default_engine_settings[TTS_ENGINES['COSYVOICE']]['voices']
+                self.voice_options = [(label, spk_id) for spk_id, label in cosy_speakers.items()]
+                default_voice_path = models[session['tts_engine']][session['fine_tuned']]['voice']
+                if session['voice'] not in [v for _, v in self.voice_options]:
+                    session['voice'] = default_voice_path if default_voice_path in [v for _, v in self.voice_options] else (self.voice_options[0][1] if self.voice_options else None)
+                return gr.update(choices=self.voice_options, value=session['voice'])
             lang_dir = session['language'] if session['language'] != 'con' else 'con-'  # Bypass Windows CON reserved name
             file_pattern = "*.wav"
             eng_options = []
@@ -1830,7 +1840,8 @@ class WebUI:
                 name for name, details in models.get(session['tts_engine'],{}).items()
                 if details.get('lang') == 'multi' or details.get('lang') == session['language']
             ]
-            session['fine_tuned'] = session['fine_tuned'] if session['fine_tuned'] in self.fine_tuned_options else default_fine_tuned
+            fallback = default_fine_tuned if default_fine_tuned in self.fine_tuned_options else (self.fine_tuned_options[0] if self.fine_tuned_options else None)
+            session['fine_tuned'] = session['fine_tuned'] if session['fine_tuned'] in self.fine_tuned_options else fallback
             return gr.update(choices=self.fine_tuned_options, value=session['fine_tuned'])
         except Exception as e:
             error = f'update_gr_fine_tuned_list(): {e}!'
@@ -1904,6 +1915,9 @@ class WebUI:
     def change_gr_tts_engine_list(self, engine, id):
         session = self.context.get_session(id)
         session['tts_engine'] = engine
+        available_ft = list(models.get(session['tts_engine'], {}).keys())
+        if session['fine_tuned'] not in available_ft and available_ft:
+            session['fine_tuned'] = available_ft[0]
         default_voice_path = models[session['tts_engine']][session['fine_tuned']]['voice']
         if default_voice_path is None:
             session['voice'] = default_voice_path
@@ -1911,16 +1925,17 @@ class WebUI:
         bark_visible = False
         voxcpm_visible = False
         indextts_visible = False
-        if session['tts_engine'] == TTS_ENGINES['XTTSv2']:
+        if session['tts_engine'] in [TTS_ENGINES['XTTSv2'], TTS_ENGINES['COSYVOICE']]:
             xtts_visible = True
-            visible_custom_model = True
-            if session['fine_tuned'] != 'internal':
+            visible_custom_model = True if session['tts_engine'] == TTS_ENGINES['XTTSv2'] else False
+            if session['tts_engine'] == TTS_ENGINES['XTTSv2'] and session['fine_tuned'] != 'internal':
                 visible_custom_model = False
+            upload_label = f"*Upload {session['tts_engine']} Model (Should be a ZIP file with {', '.join(models[session['tts_engine']][default_fine_tuned]['files'])})" if session['tts_engine'] == TTS_ENGINES['XTTSv2'] else f"*Upload Fine Tuned Model not available for {session['tts_engine']}"
             return (
                    gr.update(value=self.show_rating(session['tts_engine'])), 
                    gr.update(visible=xtts_visible), gr.update(visible=bark_visible), gr.update(visible=voxcpm_visible), gr.update(visible=indextts_visible),
                    gr.update(visible=visible_custom_model), self.update_gr_fine_tuned_list(id),
-                   gr.update(label=f"*Upload {session['tts_engine']} Model (Should be a ZIP file with {', '.join(models[session['tts_engine']][default_fine_tuned]['files'])})"),
+                   gr.update(label=upload_label),
                    gr.update(label=f"My {session['tts_engine']} custom models")
             )
         else:
