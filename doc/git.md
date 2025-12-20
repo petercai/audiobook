@@ -20,6 +20,7 @@ If you want to verify:
 
 ```bash
 git config --global --list
+git config --local --list
 ```
 
 If you still see it, macOS sometimes sets it in the system config. Remove it too:
@@ -80,9 +81,79 @@ git config --global credential.helper 'cache --timeout=86400'
 
 ***
 
-If you want, I can also help you:
+Sure thing — here’s exactly how to change Git’s credential helper **for only the current repo**, without affecting global or system settings.
 
-✅ switch to SSH keys  
-✅ store tokens securely  
-✅ use macOS keychain safely  
-Which one would you prefer?
+***
+
+# ✅ Change credential helper **only for this repo**
+
+Run the following **inside** your repo:
+
+### **1. Remove the macOS Keychain helper (repo‑local):**
+
+```bash
+git config --local --unset credential.helper
+```
+
+If you want to confirm it was removed:
+
+```bash
+git config --local --list
+```
+
+If it still shows up, that means the helper is coming from **global** or **system** config — but this repo-level unset will override them once you set a new helper below.
+
+***
+
+# ✅ 2. Enable Git credential cache (24‑hour cache) **only for this repo**
+
+```bash
+git config --local credential.helper 'cache --timeout=86400'
+```
+
+Now this repository uses:
+
+*   Git **credential cache in memory**, lasting **24 hours**
+*   NOT macOS keychain
+*   And no other repo is affected
+
+***
+
+# 🔍 Verify the final config for this repo
+
+```bash
+git config --local credential.helper
+```
+
+Expected output:
+
+    cache --timeout=86400
+
+To see all active credential helpers (repo → global → system):
+
+```bash
+git config --show-origin credential.helper
+```
+
+This shows exactly which config file each helper is coming from.
+
+***
+
+# 🧼 Optional cleanup
+
+If you want to *completely ignore* any global/system helpers for this repo and use **only the cache**, force override:
+
+```bash
+git config --local credential.helper ''
+git config --local credential.helper 'cache --timeout=86400'
+```
+
+(Empty string clears inherited helpers.)
+
+***
+
+# 🧪 Need to switch to SSH instead of HTTPS?
+
+Just say the word — I can generate the commands and update your remote URL automatically.
+
+Happy to help!
