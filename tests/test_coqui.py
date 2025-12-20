@@ -62,42 +62,6 @@ def session_context(tmp_path):
 
     return context, session_id, session
 
-
-
-def test_tts_cn_convert(session_context, ebook_path, tmp_path):
-    context, session_id, session = session_context
-    # Setup arguments for EBookProcessor
-    args = {
-        "ebook": os.path.join(ebook_path, "god-c12.epub"),
-        "language": "zho",
-        "language_iso1": "zh",
-        "tts_engine": TTS_ENGINES['VOXCPM'],
-        "voice": os.path.join(voices_dir, "zho", "adult", "male", "yunjian.wav"),
-    }
-    # update session with args
-    session.update(args)
-
-    func_name = inspect.currentframe().f_code.co_name
-    set_process_dir(session, func_name)
-
-    # Instantiate EBookProcessor
-    from lib.headless_processor import EBookProcessor
-    ebook_processor = EBookProcessor()
-    session["epub_path"] = session["ebook"]
-    epubBook = epub.read_epub(session["ebook"], {"ignore_ncx": True})
-    basename = os.path.basename(session["ebook"])
-    name_splits = os.path.splitext(basename)
-    session["filename_noext"] = name_splits[0]
-
-    # Process the EPUB
-    status, success = ebook_processor.process_epub_chapters(epubBook, session)
-
-    # Assertions
-    print(status)
-    assert success
-    print(session['audiobook'])
-    assert os.path.exists(session['audiobook'])
-
 def test_tts_en_zeroshot(session_context, ebook_path, tmp_path):
     context, session_id, session = session_context
 

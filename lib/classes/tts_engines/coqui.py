@@ -103,8 +103,8 @@ class Coqui:
                                          otherwise returns False on failure.
         """
         try:
-            tts_engine_ = self.session['tts_engine']
-            load_zeroshot = tts_engine_ in [TTS_ENGINES['VITS'], TTS_ENGINES['FAIRSEQ'], TTS_ENGINES['TACOTRON2']]
+            tts_engine_name = self.session['tts_engine']
+            load_zeroshot = tts_engine_name in [TTS_ENGINES['VITS'], TTS_ENGINES['FAIRSEQ'], TTS_ENGINES['TACOTRON2']]
             tts = loaded_tts.get(self.tts_key, {}).get('engine', False)
 
             if not tts:
@@ -112,7 +112,7 @@ class Coqui:
                 self._ensure_xtts_speakers(xtt_sv_files_)
 
                 fine_tuned_ = self.session['fine_tuned']
-                tuned_files_ = models[tts_engine_][fine_tuned_]['files']
+                tuned_files_ = models[tts_engine_name][fine_tuned_]['files']
                 custom_model_ = self.session['custom_model']
                 handlers = self._engine_handlers(fine_tuned_, tuned_files_, custom_model_, xtt_sv_files_)
                 for handler in handlers:
@@ -173,12 +173,12 @@ class Coqui:
         unload_tts(self.session['device'], [self.tts_key, self.tts_vc_key])
         try:
             fp16=torch.cuda.is_available()
-            if fine_tuned_ == 'internal':
-                from cosyvoice.cli.cosyvoice import CosyVoice2
-                tts = CosyVoice2(model_dir, load_jit=False, load_trt=False, load_vllm=False, fp16=fp16)
-            else:
+            if self._cosy_repo == 'CosyVoice-300M-SFT':
                 from cosyvoice.cli.cosyvoice import CosyVoice
                 tts = CosyVoice(model_dir, load_jit=False, load_trt=False, fp16=fp16)
+            else:
+                from cosyvoice.cli.cosyvoice import CosyVoice2
+                tts = CosyVoice2(model_dir, load_jit=False, load_trt=False, load_vllm=False, fp16=fp16)
         except Exception as e:
             print(f"{TTS_ENGINES['COSYVOICE']} load error: {e}")
             return True
@@ -188,7 +188,7 @@ class Coqui:
                 tts, "sample_rate", self.params[TTS_ENGINES['COSYVOICE']]['samplerate']
             )
             loaded_tts[self.tts_key] = {"engine": tts, "config": None}
-            print(f'{fine_tuned_} Loaded!')
+            print(f'{self} Loaded!')
             return True
         return False
 
