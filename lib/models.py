@@ -474,7 +474,7 @@ models = {
             "files": default_engine_settings[TTS_ENGINES['COSYVOICE']]['files'],
             "samplerate": default_engine_settings[TTS_ENGINES['COSYVOICE']]['samplerate']
         },
-        "中文女": {
+        "ChineseFemale": {
             "lang": "zho",
             "repo": "CosyVoice-300M-SFT",
             "sub": "",
@@ -482,7 +482,7 @@ models = {
             "files": default_engine_settings[TTS_ENGINES['COSYVOICE']]['files'],
             "samplerate": default_engine_settings[TTS_ENGINES['COSYVOICE']]['samplerate']
         },
-        "中文男": {
+        "ChineseMale": {
             "lang": "zho",
             "repo": "CosyVoice-300M-SFT",
             "sub": "",
@@ -490,7 +490,7 @@ models = {
             "files": default_engine_settings[TTS_ENGINES['COSYVOICE']]['files'],
             "samplerate": default_engine_settings[TTS_ENGINES['COSYVOICE']]['samplerate']
         },
-        "粤语女": {
+        "CantoneseFemale": {
             "lang": "zho",
             "repo": "CosyVoice-300M-SFT",
             "sub": "",
@@ -498,7 +498,7 @@ models = {
             "files": default_engine_settings[TTS_ENGINES['COSYVOICE']]['files'],
             "samplerate": default_engine_settings[TTS_ENGINES['COSYVOICE']]['samplerate']
         },
-        "英文女": {
+        "EnglishFemale": {
             "lang": "eng",
             "repo": "CosyVoice-300M-SFT",
             "sub": "",
@@ -506,7 +506,7 @@ models = {
             "files": default_engine_settings[TTS_ENGINES['COSYVOICE']]['files'],
             "samplerate": default_engine_settings[TTS_ENGINES['COSYVOICE']]['samplerate']
         },
-        "英文男": {
+        "EnglishMale": {
             "lang": "eng",
             "repo": "CosyVoice-300M-SFT",
             "sub": "",

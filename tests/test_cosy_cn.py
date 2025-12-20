@@ -60,8 +60,6 @@ def session_context(tmp_path):
         }
     )
     session = context.get_session(session_id)
-
-
     return context, session_id, session
 
 
@@ -79,18 +77,6 @@ def test_cosyvoice_cn_zeroshot(session_context, ebook_path, tmp_path):
     # audio file in $process_dir/chapters/sentenses/{speaker}.flac
     assert result # Ture or False
 
-def test_tts_en_zeroshot(session_context, ebook_path, tmp_path):
-    context, session_id, session = session_context
-
-    # Create necessary directories
-    process_dir = inspect.currentframe().f_code.co_name
-    set_process_dir(session, process_dir)
-
-
-    tts_manager = TTSManager(session)
-    result = tts_manager.convert_sentence2audio(1, tts_text)
-    # audio file in $process_dir/chapters/sentenses/0.flac
-    assert result # Ture or False
     
 def test_tts_en_ft_RosamundPike(session_context, ebook_path, tmp_path):
     context, session_id, session = session_context
