@@ -45,6 +45,17 @@ uv pip install gradio==5.42.0
 uv pip install protobuf==3.20.3
 uv pip install "gradio==5.42.0"
 
+
+uv pip install --no-deps matcha-tts
+
+# From a local directory
+uv pip install --no-deps -e /path/to/matcha-tts
+# Or directly from Git
+uv pip install --no-deps git+https://github.com/<org>/matcha-tts.git
+
+
+uv pip install -e ../tts/CosyVoice
+
 pytest tests/test_epub.py::test_filter_chapter
 pytest tests/test_epub.py::test_process_epub_chapters_en
 pytest tests/test_epub.py::test_process_epub_chapters_zh
