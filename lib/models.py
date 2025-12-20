@@ -43,11 +43,11 @@ max_upload_size = '6GB'
 default_engine_settings = {
     TTS_ENGINES['XTTSv2']: {
         "samplerate": 24000,
-        "temperature": 0.75,
+        "temperature": 0.05,
         "length_penalty": 1.0,
         "num_beams": 1,
-        "repetition_penalty": 3.0,
-        "top_k": 50,
+        "repetition_penalty": 1.15,
+        "top_k": 40,
         "top_p": 0.85,
         "speed": 1.0,
         "enable_text_splitting": False,
@@ -84,7 +84,7 @@ default_engine_settings = {
     TTS_ENGINES['COSYVOICE']: {
         # CosyVoice exposes XTTS-like decoding controls; defaults mirror XTTSv2 so UI sliders behave consistently.
         "samplerate": 22050,
-        "temperature": 0.75,
+        "temperature": 0.05,
         "length_penalty": 1.0,
         "num_beams": 1,
         "repetition_penalty": 3.0,
