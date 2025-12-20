@@ -3,8 +3,6 @@ import os
 import pytest
 from ebooklib import epub
 
-from lib import models
-from lib.headless_processor import EBookProcessor
 from lib.models import TTS_ENGINES, voices_dir
 from lib.classes.tts_manager import TTSManager
 from lib.mock_session import SessionContextMock, set_process_dir
@@ -83,6 +81,7 @@ def test_tts_cn_convert(session_context, ebook_path, tmp_path):
     set_process_dir(session, func_name)
 
     # Instantiate EBookProcessor
+    from lib.headless_processor import EBookProcessor
     ebook_processor = EBookProcessor()
     session["epub_path"] = session["ebook"]
     epubBook = epub.read_epub(session["ebook"], {"ignore_ncx": True})

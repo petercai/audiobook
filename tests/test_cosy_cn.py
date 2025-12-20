@@ -3,8 +3,6 @@ import os
 import pytest
 from ebooklib import epub
 
-from lib import models
-from lib.headless_processor import EBookProcessor
 from lib.models import TTS_ENGINES, voices_dir
 from lib.classes.tts_manager import TTSManager
 from lib.mock_session import SessionContextMock, set_process_dir

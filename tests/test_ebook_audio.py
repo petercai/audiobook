@@ -7,7 +7,6 @@ from ebooklib import epub
 from lib import TTS_ENGINES, tmp_dir, voices_dir
 from lib.ebook_audio import EbookAudio
 from lib.epub import EPubProcessor
-from lib.headless_processor import EBookProcessor
 from lib.mock_session import SessionContextMock, set_process_dir
 
 import sys
@@ -90,7 +89,6 @@ def test_combine_audio_chapters(session_context, ebook_path, tmp_path):
     """Test successful processing of an EPUB file."""
     context, session_id, session = session_context
 
-    # Setup arguments for EBookProcessor
     args = {
         "session": "34580d40b4f8e9a591f0ee19dc51a4f4",
         "ebook": os.path.join(ebook_path, "jane-eyre-c12.epub"),
@@ -148,7 +146,6 @@ def test_combine_audio_chapters(session_context, ebook_path, tmp_path):
     name_splits = os.path.splitext(basename)
     session["filename_noext"] = name_splits[0]
 
-    # Instantiate EBookProcessor
     processor = EbookAudio()
     # Process the EPUB
     audio_files = processor.combine_audio_chapters(session)
@@ -162,7 +159,6 @@ def test_stamp_on_image(session_context, ebook_path, tmp_path):
     """Test successful processing of an EPUB file."""
     context, session_id, session = session_context
 
-    # Setup arguments for EBookProcessor
     args = {
         "session": "34580d40b4f8e9a591f0ee19dc51a4f4",
         "ebook": os.path.join(ebook_path, "The_Hunger_Games.epub"),
@@ -189,7 +185,6 @@ def test_stamp_on_image(session_context, ebook_path, tmp_path):
     session["filename_noext"] = name_splits[0]
     new_cover = os.path.join(tmp_dir, f"{basename}_part{1:02d}.jpg")
 
-    # Instantiate EBookProcessor
     processor = EbookAudio()
     with open( session['cover'], 'rb') as f:
         cover_data = f.read()

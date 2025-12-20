@@ -6,7 +6,6 @@ from ebooklib import epub
 
 from lib import TTS_ENGINES, tmp_dir, voices_dir
 from lib.epub import EPubProcessor
-from lib.headless_processor import EBookProcessor
 from lib.mock_session import SessionContextMock, set_process_dir
 
 import sys
@@ -127,6 +126,7 @@ def test_process_epub_cn(session_context, ebook_path, tmp_path):
     session["filename_noext"] = name_splits[0]
 
     # Instantiate EBookProcessor
+    from lib.headless_processor import EBookProcessor
     ebook_processor = EBookProcessor()
     # Process the EPUB
     status, success = ebook_processor.process_epub(session)
@@ -163,6 +163,7 @@ def test_process_epub_en(session_context, ebook_path, tmp_path):
     session["filename_noext"] = name_splits[0]
 
     # Instantiate EBookProcessor
+    from lib.headless_processor import EBookProcessor
     ebook_processor = EBookProcessor()
     # Process the EPUB
     status, success = ebook_processor.process_epub(session)
@@ -198,6 +199,7 @@ def test_process_epub_en_mps(session_context, ebook_path, tmp_path):
     session["filename_noext"] = name_splits[0]
 
     # Instantiate EBookProcessor
+    from lib.headless_processor import EBookProcessor
     ebook_processor = EBookProcessor()
     # Process the EPUB
     status, success = ebook_processor.process_epub(session)
@@ -229,6 +231,7 @@ def test_process_epub_chapters_cn(session_context, ebook_path, tmp_path):
     session['epub_path'] = session['ebook']
 
     # Instantiate EBookProcessor
+    from lib.headless_processor import EBookProcessor
     ebook_processor = EBookProcessor()
     epubBook = epub.read_epub(session["ebook"], {"ignore_ncx": True})
     basename = os.path.basename(session["ebook"])
@@ -264,6 +267,7 @@ def test_process_epub_chapters_en(session_context, ebook_path, tmp_path):
     session['epub_path'] = session['ebook']
 
     # Instantiate EBookProcessor
+    from lib.headless_processor import EBookProcessor
     ebook_processor = EBookProcessor()
     epubBook = epub.read_epub(session["ebook"], {"ignore_ncx": True})
     basename = os.path.basename(session["ebook"])
@@ -299,6 +303,7 @@ def test_process_epub_metadata_cn(session_context, ebook_path, tmp_path):
     session['epub_path'] = session['ebook']
 
     # Instantiate EBookProcessor
+    from lib.headless_processor import EBookProcessor
     ebook_processor = EBookProcessor()
     epubBook = epub.read_epub(session["epub_path"], {"ignore_ncx": True})
     basename = os.path.basename(session["ebook"])
@@ -336,6 +341,7 @@ def test_process_epub_metadata_en(session_context, ebook_path, tmp_path):
     session['epub_path'] = session['ebook']
 
     # Instantiate EBookProcessor
+    from lib.headless_processor import EBookProcessor
     ebook_processor = EBookProcessor()
     epubBook = epub.read_epub(session["epub_path"], {"ignore_ncx": True})
     basename = os.path.basename(session["ebook"])
