@@ -18,7 +18,6 @@ from lib.classes.tts_engines.common.audio_filters import detect_gender, trim_aud
 #logging.basicConfig(level=logging.DEBUG)
 
 lock = threading.Lock()
-xtts_builtin_speakers_list = None
 
 class Coqui:
     """
@@ -64,6 +63,7 @@ class Coqui:
             self.session = session
             self.cache_dir = tts_dir
             self.speakers_path = None
+            self.xtts_builtin_speakers_list = None
             self.tts_key = f"{self.session['tts_engine']}-{self.session['fine_tuned']}"
             self.tts_vc_key = default_vc_model.rsplit('/', 1)[-1]
             self.is_bf16 = True if self.session['device'] == 'cuda' and torch.cuda.is_bf16_supported() == True else False
@@ -164,12 +164,12 @@ class Coqui:
             return True
 
         # Keep the tts_key unique per CosyVoice flavour to reuse cached models.
-        self.tts_key = f"{TTS_ENGINES['COSYVOICE']}-{fine_tuned_}"
+        self._cosy_repo = models[TTS_ENGINES['COSYVOICE']][fine_tuned_]['repo']
+        self.tts_key = f"{TTS_ENGINES['COSYVOICE']}-{self._cosy_repo}"
         if (loaded_tts.get(self.tts_key) or {}).get('engine'):
             return True
 
-        repo = models[TTS_ENGINES['COSYVOICE']][fine_tuned_]['repo']
-        model_dir = os.path.join(tts_dir, repo)
+        model_dir = os.path.join(tts_dir, self._cosy_repo)
         unload_tts(self.session['device'], [self.tts_key, self.tts_vc_key])
         try:
             fp16=torch.cuda.is_available()
@@ -193,8 +193,7 @@ class Coqui:
         return False
 
     def _ensure_xtts_speakers(self, xtt_sv_files_):
-        global xtts_builtin_speakers_list
-        if xtts_builtin_speakers_list is not None:
+        if self.xtts_builtin_speakers_list is not None:
             return
         repo_ = models[TTS_ENGINES['XTTSv2']]['internal']['repo']
         try:
@@ -203,7 +202,11 @@ class Coqui:
                 filename=xtt_sv_files_[4],
                 cache_dir=self.cache_dir,
                 local_files_only=self.session['offline_mode'])
-            xtts_builtin_speakers_list = torch.load(self.speakers_path, map_location=self.session['device'], weights_only=False)
+            self.xtts_builtin_speakers_list = torch.load(
+                self.speakers_path,
+                map_location=self.session['device'],
+                weights_only=False
+            )
         except Exception as e:
             if self.session['offline_mode']:
                 print(f"Offline mode: Failed to load XTTSv2 speakers file. Expected in '{self.cache_dir}'.")
@@ -586,7 +589,7 @@ class Coqui:
                             if speaker in voices__keys:
                                 # Use pre-computed latents for built-in speakers.
                                 speaker_ = default_engine_settings[TTS_ENGINES['XTTSv2']]['voices'][speaker]
-                                gpt_cond_latent, speaker_embedding = xtts_builtin_speakers_list[speaker_].values()
+                                gpt_cond_latent, speaker_embedding = self.xtts_builtin_speakers_list[speaker_].values()
                             else:
                                 # Compute latents from the voice audio file for custom speakers.
                                 gpt_cond_latent, speaker_embedding = tts.get_conditioning_latents(audio_path=[voice_path])
@@ -798,7 +801,9 @@ class Coqui:
             msg = 'Computing speaker latents...'
             print(msg)
             if speaker in default_engine_settings[TTS_ENGINES['XTTSv2']]['voices'].keys():
-                settings['gpt_cond_latent'], settings['speaker_embedding'] = xtts_builtin_speakers_list[default_engine_settings[TTS_ENGINES['XTTSv2']]['voices'][speaker]].values()
+                settings['gpt_cond_latent'], settings['speaker_embedding'] = self.xtts_builtin_speakers_list[
+                    default_engine_settings[TTS_ENGINES['XTTSv2']]['voices'][speaker]
+                ].values()
             else:
                 settings['gpt_cond_latent'], settings['speaker_embedding'] = tts.get_conditioning_latents(audio_path=[settings['voice_path']])
             settings['latent_embedding'][settings['voice_path']] = settings['gpt_cond_latent'], settings['speaker_embedding']
@@ -941,7 +946,7 @@ class Coqui:
         try:
             samplerate = settings.get('samplerate', default_engine_settings[TTS_ENGINES['COSYVOICE']]['samplerate'])
             audio_chunks = []
-            if self.session['fine_tuned'] == 'CosyVoice-300M-SFT':
+            if self._cosy_repo == 'CosyVoice-300M-SFT':
                 # Fine-tuned CosyVoice uses fixed speaker ids instead of reference audio.
                 speaker_id = speaker or models[TTS_ENGINES['COSYVOICE']][self.session['fine_tuned']]['voice']
                 for out in tts.inference_sft(sentence, speaker_id, stream=False):
@@ -996,7 +1001,6 @@ class Coqui:
             bool: True if the conversion is successful and the audio file is saved,
                   False otherwise.
         """
-        global xtts_builtin_speakers_list
         try:
             # --- Initialization ---
             sentence_number = s_n

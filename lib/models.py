@@ -83,7 +83,7 @@ default_engine_settings = {
     },
     TTS_ENGINES['COSYVOICE']: {
         # CosyVoice exposes XTTS-like decoding controls; defaults mirror XTTSv2 so UI sliders behave consistently.
-        "samplerate": 22050,
+        "samplerate": 24000,
         "temperature": 0.05,
         "length_penalty": 1.0,
         "num_beams": 1,
