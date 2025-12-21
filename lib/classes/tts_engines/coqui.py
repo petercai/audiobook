@@ -1,23 +1,24 @@
-import hashlib, math, os, shutil, subprocess, tempfile, threading, uuid, warnings
-# warnings.filterwarnings("ignore", category=FutureWarning, module="torchaudio")
-# warnings.filterwarnings("ignore", category=UserWarning, module="torchaudio")
-# warnings.filterwarnings("ignore", category=DeprecationWarning, module="torchaudio")
-warnings.filterwarnings("ignore")
-import numpy as np, regex as re, soundfile as sf, torch, torchaudio
+import hashlib
+import os
+import shutil
+import subprocess
+import tempfile
+import uuid
+
+from lib import models
+import numpy as np
+import regex as re
+import soundfile as sf
+import torch
+import torchaudio
 
 from huggingface_hub import hf_hub_download
 from pathlib import Path
-from pprint import pprint
 
-from lib import *
-from lib.functions import DependencyError
+from lib.functions import DependencyError, tts_dir, default_audio_proc_format, default_audio_proc_samplerate, default_engine_settings, language_tts, voices_dir
+from lib.models import TTS_ENGINES, TTS_SML, TTS_VOICE_CONVERSION, tts_lock, default_vc_model, loaded_tts
 from lib.classes.tts_engines.common.utils import unload_tts, append_sentence2vtt
 from lib.classes.tts_engines.common.audio_filters import detect_gender, trim_audio, normalize_audio, is_audio_data_valid
-
-#import logging
-#logging.basicConfig(level=logging.DEBUG)
-
-lock = threading.Lock()
 
 class Coqui:
     """
@@ -66,7 +67,7 @@ class Coqui:
             self.xtts_builtin_speakers_list = None
             self.tts_key = f"{self.session['tts_engine']}-{self.session['fine_tuned']}"
             self.tts_vc_key = default_vc_model.rsplit('/', 1)[-1]
-            self.is_bf16 = True if self.session['device'] == 'cuda' and torch.cuda.is_bf16_supported() == True else False
+            self.is_bf16 = self.session['device'] == 'cuda' and torch.cuda.is_bf16_supported()
             self.npz_path = None
             self.npz_data = None
             self.sentences_total_time = 0.0
@@ -361,7 +362,6 @@ class Coqui:
             TTS model instance or False: The loaded TTS model instance on success,
                                          or False on failure.
         """
-        global lock
         try:
             # Check if the model is already loaded in the global cache.
             if key in loaded_tts.keys():
@@ -374,7 +374,7 @@ class Coqui:
             from TTS.api import TTS as coquiAPI
             
             # Use a lock to ensure thread-safe model loading.
-            with lock:
+            with tts_lock:
                 # Initialize the TTS model from the specified model path.
                 tts = coquiAPI(model_path)
                 
@@ -418,7 +418,6 @@ class Coqui:
             TTS model instance or False: The loaded TTS model instance on success,
                                          or False on failure.
         """
-        global lock
         try:
             # Extract the unique key for the model from kwargs.
             key = kwargs.get('key')
@@ -434,7 +433,7 @@ class Coqui:
             unload_tts(device, [self.tts_key, self.tts_vc_key])
             
             # Use a lock to ensure thread-safe model loading.
-            with lock:
+            with tts_lock:
                 # --- XTTSv2 Model Loading ---
                 if tts_engine == TTS_ENGINES['XTTSv2']:
                     from TTS.tts.configs.xtts_config import XttsConfig
@@ -679,7 +678,8 @@ class Coqui:
                     hf_sub = models[TTS_ENGINES['BARK']]['internal']['sub']
                     tts = (loaded_tts.get(tts_internal_key) or {}).get('engine', False)
                     if not tts:
-                        for key in list(loaded_tts.keys()): unload_tts(device, None, key)
+                        for key in list(loaded_tts.keys()): 
+                            unload_tts(device, None, key)
                         try:
                             text_model_path = hf_hub_download(
                                 repo_id=hf_repo,
@@ -917,7 +917,8 @@ class Coqui:
                 return None, trim_audio_buffer
 
             for f in [tmp_in_wav, tmp_out_wav, source_wav]:
-                if os.path.exists(f): os.remove(f)
+                if os.path.exists(f): 
+                    os.remove(f)
         else:
             audio_sentence = tts.tts(text=sentence, **speaker_argument)
 
@@ -958,7 +959,7 @@ class Coqui:
                     print('CosyVoice zero-shot requires a valid reference voice file.')
                     return None, trim_audio_buffer
                 from cosyvoice.utils.file_utils import load_wav
-                prompt_audio = load_wav(voice_path, 16000)
+                prompt_audio = load_wav(voice_path, 24000)
                 prompt_text = ''
                 prompt_text_file = Path(voice_path).with_suffix(".txt")
                 if prompt_text_file.exists():
@@ -1006,7 +1007,6 @@ class Coqui:
             sentence_number = s_n
             sentence = s
             speaker = None
-            audio_data = False
             trim_audio_buffer = 0.004  # Default trim buffer
             
             # Get settings for the current TTS engine.
@@ -1015,7 +1015,7 @@ class Coqui:
             
             cosyvoice_sft = (
                 self.session['tts_engine'] == TTS_ENGINES['COSYVOICE']
-                and self.session['fine_tuned'] == 'CosyVoice-300M-SFT'
+                and self.session['fine_tuned']['repo'] == 'CosyVoice-300M-SFT'
             )
             if cosyvoice_sft:
                 # SFT flavour uses speaker IDs instead of reference audio.

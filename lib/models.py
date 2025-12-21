@@ -1,7 +1,9 @@
 import os
+import threading
 
 from lib.conf import tts_dir, voices_dir
 loaded_tts = {}
+tts_lock = threading.Lock()
 
 TTS_ENGINES = {
     "XTTSv2": "xtts", 

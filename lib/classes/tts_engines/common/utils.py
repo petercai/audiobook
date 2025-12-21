@@ -1,29 +1,59 @@
 import os
 import torch
 import regex as re
-import stanza
 
-from lib.models import loaded_tts, max_tts_in_memory, TTS_ENGINES
+from lib.models import loaded_tts, max_tts_in_memory, tts_lock
 
 def unload_tts(device, reserved_keys=None, tts_key=None):
+    """
+    Unloads TTS models from memory to manage resource usage.
+
+    This function can operate in two modes:
+    1. Unload a specific model by providing `tts_key`.
+    2. Free up memory by unloading models if the cache size exceeds `max_tts_in_memory`.
+       In this mode, it preserves models whose keys are in `reserved_keys`.
+
+    It is thread-safe and handles CUDA cache clearing.
+
+    Args:
+        device (str): The device ('cuda' or 'cpu') from which to unload.
+        reserved_keys (list, optional): A list of keys for models to keep in memory.
+        tts_key (str, optional): The key of a specific model to unload.
+
+    Returns:
+        bool: True on success, False on failure.
+    """    
     try:
-        if len(loaded_tts) >= max_tts_in_memory:
-            if reserved_keys is None:
-                reserved_keys = []
+        with tts_lock:
+            # Case 1: Unload a specific model if tts_key is provided.
             if tts_key is not None:
-                if tts_key in loaded_tts.keys():
+                if tts_key in loaded_tts:
                     del loaded_tts[tts_key]
-                if device == 'cuda':
-                    torch.cuda.empty_cache()
-                    torch.cuda.ipc_collect()
-            else:
+                    if device == 'cuda':
+                        torch.cuda.empty_cache()
+                        torch.cuda.ipc_collect()
+                return True
+
+            # Case 2: Free up memory if the cache is full.
+            if len(loaded_tts) >= max_tts_in_memory:
+                if reserved_keys is None:
+                    reserved_keys = []
+                
+                unloaded_something = False
                 for key in list(loaded_tts.keys()):
                     if key not in reserved_keys:
                         del loaded_tts[key]
+                        unloaded_something = True
+                
+                if unloaded_something and device == 'cuda':        
+                    torch.cuda.empty_cache()
+                    torch.cuda.ipc_collect()
     except Exception as e:
         error = f'unload_tts() error: {e}'
         print(error)
         return False
+    return True
+
 
 def format_vtt_timestamp(seconds):
     m, s = divmod(seconds, 60)
