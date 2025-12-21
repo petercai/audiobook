@@ -271,16 +271,16 @@ class EPubProcessor:
             # Initialize Stanza NLP pipeline for languages that require advanced processing
             # This is used for date recognition and other NLP tasks
             stanza_nlp = False
-            if language_ in year_to_decades_languages:
-                try:
-                    # Download the required language model if not already present
-                    stanza.download(language_iso_, dir=os.path.join(models_dir, 'stanza'), logging_level='WARN', verbose=False if session['offline_mode'] else None)
-                except Exception as e:
-                    if session['offline_mode']:
-                        print(f"Offline mode: Failed to find stanza model for '{language_iso_}'. Expected in '{os.path.join(models_dir, 'stanza')}'")
-                    raise e
-                # Create a processing pipeline for tokenization and named entity recognition
-                stanza_nlp = stanza.Pipeline(language_iso_, processors='tokenize,ner')
+            # if language_ in year_to_decades_languages:
+            #     try:
+            #         # Download the required language model if not already present
+            #         stanza.download(language_iso_, dir=os.path.join(models_dir, 'stanza'), logging_level='WARN', verbose=False if session['offline_mode'] else None)
+            #     except Exception as e:
+            #         if session['offline_mode']:
+            #             print(f"Offline mode: Failed to find stanza model for '{language_iso_}'. Expected in '{os.path.join(models_dir, 'stanza')}'")
+            #         raise e
+            #     # Create a processing pipeline for tokenization and named entity recognition
+            #     stanza_nlp = stanza.Pipeline(language_iso_, processors='tokenize,ner')
                 
             # Check if the num2words library supports the current language
             # This determines how numbers will be converted to words
