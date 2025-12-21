@@ -1,12 +1,7 @@
-# NOTE!!NOTE!!!NOTE!!NOTE!!!NOTE!!NOTE!!!NOTE!!NOTE!!!
-# THE WORD "CHAPTER" IN THE CODE DOES NOT MEAN
-# IT'S THE REAL CHAPTER OF THE EBOOK SINCE NO STANDARDS
-# ARE DEFINING A CHAPTER ON .EPUB FORMAT. THE WORD "BLOCK"
-# IS USED TO PRINT IT OUT TO THE TERMINAL, AND "CHAPTER" TO THE CODE
-# WHICH IS LESS GENERIC FOR THE DEVELOPERS
-
 import hashlib
 import math
+import os
+import platform
 import shutil
 import subprocess
 import time
@@ -14,6 +9,7 @@ import traceback
 from collections.abc import Mapping
 from multiprocessing import Manager
 from multiprocessing.managers import DictProxy
+import zipfile
 
 import gradio as gr
 import psutil
@@ -22,7 +18,13 @@ import unicodedata
 from bs4 import BeautifulSoup
 from num2words import num2words
 
-from lib import *
+from lib.conf import NATIVE, default_device, tmp_dir, voices_dir
+from lib.conf import models_dir
+from lib.conf import  default_output_format, default_output_split, default_output_split_minutes
+from lib.lang import roman_numbers_tuples, emojis_list, default_language_code, language_math_phonemes, language_clock, \
+    abbreviations_mapping, punctuation_switch, punctuation_split_hard_set, punctuation_split_soft_set, \
+    specialchars_mapping, language_tts
+from lib.models import TTS_SML, default_tts_engine, default_fine_tuned, default_engine_settings, TTS_ENGINES, models
 
 
 class DependencyError(Exception):
@@ -301,7 +303,7 @@ def compare_dict_keys(d1, d2):
             "missing_in_d1": missing_in_d1,
         }
     for key in d1_keys.intersection(d2_keys):
-        nested_result = compare_keys(d1[key], d2[key])
+        nested_result = compare_dict_keys(d1[key], d2[key])
         if nested_result:
             return {key: nested_result}
     return None
@@ -523,7 +525,7 @@ def year2words(year_str, lang, lang_iso1, is_num2words_compat):
 def clock2words(text, lang, lang_iso1, tts_engine, is_num2words_compat):
     time_rx = re.compile(r'(\d{1,2})[:.](\d{1,2})(?:[:.](\d{1,2}))?')
     lang_lc = (lang or "").lower()
-    lc = language_clock.get(lang_lc) if 'language_clock' in globals() else None
+    lc = language_clock.get(lang_lc)
     _n2w_cache = {}
 
     def n2w(n: int) -> str:

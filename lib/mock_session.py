@@ -4,7 +4,7 @@ import os
 import uuid
 from types import SimpleNamespace
 
-from lib import tmp_dir
+from lib.conf import tmp_dir
 
 
 def to_object(data):

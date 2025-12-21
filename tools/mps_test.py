@@ -1,6 +1,9 @@
 import torch
 import Metal
 
+'''
+uv pip install pyobjc-framework-Metal
+'''
 def mps_test():
 
     if torch.backends.mps.is_available():

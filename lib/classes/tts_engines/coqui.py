@@ -5,7 +5,6 @@ import subprocess
 import tempfile
 import uuid
 
-from lib import models
 import numpy as np
 import regex as re
 import soundfile as sf
@@ -15,8 +14,9 @@ import torchaudio
 from huggingface_hub import hf_hub_download
 from pathlib import Path
 
-from lib.functions import DependencyError, tts_dir, default_audio_proc_format, default_audio_proc_samplerate, default_engine_settings, language_tts, voices_dir
-from lib.models import TTS_ENGINES, TTS_SML, TTS_VOICE_CONVERSION, tts_lock, default_vc_model, loaded_tts
+from lib.conf import tts_dir, default_audio_proc_samplerate, default_audio_proc_format
+from lib.functions import DependencyError, default_engine_settings, language_tts, voices_dir
+from lib.models import TTS_ENGINES, TTS_SML, TTS_VOICE_CONVERSION, tts_lock, default_vc_model, loaded_tts, models
 from lib.classes.tts_engines.common.utils import unload_tts, append_sentence2vtt
 from lib.classes.tts_engines.common.audio_filters import detect_gender, trim_audio, normalize_audio, is_audio_data_valid
 
@@ -65,7 +65,13 @@ class Coqui:
             self.cache_dir = tts_dir
             self.speakers_path = None
             self.xtts_builtin_speakers_list = None
-            self.tts_key = f"{self.session['tts_engine']}-{self.session['fine_tuned']}"
+            if self.session['tts_engine'] == TTS_ENGINES['COSYVOICE']:
+                engine_ = models[self.session['tts_engine']]
+                tuned_ = engine_[self.session['fine_tuned']]
+                mode_name = tuned_['repo']
+                self.tts_key = f"{self.session['tts_engine']}-{mode_name}"
+            else: 
+                self.tts_key = f"{self.session['tts_engine']}-{self.session['fine_tuned']}"
             self.tts_vc_key = default_vc_model.rsplit('/', 1)[-1]
             self.is_bf16 = self.session['device'] == 'cuda' and torch.cuda.is_bf16_supported()
             self.npz_path = None
@@ -166,7 +172,7 @@ class Coqui:
 
         # Keep the tts_key unique per CosyVoice flavour to reuse cached models.
         self._cosy_repo = models[TTS_ENGINES['COSYVOICE']][fine_tuned_]['repo']
-        self.tts_key = f"{TTS_ENGINES['COSYVOICE']}-{self._cosy_repo}"
+        # self.tts_key = f"{TTS_ENGINES['COSYVOICE']}-{self._cosy_repo}"
         if (loaded_tts.get(self.tts_key) or {}).get('engine'):
             return True
 
@@ -189,7 +195,7 @@ class Coqui:
                 tts, "sample_rate", self.params[TTS_ENGINES['COSYVOICE']]['samplerate']
             )
             loaded_tts[self.tts_key] = {"engine": tts, "config": None}
-            print(f'{self} Loaded!')
+            print(f'{self._cosy_repo} Loaded!')
             return True
         return False
 
