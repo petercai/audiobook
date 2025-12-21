@@ -19,6 +19,7 @@ os.environ['DO_NOT_TRACK'] = 'true'
 os.environ['CALIBRE_TEMP_DIR'] = tmp_dir
 os.environ['CALIBRE_CACHE_DIRECTORY'] = tmp_dir
 os.environ['HUGGINGFACE_HUB_CACHE'] = tts_dir
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
 os.environ['HF_HOME'] = tts_dir
 os.environ['HF_DATASETS_CACHE'] = tts_dir
 os.environ['BARK_CACHE_DIR'] = tts_dir

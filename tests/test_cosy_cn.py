@@ -1,5 +1,6 @@
 import inspect
 import os
+import re
 import pytest
 from ebooklib import epub
 
@@ -34,8 +35,8 @@ def session_context(tmp_path):
             "output_format": "m4b",
             "custom_model": None,
             "fine_tuned": "internal",
-            "voice": None,
-            "voice_dir": os.path.join(voices_dir, '__sessions', "test_voice"),
+            "voice": os.path.join(voices_dir, "zho", "adult", "male", "yunyang.wav"),
+            # "voice_dir": os.path.join(voices_dir, '__sessions', "test_voice"),
             # "speaker_wav": os.path.join(voices_dir, "zho", "adult", "male", "yunjian.wav"),
             # "temperature": 0.75,
             # "length_penalty": 1.0,
@@ -61,21 +62,88 @@ def session_context(tmp_path):
     return context, session_id, session
 
 
+def pick_speaker(session, category, voice_file):
+    voice_path = os.path.join(voices_dir, "zho", "adult", category, voice_file)
+    session["voice"] = voice_path
+    return re.sub(r'\.wav$', '', os.path.basename(voice_path))
 
-def test_cosyvoice_cn_zeroshot(session_context, ebook_path, tmp_path):
+
+
+def test_cosyvoice_cn_zeroshot_yunyang(session_context):
     context, session_id, session = session_context
-
     func_name = inspect.currentframe().f_code.co_name
     set_process_dir(session, func_name)
-    
-    speaker = "default"  
+    speaker = pick_speaker(session, "male", "yunyang.wav")
 
     tts_manager = TTSManager(session)
     result = tts_manager.convert_sentence2audio(speaker, tts_text)
     # audio file in $process_dir/chapters/sentenses/{speaker}.flac
-    assert result # Ture or False
+    assert result
 
+def test_cosyvoice_cn_zeroshot_yunxi(session_context):
+    context, session_id, session = session_context
+    func_name = inspect.currentframe().f_code.co_name
+    set_process_dir(session, func_name)
+    speaker = pick_speaker(session, "male", "yunxi.wav")
+
+    tts_manager = TTSManager(session)
+    result = tts_manager.convert_sentence2audio(speaker, tts_text)
+    # audio file in $process_dir/chapters/sentenses/{speaker}.flac
+    assert result
     
+def test_cosyvoice_cn_zeroshot_yunjian(session_context):
+    context, session_id, session = session_context
+    func_name = inspect.currentframe().f_code.co_name
+    set_process_dir(session, func_name)
+    speaker = pick_speaker(session, "male", "yunjian.wav")
+
+    tts_manager = TTSManager(session)
+    result = tts_manager.convert_sentence2audio(speaker, tts_text)
+    # audio file in $process_dir/chapters/sentenses/{speaker}.flac
+    assert result
+def test_cosyvoice_cn_zeroshot_yunxia(session_context):
+    context, session_id, session = session_context
+    func_name = inspect.currentframe().f_code.co_name
+    set_process_dir(session, func_name)
+    speaker = pick_speaker(session, "female", "yunxia.wav")
+
+    tts_manager = TTSManager(session)
+    result = tts_manager.convert_sentence2audio(speaker, tts_text)
+    # audio file in $process_dir/chapters/sentenses/{speaker}.flac
+    assert result
+def test_cosyvoice_cn_zeroshot_yunxiao(session_context):
+    context, session_id, session = session_context
+    func_name = inspect.currentframe().f_code.co_name
+    set_process_dir(session, func_name)
+    speaker = pick_speaker(session, "female", "yunxiao.wav")
+
+    tts_manager = TTSManager(session)
+    result = tts_manager.convert_sentence2audio(speaker, tts_text)
+    # audio file in $process_dir/chapters/sentenses/{speaker}.flac
+    assert result
+def test_cosyvoice_cn_zeroshot_yunyi(session_context):
+    context, session_id, session = session_context
+    func_name = inspect.currentframe().f_code.co_name
+    set_process_dir(session, func_name)
+    speaker = pick_speaker(session, "female", "yunyi.wav")
+
+    tts_manager = TTSManager(session)
+    result = tts_manager.convert_sentence2audio(speaker, tts_text)
+    # audio file in $process_dir/chapters/sentenses/{speaker}.flac
+    assert result
+    
+def test_cosyvoice_cn_ft_male(session_context):
+    context, session_id, session = session_context
+    
+    func_name = inspect.currentframe().f_code.co_name
+    set_process_dir(session, func_name)
+    session["voice"] = None
+    session['fine_tuned'] = "ChineseMale"
+    tts_manager = TTSManager(session)
+    result = tts_manager.convert_sentence2audio(session['fine_tuned'], tts_text)
+    # audio file in $process_dir/chapters/sentenses/{speaker}.flac
+    assert result
+
 def test_tts_en_ft_RosamundPike(session_context, ebook_path, tmp_path):
     context, session_id, session = session_context
     speaker = "RosamundPike"

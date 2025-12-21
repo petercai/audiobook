@@ -6,6 +6,8 @@ from cosyvoice.utils.file_utils import load_wav
 from lib.conf import tts_dir
 
 model_dir = os.path.join(tts_dir, "CosyVoice2-0.5B")
+sentence = '收到好友从远方寄来的生日礼物，那份意外的惊喜与深深的祝福让我心中充满了甜蜜的快乐，笑容如花儿般绽放。'
+sentence = '二愣子睁大着双眼，直直望着茅草和烂泥糊成的黑屋顶，身上盖着的旧棉被，已呈深黄色，看不出原来的本来面目，还若有若无的散发着淡淡的霉味。'
 
 cosyvoice = CosyVoice2(model_dir, load_jit=False, load_trt=False, load_vllm=False, fp16=False)
 
@@ -20,6 +22,6 @@ if prompt_text_file.exists():
 
 # save zero_shot spk as a voice_id for future usage
 assert cosyvoice.add_zero_shot_spk(prompt_text, prompt_speech_16k, 'my_zero_shot_spk') is True
-for i, j in enumerate(cosyvoice.inference_zero_shot('收到好友从远方寄来的生日礼物，那份意外的惊喜与深深的祝福让我心中充满了甜蜜的快乐，笑容如花儿般绽放。', '', '', zero_shot_spk_id='my_zero_shot_spk', stream=False)):
+for i, j in enumerate(cosyvoice.inference_zero_shot(sentence, '', '', zero_shot_spk_id='my_zero_shot_spk', stream=False)):
     torchaudio.save('speaker_id_{}.wav'.format(i), j['tts_speech'], cosyvoice.sample_rate)
 # cosyvoice.save_spkinfo()

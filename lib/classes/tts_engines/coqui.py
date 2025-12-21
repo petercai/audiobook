@@ -185,14 +185,12 @@ class Coqui:
             else:
                 from cosyvoice.cli.cosyvoice import CosyVoice2
                 tts = CosyVoice2(model_dir, load_jit=False, load_trt=False, load_vllm=False, fp16=fp16)
-                settings = self.params[TTS_ENGINES['COSYVOICE']]
-                if settings.get('voice_path') is None:
-                    settings['voice_path'] = (
-                        self.session['voice'] if self.session['voice'] is not None
-                        # else os.path.join(self.session['custom_model_dir'], self.session['tts_engine'], self.session['custom_model'], 'ref.wav') if self.session['custom_model'] is not None
-                        else models[self.session['tts_engine']][self.session['fine_tuned']]['voice']
-                    )
-                self._prepare_cosyvoice_zero_shot(tts, settings)
+                voice_path = (
+                    self.session['voice'] if self.session['voice'] is not None
+                    else models[self.session['tts_engine']][self.session['fine_tuned']]['voice']
+                )
+
+                self._prepare_cosyvoice_zero_shot(tts, voice_path)
         except Exception as e:
             print(f"{TTS_ENGINES['COSYVOICE']} load error: {e}")
             return True
@@ -206,28 +204,21 @@ class Coqui:
             return True
         return False
 
-    def _prepare_cosyvoice_zero_shot(self, tts, settings):
-        voice_path = settings.get('voice_path')
+    def _prepare_cosyvoice_zero_shot(self, tts, voice_path):
         if voice_path is None or not os.path.exists(voice_path):
             print('CosyVoice zero-shot requires a valid reference voice file.')
             return False
+        speaker = re.sub(r'\.wav$', '', os.path.basename(voice_path))
         from cosyvoice.utils.file_utils import load_wav
-        prompt_audio = load_wav(voice_path, 24000)
+        prompt_audio = load_wav(voice_path, 16000)
         prompt_text = ''
         prompt_text_file = Path(voice_path).with_suffix(".txt")
         if prompt_text_file.exists():
             prompt_text = prompt_text_file.read_text(encoding="utf-8").strip()
-        # zero_cache = settings.setdefault('zero_shot_speakers', {})
-        # prompt_cache = settings.setdefault('zero_shot_prompts', {})
-        speaker_id = settings.get('speaker')
-        if speaker_id is None:
-            speaker_id = f"cosy_{hashlib.md5(voice_path.encode('utf-8')).hexdigest()[:8]}"
-        added = tts.add_zero_shot_spk(prompt_text, prompt_audio, speaker_id)
+        added = tts.add_zero_shot_spk(prompt_text, prompt_audio, speaker)
         if not added:
             print('Failed to register CosyVoice zero-shot speaker.')
             return False
-        # zero_cache[voice_path] = speaker_id
-        # prompt_cache[voice_path] = {"audio": prompt_audio, "text": prompt_text}
         return True
 
     def _ensure_xtts_speakers(self, xtt_sv_files_):
@@ -995,20 +986,7 @@ class Coqui:
                 if voice_path is None or not os.path.exists(voice_path):
                     print('CosyVoice zero-shot requires a valid reference voice file.')
                     return None, trim_audio_buffer
-                zero_cache = settings.setdefault('zero_shot_speakers', {})
-                prompt_cache = settings.setdefault('zero_shot_prompts', {})
-                speaker_id = zero_cache.get(voice_path)
-                prompt = prompt_cache.get(voice_path)
-                if speaker_id is None or prompt is None:
-                    if not self._prepare_cosyvoice_zero_shot(tts, settings):
-                        return None, trim_audio_buffer
-                    speaker_id = zero_cache.get(voice_path)
-                    prompt = prompt_cache.get(voice_path)
-                    if speaker_id is None or prompt is None:
-                        return None, trim_audio_buffer
-                prompt_audio = prompt["audio"]
-                prompt_text = prompt["text"]
-                for out in tts.inference_zero_shot(sentence, prompt_text, prompt_audio, zero_shot_spk_id=speaker_id, stream=False):
+                for out in tts.inference_zero_shot(sentence, '', '', zero_shot_spk_id=speaker, stream=False):
                     audio_chunks.append(out['tts_speech'])
 
             if not audio_chunks:
