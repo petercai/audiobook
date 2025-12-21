@@ -31,11 +31,11 @@ from pathlib import Path
 # 配置
 # ================================
 # TXT 小说所在文件夹（当前目录）
-TXT_FOLDER = r".\ebooks\txt"
+TXT_FOLDER = r".\txt"
 END_OF_BOOK = "（完）"
 
 CALIBRE_PATH = r"C:\Program Files\Calibre2\ebook-convert.exe"  # 或 "ebook-convert"（已在 PATH）
-ENCODING = "GB18030"
+ENCODING = "utf-8"
 COVER_CANDIDATES = ["cover.jpg", "cover.jpeg", "cover.png", "cover.webp"]
 # 匹配章节标题（更宽松）：第123章 / 第 一百 二十 三 章 等
 RE_CHAPTER = re.compile(r"^第[\u4e00-\u9fa5\d\s零一二三四五六七八九十百千万亿]+章.*$")
