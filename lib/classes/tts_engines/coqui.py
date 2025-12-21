@@ -172,7 +172,6 @@ class Coqui:
 
         # Keep the tts_key unique per CosyVoice flavour to reuse cached models.
         self._cosy_repo = models[TTS_ENGINES['COSYVOICE']][fine_tuned_]['repo']
-        # self.tts_key = f"{TTS_ENGINES['COSYVOICE']}-{self._cosy_repo}"
         if (loaded_tts.get(self.tts_key) or {}).get('engine'):
             return True
 
@@ -186,6 +185,14 @@ class Coqui:
             else:
                 from cosyvoice.cli.cosyvoice import CosyVoice2
                 tts = CosyVoice2(model_dir, load_jit=False, load_trt=False, load_vllm=False, fp16=fp16)
+                settings = self.params[TTS_ENGINES['COSYVOICE']]
+                if settings.get('voice_path') is None:
+                    settings['voice_path'] = (
+                        self.session['voice'] if self.session['voice'] is not None
+                        # else os.path.join(self.session['custom_model_dir'], self.session['tts_engine'], self.session['custom_model'], 'ref.wav') if self.session['custom_model'] is not None
+                        else models[self.session['tts_engine']][self.session['fine_tuned']]['voice']
+                    )
+                self._prepare_cosyvoice_zero_shot(tts, settings)
         except Exception as e:
             print(f"{TTS_ENGINES['COSYVOICE']} load error: {e}")
             return True
@@ -198,6 +205,30 @@ class Coqui:
             print(f'{self._cosy_repo} Loaded!')
             return True
         return False
+
+    def _prepare_cosyvoice_zero_shot(self, tts, settings):
+        voice_path = settings.get('voice_path')
+        if voice_path is None or not os.path.exists(voice_path):
+            print('CosyVoice zero-shot requires a valid reference voice file.')
+            return False
+        from cosyvoice.utils.file_utils import load_wav
+        prompt_audio = load_wav(voice_path, 24000)
+        prompt_text = ''
+        prompt_text_file = Path(voice_path).with_suffix(".txt")
+        if prompt_text_file.exists():
+            prompt_text = prompt_text_file.read_text(encoding="utf-8").strip()
+        # zero_cache = settings.setdefault('zero_shot_speakers', {})
+        # prompt_cache = settings.setdefault('zero_shot_prompts', {})
+        speaker_id = settings.get('speaker')
+        if speaker_id is None:
+            speaker_id = f"cosy_{hashlib.md5(voice_path.encode('utf-8')).hexdigest()[:8]}"
+        added = tts.add_zero_shot_spk(prompt_text, prompt_audio, speaker_id)
+        if not added:
+            print('Failed to register CosyVoice zero-shot speaker.')
+            return False
+        # zero_cache[voice_path] = speaker_id
+        # prompt_cache[voice_path] = {"audio": prompt_audio, "text": prompt_text}
+        return True
 
     def _ensure_xtts_speakers(self, xtt_sv_files_):
         if self.xtts_builtin_speakers_list is not None:
@@ -964,21 +995,19 @@ class Coqui:
                 if voice_path is None or not os.path.exists(voice_path):
                     print('CosyVoice zero-shot requires a valid reference voice file.')
                     return None, trim_audio_buffer
-                from cosyvoice.utils.file_utils import load_wav
-                prompt_audio = load_wav(voice_path, 24000)
-                prompt_text = ''
-                prompt_text_file = Path(voice_path).with_suffix(".txt")
-                if prompt_text_file.exists():
-                    prompt_text = prompt_text_file.read_text(encoding="utf-8").strip()
                 zero_cache = settings.setdefault('zero_shot_speakers', {})
+                prompt_cache = settings.setdefault('zero_shot_prompts', {})
                 speaker_id = zero_cache.get(voice_path)
-                if speaker_id is None:
-                    speaker_id = f"cosy_{hashlib.md5(voice_path.encode('utf-8')).hexdigest()[:8]}"
-                    added = tts.add_zero_shot_spk(prompt_text, prompt_audio, speaker_id)
-                    if not added:
-                        print('Failed to register CosyVoice zero-shot speaker.')
+                prompt = prompt_cache.get(voice_path)
+                if speaker_id is None or prompt is None:
+                    if not self._prepare_cosyvoice_zero_shot(tts, settings):
                         return None, trim_audio_buffer
-                    zero_cache[voice_path] = speaker_id
+                    speaker_id = zero_cache.get(voice_path)
+                    prompt = prompt_cache.get(voice_path)
+                    if speaker_id is None or prompt is None:
+                        return None, trim_audio_buffer
+                prompt_audio = prompt["audio"]
+                prompt_text = prompt["text"]
                 for out in tts.inference_zero_shot(sentence, prompt_text, prompt_audio, zero_shot_spk_id=speaker_id, stream=False):
                     audio_chunks.append(out['tts_speech'])
 
