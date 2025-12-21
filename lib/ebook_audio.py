@@ -17,7 +17,8 @@ from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
 from pydub import AudioSegment
 
-from lib import TTS_SML, default_audio_proc_format
+from lib.models import TTS_SML
+from lib.conf import default_audio_proc_format
 from lib.functions import DependencyError, models, default_fine_tuned
 
 class EbookAudio:

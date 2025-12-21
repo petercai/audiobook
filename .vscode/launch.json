@@ -3,17 +3,7 @@
   // Hover to view descriptions of existing attributes.
   // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
   "version": "0.2.0",
-  "configurations": [
-    {
-      "name": "Python Debugger: test_tts_en_convert",
-      "type": "debugpy",
-      "request": "launch",
-      "module": "pytest",
-      "console": "integratedTerminal",
-      "args": "tests/test_coqui.py::test_tts_en_convert",
-      "justMyCode": false
-    },
-    {
+  "configurations": [{
       "name": "GUI",
       "type": "debugpy",
       "request": "launch",
@@ -21,8 +11,7 @@
       "console": "integratedTerminal",
       "args": [
       ],
-    },
-    {
+    }, {
       "name": "GUI - Offline Mode",
       "type": "debugpy",
       "request": "launch",
@@ -31,96 +20,12 @@
       "args": [
         "--offline_mode"
       ],
-    },
-    {
-      "name": "xTTS CN",
-      "type": "debugpy",
-      "request": "launch",
-      "program": "app.py",
-      "console": "integratedTerminal",
-      "args": [
-        "--headless",  
-        "--ebook", 
-        "ebooks/god-1.txt",
-        "--device",
-        "gpu",
-        "--tts_engine",
-        "xtts",
-        "--language",
-        "zho",
-        "--voice",
-        "voices/zho/adult/male/yunxi_24000.wav",
-        "--session",
-        "21ce9315-cf16-4b12-921b-fcf52c680809", 
-      ],
-    },
-    {
-      "name": "Bark CN",
-      "type": "debugpy",
-      "request": "launch",
-      "program": "app.py",
-      "console": "integratedTerminal",
-      "args": [
-        "--headless",  
-        "--ebook", 
-        "ebooks/god-1.txt",
-        "--device",
-        "gpu",
-        "--tts_engine",
-        "bark",
-        "--language",
-        "zho",
-        "--voice",
-        "voices/zho/adult/male/yunxi_24000.wav",
-        // "--session",
-        // "ead72c49-c5a2-4bf7-8e75-8c7b2c07f0ee", // CPU
-      ],
-    },
-    {
-      "name": "VoxCPM CN",
-      "type": "debugpy",
-      "request": "launch",
-      "program": "app.py",
-      "console": "integratedTerminal",
-      "args": [
-        "--headless",  
-        "--ebook", 
-        "ebooks/god-1.txt",
-        "--device",
-        "cpu",
-        "--tts_engine",
-        "voxcpm",
-        "--language",
-        "zho",
-        "--voice",
-        "voices/zho/adult/male/yunxi_24000.wav",
-        "--session",
-        "72491125-07fd-4bc4-b837-ec5187d9e2a1", 
-      ],
-    },
-    {
-      "name": "xTTS en",
-      "type": "debugpy",
-      "request": "launch",
-      "program": "app.py",
-      "console": "integratedTerminal",
-      "args": [
-        "--headless",  
-        "--ebook", 
-        "ebooks/UnravelMe_one_sentense.txt",
-        "--device",
-        "mps",
-        "--tts_engine",
-        "xtts",
-      ],
-    },
-    {
+    }, {
       "name": "Python: Debug current file",
       "type": "debugpy",
       "request": "launch",
       "program": "${file}",
       "justMyCode": false
-}
-    
+    }
   ]
 }

@@ -14,27 +14,12 @@ from iso639 import languages
 
 from lib.ebook_audio import EbookAudio
 from .classes.voice_extractor import VoiceExtractor
-from .functions import (
-    NATIVE,
-    TTS_ENGINES,
-    analyze_uploaded_file,
-    check_programs,
-    default_engine_settings,
-    default_gpu_wiki,
-    default_output_split_minutes,
-    get_compatible_tts_engines,
-    get_vram,
-    language_mapping,
-    models,
-    models_dir,
-    prepare_dirs,
-    reset_ebook_session,
-    show_alert,
-    ebook_formats,
-    tmp_dir,
-    voices_dir,
-)
+from lib.conf import default_gpu_wiki, ebook_formats
+from lib.functions import NATIVE, TTS_ENGINES, analyze_uploaded_file, check_programs, default_engine_settings, \
+    default_output_split_minutes, get_compatible_tts_engines, get_vram,  models, models_dir, \
+    prepare_dirs, reset_ebook_session, show_alert,  tmp_dir, voices_dir
 from lib.epub import EPubProcessor
+from .lang import language_mapping
 
 
 class EBookProcessor:

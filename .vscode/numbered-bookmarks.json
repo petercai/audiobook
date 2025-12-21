@@ -1,96 +1,6 @@
 {
 	"files": [
 		{
-			"path": "deps.txt",
-			"bookmarks": [
-				{
-					"line": -1,
-					"column": 0
-				},
-				{
-					"line": 788,
-					"column": 29
-				},
-				{
-					"line": -1,
-					"column": 0
-				},
-				{
-					"line": -1,
-					"column": 0
-				},
-				{
-					"line": -1,
-					"column": 0
-				},
-				{
-					"line": -1,
-					"column": 0
-				},
-				{
-					"line": -1,
-					"column": 0
-				},
-				{
-					"line": -1,
-					"column": 0
-				},
-				{
-					"line": -1,
-					"column": 0
-				},
-				{
-					"line": -1,
-					"column": 0
-				}
-			]
-		},
-		{
-			"path": "lib/models.py",
-			"bookmarks": [
-				{
-					"line": -1,
-					"column": 0
-				},
-				{
-					"line": -1,
-					"column": 0
-				},
-				{
-					"line": -1,
-					"column": 0
-				},
-				{
-					"line": -1,
-					"column": 0
-				},
-				{
-					"line": -1,
-					"column": 0
-				},
-				{
-					"line": -1,
-					"column": 0
-				},
-				{
-					"line": -1,
-					"column": 0
-				},
-				{
-					"line": -1,
-					"column": 0
-				},
-				{
-					"line": 83,
-					"column": 16
-				},
-				{
-					"line": 467,
-					"column": 31
-				}
-			]
-		},
-		{
 			"path": "lib/classes/tts_engines/coqui.py",
 			"bookmarks": [
 				{
@@ -98,16 +8,8 @@
 					"column": 0
 				},
 				{
-					"line": 947,
-					"column": 65
-				},
-				{
-					"line": 175,
-					"column": 35
-				},
-				{
-					"line": 792,
-					"column": 34
+					"line": 986,
+					"column": 50
 				},
 				{
 					"line": -1,
@@ -120,6 +22,14 @@
 				{
 					"line": -1,
 					"column": 0
+				},
+				{
+					"line": -1,
+					"column": 0
+				},
+				{
+					"line": 1051,
+					"column": 49
 				},
 				{
 					"line": -1,
