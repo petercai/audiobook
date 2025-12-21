@@ -19,7 +19,9 @@ from pydub import AudioSegment
 
 from lib.models import TTS_SML
 from lib.conf import default_audio_proc_format
-from lib.functions import DependencyError, models, default_fine_tuned
+from lib.functions import DependencyError
+from lib.models import models
+from lib.models import default_fine_tuned
 
 class EbookAudio:
 

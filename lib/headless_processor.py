@@ -15,9 +15,21 @@ from iso639 import languages
 from lib.ebook_audio import EbookAudio
 from .classes.voice_extractor import VoiceExtractor
 from lib.conf import default_gpu_wiki, ebook_formats
-from lib.functions import NATIVE, TTS_ENGINES, analyze_uploaded_file, check_programs, default_engine_settings, \
-    default_output_split_minutes, get_compatible_tts_engines, get_vram,  models, models_dir, \
-    prepare_dirs, reset_ebook_session, show_alert,  tmp_dir, voices_dir
+from lib.conf import NATIVE
+from lib.models import TTS_ENGINES
+from lib.functions import analyze_uploaded_file
+from lib.functions import check_programs
+from lib.models import default_engine_settings
+from lib.conf import default_output_split_minutes
+from lib.functions import get_compatible_tts_engines
+from lib.functions import get_vram
+from lib.models import models
+from lib.conf import models_dir
+from lib.functions import prepare_dirs
+from lib.functions import reset_ebook_session
+from lib.functions import show_alert
+from lib.conf import tmp_dir
+from lib.conf import voices_dir
 from lib.epub import EPubProcessor
 from .lang import language_mapping
 
