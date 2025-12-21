@@ -1018,10 +1018,10 @@ class Coqui:
             # Get settings for the current TTS engine.
             settings = self.params[self.session['tts_engine']]
             final_sentence_file = os.path.join(self.session['chapters_dir_sentences'], f'{sentence_number}.{default_audio_proc_format}')
-            
+            model_name_ = models[self.session["tts_engine"]][self.session['fine_tuned']]['repo']
             cosyvoice_sft = (
                 self.session['tts_engine'] == TTS_ENGINES['COSYVOICE']
-                and self.session['fine_tuned']['repo'] == 'CosyVoice-300M-SFT'
+                and model_name_ == 'CosyVoice-300M-SFT'
             )
             if cosyvoice_sft:
                 # SFT flavour uses speaker IDs instead of reference audio.
