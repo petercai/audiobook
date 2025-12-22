@@ -2,11 +2,11 @@
 import inspect
 import os
 import pytest
-from ebooklib import epub
 
-from lib import TTS_ENGINES, tmp_dir, voices_dir
+from lib.models import TTS_ENGINES
+ 
+from lib.conf import tmp_dir, voices_dir
 from lib.ebook_audio import EbookAudio
-from lib.epub import EPubProcessor
 from lib.mock_session import SessionContextMock, set_process_dir
 
 import sys
