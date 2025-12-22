@@ -482,98 +482,16 @@ class EPubProcessor:
         """
         try:
             is_tokenizer_tts = tts_engine not in TOKENIZER_FREE_TTS
-            tuples_list = self._extract_chapter_sentence_list(doc_chapter, is_tokenizer_tts)
-            if not tuples_list:
+            tuples_structured_sentence_list = self._extract_chapter_structured_sentence_list(doc_chapter, is_tokenizer_tts)
+            if not tuples_structured_sentence_list:
                 return []
-            # Process the structured list to build a flat list of text elements.
-            text_list = []
-            handled_tables = set()  # Keep track of tables we've already processed
-            prev_typ = None  # Track the previous element type to avoid duplicate breaks/pauses
-            for typ, payload in tuples_list:
-                if typ == "heading":
-                    # Add heading text to the list after stripping whitespace
-                    text_list.append(payload.strip())
-                elif typ == "break":
-                    # Avoid adding multiple consecutive break tokens which could cause unwanted pauses
-                    if prev_typ != 'break' and is_tokenizer_tts :
-                        text_list.append(TTS_SML['break'])
-                elif typ == 'pause' and is_tokenizer_tts:
-                    # Avoid adding multiple consecutive pause tokens which could cause unwanted pauses
-                    if prev_typ != 'pause':
-                        text_list.append(TTS_SML['pause'])
-                elif typ == "table":
-                    # Convert HTML tables into a readable string format for TTS
-                    table = payload
-                    # Skip if we've already processed this table (to avoid duplicates)
-                    if table in handled_tables:
-                        prev_typ = typ
-                        continue
-                    handled_tables.add(table)
-                    # Find all table rows
-                    rows = table.find_all("tr")
-                    if not rows:
-                        prev_typ = typ
-                        continue
-                    # Extract header cells text (both th and td in first row)
-                    headers = [c.get_text(strip=True) for c in rows[0].find_all(["td", "th"])]
-                    # Process each data row after the header
-                    for row in rows[1:]:
-                        # Extract cell texts, replacing non-breaking spaces with regular spaces
-                        cells = [c.get_text(strip=True).replace('\xa0', ' ') for c in row.find_all("td")]
-                        if not cells:
-                            continue
-                        # Format the row data - if headers exist and match cell count, use labeled format
-                        if len(cells) == len(headers) and headers:
-                            line = " — ".join(f"{h}: {c}" for h, c in zip(headers, cells))
-                        else:
-                            # Otherwise, just join the cells with separators
-                            line = " — ".join(cells)
-                        if line:
-                            text_list.append(line.strip())
-                else:
-                    # Handle regular text content
-                    text = payload.strip()
-                    if text:
-                        text_list.append(text)
-                prev_typ = typ
             # Get the maximum character limit for the current language to ensure proper sentence segmentation
             max_chars = language_mapping[lang]['max_chars'] - 4
-            # Clean the list by merging short sentences that were separated by a break.
-            # This helps create more natural speech flow by avoiding too many short utterances.
-            clean_list = []
-            i = 0
-            while i < len(text_list):
-                current = text_list[i]
-                # Check if the current item is a break token
-                if current == "‡break‡":
-                    if clean_list:
-                        prev = clean_list[-1]
-                        # Skip consecutive break or pause tokens
-                        if prev in ("‡break‡", "‡pause‡"):
-                            i += 1
-                            continue
-                        # If the previous text ends with alphanumeric or space, try to merge with next sentence
-                        if prev and (prev[-1].isalnum() or prev[-1] == ' '):
-                            if i + 1 < len(text_list):
-                                next_sentence = text_list[i + 1]
-                                # Calculate the length if we merge the previous text with the next sentence
-                                merged_length = len(prev.rstrip()) + 1 + len(next_sentence.lstrip())
-                                # Merge if the combined length is within the character limit.
-                                if merged_length <= max_chars:
-                                    # Handle spacing between merged parts to ensure proper spacing
-                                    if not prev.endswith(" ") and not next_sentence.startswith(" "):
-                                        clean_list[-1] = prev + " " + next_sentence
-                                    else:
-                                        clean_list[-1] = prev + next_sentence
-                                    i += 2
-                                    continue
-                                else:
-                                    # If merging would exceed limit, just add the break token
-                                    clean_list.append(current)
-                                    i += 1
-                                    continue
-                clean_list.append(current)
-                i += 1
+            clean_list = self._to_flat_sentence_list_with_break(
+                tuples_structured_sentence_list,
+                is_tokenizer_tts,
+                max_chars
+            )
             # Join the cleaned list into a single text string for further processing
             text = ' '.join(clean_list)
             # If the text is empty or contains no valid characters, return None to indicate no content
@@ -667,7 +585,7 @@ class EPubProcessor:
             DependencyError(error)
             return None
 
-    def _extract_chapter_sentence_list(self, doc_chapter, is_tokenizer_tts):
+    def _extract_chapter_structured_sentence_list(self, doc_chapter, is_tokenizer_tts):
         # Decode the HTML content of the chapter from the ebook document.
         raw_html = doc_chapter.get_content().decode("utf-8")
         # Parse the HTML using BeautifulSoup to create a navigable structure.
@@ -719,6 +637,96 @@ class EPubProcessor:
             if tail:
                 result.append(tail)
         return result
+
+    def _to_flat_sentence_list_with_break(self, tuples_structured_sentence_list, is_tokenizer_tts, max_chars):
+        # Process the structured list to build a flat list of text elements.
+        text_list = []
+        handled_tables = set()  # Keep track of tables we've already processed
+        prev_typ = None  # Track the previous element type to avoid duplicate breaks/pauses
+        for typ, payload in tuples_structured_sentence_list:
+            if typ == "heading":
+                # Add heading text to the list after stripping whitespace
+                text_list.append(payload.strip())
+            elif typ == "break":
+                # Avoid adding multiple consecutive break tokens which could cause unwanted pauses
+                if prev_typ != 'break' and is_tokenizer_tts:
+                    text_list.append(TTS_SML['break'])
+            elif typ == 'pause' and is_tokenizer_tts:
+                # Avoid adding multiple consecutive pause tokens which could cause unwanted pauses
+                if prev_typ != 'pause':
+                    text_list.append(TTS_SML['pause'])
+            elif typ == "table":
+                # Convert HTML tables into a readable string format for TTS
+                table = payload
+                # Skip if we've already processed this table (to avoid duplicates)
+                if table in handled_tables:
+                    prev_typ = typ
+                    continue
+                handled_tables.add(table)
+                # Find all table rows
+                rows = table.find_all("tr")
+                if not rows:
+                    prev_typ = typ
+                    continue
+                # Extract header cells text (both th and td in first row)
+                headers = [c.get_text(strip=True) for c in rows[0].find_all(["td", "th"])]
+                # Process each data row after the header
+                for row in rows[1:]:
+                    # Extract cell texts, replacing non-breaking spaces with regular spaces
+                    cells = [c.get_text(strip=True).replace('\xa0', ' ') for c in row.find_all("td")]
+                    if not cells:
+                        continue
+                    # Format the row data - if headers exist and match cell count, use labeled format
+                    if len(cells) == len(headers) and headers:
+                        line = " - ".join(f"{h}: {c}" for h, c in zip(headers, cells))
+                    else:
+                        # Otherwise, just join the cells with separators
+                        line = " - ".join(cells)
+                    if line:
+                        text_list.append(line.strip())
+            else:
+                # Handle regular text content
+                text = payload.strip()
+                if text:
+                    text_list.append(text)
+            prev_typ = typ
+        # Clean the list by merging short sentences that were separated by a break.
+        # This helps create more natural speech flow by avoiding too many short utterances.
+        clean_list = []
+        i = 0
+        while i < len(text_list):
+            current = text_list[i]
+            # Check if the current item is a break token
+            if current == "‡break‡":
+                if clean_list:
+                    prev = clean_list[-1]
+                    # Skip consecutive break or pause tokens
+                    if prev in ("‡break‡", "‡pause‡"):
+                        i += 1
+                        continue
+                    # If the previous text ends with alphanumeric or space, try to merge with next sentence
+                    if prev and (prev[-1].isalnum() or prev[-1] == ' '):
+                        if i + 1 < len(text_list):
+                            next_sentence = text_list[i + 1]
+                            # Calculate the length if we merge the previous text with the next sentence
+                            merged_length = len(prev.rstrip()) + 1 + len(next_sentence.lstrip())
+                            # Merge if the combined length is within the character limit.
+                            if merged_length <= max_chars:
+                                # Handle spacing between merged parts to ensure proper spacing
+                                if not prev.endswith(" ") and not next_sentence.startswith(" "):
+                                    clean_list[-1] = prev + " " + next_sentence
+                                else:
+                                    clean_list[-1] = prev + next_sentence
+                                i += 2
+                                continue
+                            else:
+                                # If merging would exceed limit, just add the break token
+                                clean_list.append(current)
+                                i += 1
+                                continue
+            clean_list.append(current)
+            i += 1
+        return clean_list
 
     def _segment_ideogramms(self, text, lang):
         """
