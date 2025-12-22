@@ -1025,27 +1025,30 @@ class Coqui:
             # Get settings for the current TTS engine.
             settings = self.params[self.session['tts_engine']]
             final_sentence_file = os.path.join(self.session['chapters_dir_sentences'], f'{sentence_number}.{default_audio_proc_format}')
-            model_name_ = models[self.session["tts_engine"]][self.session['fine_tuned']]['repo']
+            model_fine_tuned_name = self.session['fine_tuned']
+            model_name_ = models[self.session["tts_engine"]][model_fine_tuned_name]['repo']
             cosyvoice_sft = (
                 self.session['tts_engine'] == TTS_ENGINES['COSYVOICE']
                 and model_name_ == 'CosyVoice-300M-SFT'
             )
             if cosyvoice_sft:
                 # SFT flavour uses speaker IDs instead of reference audio.
-                speaker = self.session['voice'] or models[self.session['tts_engine']][self.session['fine_tuned']]['voice']
+                speaker = [self.session['tts_engine']][model_fine_tuned_name]['voice']
                 if not speaker:
                     # Fallback to the first declared CosyVoice speaker id.
                     speaker = next(iter(default_engine_settings[TTS_ENGINES['COSYVOICE']]['voices'].values()), None)
                 settings['voice_path'] = None
             else:
                 # --- Voice Path Determination ---
-                # Determine the path to the voice file to be used for synthesis.
-                settings['voice_path'] = (
-                    self.session['voice'] if self.session['voice'] is not None 
-                    else os.path.join(self.session['custom_model_dir'], self.session['tts_engine'], self.session['custom_model'], 'ref.wav') if self.session['custom_model'] is not None
-                    else models[self.session['tts_engine']][self.session['fine_tuned']]['voice']
-                )
-                
+                # Determine voice path based on session settings.
+                if self.session['voice'] is not None:
+                    settings['voice_path'] = self.session['voice']
+                elif self.session['custom_model'] is not None:
+                    settings['voice_path'] = os.path.join(self.session['custom_model_dir'], self.session['tts_engine'],
+                                              self.session['custom_model'], 'ref.wav')
+                else:
+                    settings['voice_path'] = models[self.session['tts_engine']][model_fine_tuned_name]['voice']
+
                 # --- Speaker and Voice Pre-processing ---
                 if settings['voice_path'] is not None:
                     # Extract the speaker name from the voice file path.
