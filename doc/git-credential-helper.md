@@ -41,6 +41,12 @@ Enable it:
 
 ```bash
 git config --global credential.helper 'cache --timeout=86400'
+git config --system credential.helper 'cache --timeout=86400'
+git config --local credential.helper 'cache --timeout=86400'
+git config --global credential.helper store
+git config --system credential.helper store
+git config --local credential.helper store
+git config credential.helper store
 ```
 
 **86400 seconds = 24 hours**

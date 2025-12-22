@@ -835,8 +835,8 @@ specialchars_remove = [
 language_mapping = {
     "ara": {"name": "Arabic", "native_name": "العربية", "max_chars": 166},
     "ben": {"name": "Bengali", "native_name": "বাংলা", "max_chars": 142},
-    "zho": {"name": "Chinese", "native_name": "中文", "max_chars": 82},
-    "eng": {"name": "English", "native_name": "English", "max_chars": 250},
+    "zho": {"name": "Chinese", "native_name": "中文", "max_chars": 50},
+    "eng": {"name": "English", "native_name": "English", "max_chars": 150},
     "fas": {"name": "Persian", "native_name": "فارسی", "max_chars": 182},
     "fra": {"name": "French", "native_name": "Français", "max_chars": 273},
     "deu": {"name": "German, Standard", "native_name": "Deutsch", "max_chars": 253},
