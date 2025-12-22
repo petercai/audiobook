@@ -1041,7 +1041,15 @@ class Coqui:
             else:
                 # --- Voice Path Determination ---
                 # Determine voice path based on session settings.
-                if self.session['voice'] is not None:
+                # if fine_tuned model is selected (name is not internal)
+                # pick the speaker (or voice_apth) from model definition first!
+                internal_voice_path = None
+                if model_fine_tuned_name != 'internal':
+                    internal_voice_path = models[self.session['tts_engine']][model_fine_tuned_name].get('voice')
+
+                if internal_voice_path is not None:
+                    settings['voice_path'] = internal_voice_path
+                elif self.session['voice'] is not None:
                     settings['voice_path'] = self.session['voice']
                 elif self.session['custom_model'] is not None:
                     settings['voice_path'] = os.path.join(self.session['custom_model_dir'], self.session['tts_engine'],
