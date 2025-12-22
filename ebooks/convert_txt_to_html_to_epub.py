@@ -33,6 +33,7 @@ from pathlib import Path
 # TXT 小说所在文件夹（当前目录）
 TXT_FOLDER = r".\txt"
 END_OF_BOOK = "（完）"
+LAN = "cn"
 
 CALIBRE_PATH = r"C:\Program Files\Calibre2\ebook-convert.exe"  # 或 "ebook-convert"（已在 PATH）
 ENCODING = "utf-8"
@@ -139,7 +140,7 @@ def txt_to_structured_html(txt_path, html_path):
 
     # 若从未识别出章节，把全文当成一章（避免空 toc）
     if not chapters:
-        chapters.append({"title": "正文", "paras": lines_title_page.copy()})
+        chapters.append({"title": "第一章" if LAN == "cn" else "Chapter 1", "paras": lines_title_page.copy()})
         lines_title_page = []
 
     # 生成 HTML：包含 cover, title-page, nav, chapters（每章 id 固定）
