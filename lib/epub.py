@@ -370,43 +370,85 @@ class EPubProcessor:
             return self._math2words(m, lang, lang_iso1, None, is_num2words_compat)
 
     def _tuple_row(self, node, last_text_char=None, tokenizer_tts=True):
+        """
+        Recursively traverses a BeautifulSoup HTML node tree and yields structured content tuples.
+
+        This generator function walks through the HTML elements of a chapter, extracting
+        text, headings, and tables. It also identifies structural tags to insert
+        special markup language (SML) tokens for breaks and pauses, which are used
+        by certain TTS engines to produce more natural-sounding speech.
+
+        Args:
+            node (bs4.Tag or bs4.BeautifulSoup): The BeautifulSoup node to traverse.
+            last_text_char (str, optional): The last character of the previously yielded
+                text segment. This is used to make decisions about inserting break tokens.
+                Defaults to None.
+            tokenizer_tts (bool, optional): A flag indicating whether the TTS engine
+                requires explicit SML tokens for pausing and sentence breaking. If True,
+                the generator will yield 'break' and 'pause' tuples. This should be set
+                based on whether the selected TTS engine is in the TOKENIZER_FREE_TTS list.
+                Defaults to True.
+
+        Yields:
+            tuple: A tuple in the format (type, content), where 'type' can be one of
+                   "text", "heading", "table", "break", or "pause", and 'content' is
+                   the corresponding data (string, bs4.Tag, or SML token).
+        """
         try:
+            # Iterate over each child of the current HTML node.
             for child in node.children:
+                # If the child is a text string (not a tag).
                 if isinstance(child, NavigableString):
                     text = child.strip()
+                    # Yield the text if it's not empty.
                     if text:
                         yield ("text", text)
+                        # Update the last character seen to track context for break insertion.
                         last_text_char = text[-1] if text else last_text_char
 
+                # If the child is an HTML tag.
                 elif isinstance(child, Tag):
                     name = child.name.lower()
+                    # Handle heading tags (h1, h2, etc.).
                     if name in self.heading_tags:
                         title = child.get_text(strip=True)
                         if title:
                             yield ("heading", title)
+                            # Update the last character seen.
                             last_text_char = title[-1] if title else last_text_char
 
+                    # Handle table tags. The table content will be processed later.
                     elif name == "table":
                         yield ("table", child)
 
+                    # Handle other tags that are part of the processable set.
                     else:
                         return_data = False
+                        # Check if the tag is one we should process for content (e.g., p, div, span).
                         if name in self.proc_tags:
+                            # Recursively call this function on the child tag's content.
                             for inner in self._tuple_row(child, last_text_char, tokenizer_tts):
                                 return_data = True
                                 yield inner
-                                # Track last char if this is text or heading
+                                # Track the last character from any yielded text or heading.
                                 if inner[0] in ("text", "heading") and inner[1]:
                                     last_text_char = inner[1][-1]
 
+                            # After processing a tag's content, decide if a break or pause is needed.
                             if return_data:
+                                # If it's a block-level tag that implies a break (e.g., <p>, <div>).
                                 if name in self.break_tags:
-                                    # Only yield break if last char is NOT alnum or space
+                                    # Yield a break token if the TTS needs it and the preceding text
+                                    # ends with punctuation (or if there was no preceding text).
+                                    # This preserves structural breaks that coincide with sentence ends.
                                     if tokenizer_tts and not (last_text_char and (last_text_char.isalnum() or last_text_char.isspace())):
                                         yield ("break", TTS_SML['break'])
+                                # If the TTS needs it, yield a pause after headings or list containers for better pacing.
                                 elif tokenizer_tts and name in self.heading_tags or name in self.pause_tags:
                                     yield ("pause", TTS_SML['pause'])
 
+                        # If the tag is not in our processable set, just traverse into it
+                        # without adding any special breaks or pauses for the tag itself.
                         else:
                             yield from self._tuple_row(child, last_text_char, tokenizer_tts)
 
@@ -415,7 +457,7 @@ class EPubProcessor:
             DependencyError(error)
             return None
 
-    def filter_chapter(self, doc, lang, lang_iso1, tts_engine, stanza_nlp, is_num2words_compat):
+    def filter_chapter(self, doc_chapter, lang, lang_iso1, tts_engine, stanza_nlp, is_num2words_compat):
         """
         Process an EPUB chapter document and convert it into a list of properly formatted sentences
         ready for text-to-speech conversion.
@@ -439,50 +481,10 @@ class EPubProcessor:
             list: List of processed sentences ready for TTS conversion, or None if errors occur
         """
         try:
-            # Decode the HTML content of the chapter from the ebook document.
-            raw_html = doc.get_content().decode("utf-8")
-            # Parse the HTML using BeautifulSoup to create a navigable structure.
-            soup = BeautifulSoup(raw_html, 'html.parser')
-            # Determine the root element for content extraction.
-            # If a `body` tag exists, use it. Otherwise, use the whole document (`soup`).
-            # This handles cases where the EPUB page is a fragment without a `body` tag.
-            content_root = soup.body if soup.body else soup
-            # If the chapter body is empty or contains no text, skip it by returning an empty list.
-            if not content_root or not content_root.get_text(strip=True):
-                return []
-            # Check the EPUB type to exclude non-content sections like TOC, frontmatter, etc.
-            # This helps filter out pages that shouldn't be read aloud (like table of contents).
-            epub_type = ""
-            if soup.body:
-                epub_type = soup.body.get("epub:type", "").lower()
-            # If epub:type is not specified on body, check for section tag with epub:type
-            if not epub_type:
-                section_tag = content_root.find("section")
-                if section_tag:
-                    epub_type = (section_tag.get("epub:type", "") or section_tag.get("epub_type", "") or "").lower()
-                nav_tag = content_root.find("nav")
-                if nav_tag:
-                    epub_type = (nav_tag.get("epub:type", "") or nav_tag.get("epub_type", "") or "").lower()
-            # Define a set of excluded content types that shouldn't be processed
-            excluded = {
-                "frontmatter", "backmatter", "toc", "titlepage", "colophon",
-                "acknowledgments", "dedication", "glossary", "index",
-                "appendix", "bibliography", "copyright-page", "landmark"
-            }
             is_tokenizer_tts = tts_engine not in TOKENIZER_FREE_TTS
-            # If the epub_type contains any excluded terms, skip this chapter
-            if any(part in epub_type for part in excluded):
-                return []
-            # Remove script and style tags as they don't contain readable content for TTS.
-            for tag in content_root.find_all(["script", "style"]):
-                tag.decompose()
-            # Recursively traverse the HTML body to extract content into a structured list of tuples.
-            # Each tuple contains a type identifier and the corresponding content.
-            tuples_list = list(self._tuple_row(content_root, is_tokenizer_tts))
+            tuples_list = self._extract_chapter_sentence_list(doc_chapter, is_tokenizer_tts)
             if not tuples_list:
-                error = 'No tuples_list from content_root created!'
-                print(error)
-                return None
+                return []
             # Process the structured list to build a flat list of text elements.
             text_list = []
             handled_tables = set()  # Keep track of tables we've already processed
@@ -664,6 +666,47 @@ class EPubProcessor:
             error = f'filter_chapter() error: {e}'
             DependencyError(error)
             return None
+
+    def _extract_chapter_sentence_list(self, doc_chapter, is_tokenizer_tts):
+        # Decode the HTML content of the chapter from the ebook document.
+        raw_html = doc_chapter.get_content().decode("utf-8")
+        # Parse the HTML using BeautifulSoup to create a navigable structure.
+        soup = BeautifulSoup(raw_html, 'html.parser')
+        # Determine the root element for content extraction.
+        # If a `body` tag exists, use it. Otherwise, use the whole document (`soup`).
+        # This handles cases where the EPUB page is a fragment without a `body` tag.
+        content_root = soup.body if soup.body else soup
+        # If the chapter body is empty or contains no text, skip it by returning an empty list.
+        if not content_root or not content_root.get_text(strip=True):
+            return []
+        # Check the EPUB type to exclude non-content sections like TOC, frontmatter, etc.
+        # This helps filter out pages that shouldn't be read aloud (like table of contents).
+        epub_type = ""
+        if soup.body:
+            epub_type = soup.body.get("epub:type", "").lower()
+        # If epub:type is not specified on body, check for section tag with epub:type
+        if not epub_type:
+            section_tag = content_root.find("section")
+            if section_tag:
+                epub_type = (section_tag.get("epub:type", "") or section_tag.get("epub_type", "") or "").lower()
+            nav_tag = content_root.find("nav")
+            if nav_tag:
+                epub_type = (nav_tag.get("epub:type", "") or nav_tag.get("epub_type", "") or "").lower()
+        # Define a set of excluded content types that shouldn't be processed
+        excluded = {
+            "frontmatter", "backmatter", "toc", "titlepage", "colophon",
+            "acknowledgments", "dedication", "glossary", "index",
+            "appendix", "bibliography", "copyright-page", "landmark"
+        }
+        # If the epub_type contains any excluded terms, skip this chapter
+        if any(part in epub_type for part in excluded):
+            return []
+        # Remove script and style tags as they don't contain readable content for TTS.
+        for tag in content_root.find_all(["script", "style"]):
+            tag.decompose()
+        # Recursively traverse the HTML body to extract content into a structured list of tuples.
+        # Each tuple contains a type identifier and the corresponding content.
+        return list(self._tuple_row(content_root, is_tokenizer_tts))
 
     def _split_inclusive(self, text, pattern):
         result = []

@@ -471,7 +471,7 @@ def test_filter_chapter(session_context, ebook_path, tmp_path):
     args = {
         "session": session_id,
         'cancellation_requested': False,
-        "ebook": os.path.join(ebook_path, "god-c12.epub"),
+        "ebook": os.path.join(ebook_path, "思考,快与慢.epub"),
         "device": "cpu",
         "language": "zho",
         "language_iso1": 'zh',
@@ -481,32 +481,62 @@ def test_filter_chapter(session_context, ebook_path, tmp_path):
 
     # update session with args
     session.update(args)
-
+    func_name = inspect.currentframe().f_code.co_name
+    set_process_dir(session, func_name)
+    
     ebook_ = session["ebook"]
     epubBook = epub.read_epub(ebook_, {"ignore_ncx": True})
 
     processor = EPubProcessor()
     all_docs, toc = processor.get_epub_chapters(epubBook, session['language'])
+    
+    doc_by_name = {}
+    doc_by_basename = {}
+    for doc in all_docs:
+        doc_name = getattr(doc, "file_name", None) or getattr(doc, "href", None)
+        if doc_name:
+            doc_by_name[doc_name] = doc
+            doc_by_basename[os.path.basename(doc_name)] = doc
 
+    def iter_toc_items(items):
+        for item in items:
+            if isinstance(item, (list, tuple)) and len(item) == 2 and isinstance(item[1], (list, tuple)):
+                section, children = item
+                yield section
+                if children:
+                    yield from iter_toc_items(children)
+            else:
+                yield item
 
-    # Call the filter_chapter method
-    sentences = processor.filter_chapter(
-        all_docs[0],
-        lang='zho',
-        lang_iso1='zh',
-        tts_engine='xtts',
-        stanza_nlp=True,
-        is_num2words_compat=True
-    )
+    toc_docs = {}
+    for item in iter_toc_items(toc):
+        title = getattr(item, "title", None)
+        href = getattr(item, "href", None) or getattr(item, "file_name", None)
+        if not (title and href):
+            continue
+        href_base = href.split("#", 1)[0]
+        doc = doc_by_name.get(href) or doc_by_name.get(href_base) or doc_by_basename.get(os.path.basename(href_base))
+        if doc is not None:
+            toc_docs[title] = doc
+    
+    transcript_dir = os.path.join(session["process_dir"], "transcript")
+    os.makedirs(transcript_dir, exist_ok=True)
+    toc_count = len(toc_docs)
+    number_width = max(1, len(str(toc_count)))
+    for chapter_index, chapter_doc in enumerate(toc_docs.values(), 1):
+        chapter_sentences = processor.filter_chapter(
+            chapter_doc,
+            lang='zho',
+            lang_iso1='zh',
+            tts_engine='xtts',
+            stanza_nlp=True,
+            is_num2words_compat=True
+        )
+        chapter_filename = f"c{chapter_index:0{number_width}d}.txt"
+        chapter_path = os.path.join(transcript_dir, chapter_filename)
+        with open(chapter_path, "w", encoding="utf-8") as chapter_file:
+            chapter_file.write("\n".join(chapter_sentences))
 
-    # Assertions
-    assert sentences is not None
-    assert isinstance(sentences, list)
-    assert len(sentences) > 0
-    # print all sentenses
-    print("total of sentenses: " + str(len(sentences)))
-    for sentence in sentences:
-        print(sentence)
-    # assert "Chapter 1" in sentences[0]
-    # assert "This is a sentence." in sentences[1]
-    # assert "This is another sentence." in sentences[2]
+    created_files = sum(1 for entry in os.scandir(transcript_dir) if entry.is_file())
+    assert created_files == toc_count
+
