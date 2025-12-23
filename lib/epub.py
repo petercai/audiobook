@@ -501,72 +501,19 @@ class EPubProcessor:
                 return None
             # If a Stanza NLP pipeline is available, use it for advanced text processing like date recognition
             if stanza_nlp:
-                # Regex for ordinal numbers (e.g., 1st, 2nd) to convert them to words
-                re_ordinal = re.compile(
-                    r'(?<!\w)(0?[1-9]|[12][0-9]|3[01])(?:\s|\u00A0)*(?:st|nd|rd|th)(?!\w)',
-                    re.IGNORECASE
+                text = self._num2dateWithNLP(
+                    text,
+                    stanza_nlp,
+                    lang,
+                    lang_iso1,
+                    tts_engine,
+                    is_num2words_compat
                 )
-                # Regex for general numbers to convert them to words
-                re_num = re.compile(r'(?<!\w)[-+]?\d+(?:\.\d+)?(?!\w)')
-                # Normalize Unicode characters and replace non-breaking spaces with regular spaces
-                text = unicodedata.normalize('NFKC', text).replace('\u00A0', ' ')
-                # Process dates if both numbers and ordinals are present in the text
-                if re_num.search(text) and re_ordinal.search(text):
-                    # Use Stanza NLP to identify date entities in the text
-                    date_spans = self._get_date_entities(text, stanza_nlp)
-                    if date_spans:
-                        result = []
-                        last_pos = 0
-                        # Process each identified date span
-                        for start, end, date_text in date_spans:
-                            # Add text before the date span to the result
-                            result.append(text[last_pos:start])
-                            # 1) Convert 4-digit years to words using the _year2words method
-                            processed = re.sub(
-                                r"\b\d{4}\b",
-                                lambda m: self._year2words(m.group(), lang, lang_iso1, is_num2words_compat),
-                                date_text
-                            )
-                            # 2) Convert ordinal days to words based on num2words compatibility
-                            if is_num2words_compat:
-                                processed = re_ordinal.sub(
-                                    lambda m: num2words(int(m.group(1)), to="ordinal", lang=(lang_iso1 or "en")),
-                                    processed
-                                )
-                            else:
-                                processed = re_ordinal.sub(
-                                    lambda m: self._math2words(m.group(), lang, lang_iso1, tts_engine, is_num2words_compat),
-                                    processed
-                                )
-                            # 3) Convert other numbers to words, skipping years which were already processed
-                            processed = re_num.sub(lambda m: self._num_repl(m, lang, lang_iso1, is_num2words_compat), processed)
-                            result.append(processed)
-                            last_pos = end
-                        # Add any remaining text after the last date span
-                        result.append(text[last_pos:])
-                        text = ''.join(result)
-                    else:
-                        # If no date entities are found, process ordinals and years separately
-                        if is_num2words_compat:
-                            text = re_ordinal.sub(
-                                lambda m: num2words(int(m.group(1)), to="ordinal", lang=(lang_iso1 or "en")),
-                                text
-                            )
-                        else:
-                            text = re_ordinal.sub(
-                                lambda m: self._math2words(int(m.group(1)), lang, lang_iso1, tts_engine, is_num2words_compat),
-                                text
-                            )
-                        # Convert 4-digit years to words
-                        text = re.sub(
-                            r"\b\d{4}\b",
-                            lambda m: self._year2words(m.group(), lang, lang_iso1, is_num2words_compat),
-                            text
-                        )
             # Convert Roman numerals, clock times, and mathematical expressions to words for better TTS
             text = self._roman2number(text)  # Convert Roman numerals to Arabic numbers
             text = self._clock2words(text, lang, lang_iso1, tts_engine, is_num2words_compat)  # Convert clock times to words
             text = self._math2words(text, lang, lang_iso1, tts_engine, is_num2words_compat)  # Convert math expressions to words
+            
             # Remove special characters that are not needed for TTS by replacing them with spaces
             specialchars_remove_table = str.maketrans({ch: ' ' for ch in specialchars_remove})
             text = text.translate(specialchars_remove_table)
@@ -625,6 +572,71 @@ class EPubProcessor:
         # Recursively traverse the HTML body to extract content into a structured list of tuples.
         # Each tuple contains a type identifier and the corresponding content.
         return list(self._tuple_row(content_root, is_tokenizer_tts))
+
+    def _num2dateWithNLP(self, text, stanza_nlp, lang, lang_iso1, tts_engine, is_num2words_compat):
+        # Regex for ordinal numbers (e.g., 1st, 2nd) to convert them to words
+        re_ordinal = re.compile(
+            r'(?<!\w)(0?[1-9]|[12][0-9]|3[01])(?:\s|\u00A0)*(?:st|nd|rd|th)(?!\w)',
+            re.IGNORECASE
+        )
+        # Regex for general numbers to convert them to words
+        re_num = re.compile(r'(?<!\w)[-+]?\d+(?:\.\d+)?(?!\w)')
+        # Normalize Unicode characters and replace non-breaking spaces with regular spaces
+        text = unicodedata.normalize('NFKC', text).replace('\u00A0', ' ')
+        # Process dates if both numbers and ordinals are present in the text
+        if re_num.search(text) and re_ordinal.search(text):
+            # Use Stanza NLP to identify date entities in the text
+            date_spans = self._get_date_entities(text, stanza_nlp)
+            if date_spans:
+                result = []
+                last_pos = 0
+                # Process each identified date span
+                for start, end, date_text in date_spans:
+                    # Add text before the date span to the result
+                    result.append(text[last_pos:start])
+                    # 1) Convert 4-digit years to words using the _year2words method
+                    processed = re.sub(
+                        r"\b\d{4}\b",
+                        lambda m: self._year2words(m.group(), lang, lang_iso1, is_num2words_compat),
+                        date_text
+                    )
+                    # 2) Convert ordinal days to words based on num2words compatibility
+                    if is_num2words_compat:
+                        processed = re_ordinal.sub(
+                            lambda m: num2words(int(m.group(1)), to="ordinal", lang=(lang_iso1 or "en")),
+                            processed
+                        )
+                    else:
+                        processed = re_ordinal.sub(
+                            lambda m: self._math2words(m.group(), lang, lang_iso1, tts_engine, is_num2words_compat),
+                            processed
+                        )
+                    # 3) Convert other numbers to words, skipping years which were already processed
+                    processed = re_num.sub(lambda m: self._num_repl(m, lang, lang_iso1, is_num2words_compat), processed)
+                    result.append(processed)
+                    last_pos = end
+                # Add any remaining text after the last date span
+                result.append(text[last_pos:])
+                text = ''.join(result)
+            else:
+                # If no date entities are found, process ordinals and years separately
+                if is_num2words_compat:
+                    text = re_ordinal.sub(
+                        lambda m: num2words(int(m.group(1)), to="ordinal", lang=(lang_iso1 or "en")),
+                        text
+                    )
+                else:
+                    text = re_ordinal.sub(
+                        lambda m: self._math2words(int(m.group(1)), lang, lang_iso1, tts_engine, is_num2words_compat),
+                        text
+                    )
+                # Convert 4-digit years to words
+                text = re.sub(
+                    r"\b\d{4}\b",
+                    lambda m: self._year2words(m.group(), lang, lang_iso1, is_num2words_compat),
+                    text
+                )
+        return text
 
     def _split_inclusive(self, text, pattern):
         result = []
@@ -1185,12 +1197,12 @@ class EPubProcessor:
             return False
 
     def _set_formatted_number(self, text: str, lang, lang_iso1: str, is_num2words_compat: bool, max_single_value: int = 999_999_999_999_999_999):
-        # match up to 18 digits, optional �,�� groups (allowing spaces or NBSP after comma), optional decimal of up to 12 digits
+        # match up to 18 digits, optional “,…” groups (allowing spaces or NBSP after comma), optional decimal of up to 12 digits
         # handle optional range with dash/en dash/em dash between numbers, and allow trailing punctuation
         number_re = re.compile(
             r'(?<!\w)'
             r'(\d{1,18}(?:,\s*\d{1,18})*(?:\.\d{1,12})?)'      # first number
-            r'(?:\s*([-��])\s*'                                # dash type
+            r'(?:\s*([-–—])\s*'                                # dash type
             r'(\d{1,18}(?:,\s*\d{1,18})*(?:\.\d{1,12})?))?'    # optional second number
             r'([^\w\s]*)',                                     # optional trailing punctuation
             re.UNICODE
@@ -1226,31 +1238,36 @@ class EPubProcessor:
         return time_rx.sub(lambda m: self._repl_clock_num(m, lang_lc, is_num2words_compat, tts_engine, lang, lang_iso1), text)
 
     def _math2words(self, text, lang, lang_iso1, tts_engine, is_num2words_compat):
-        # Matches any digits + optional space/NBSP + st/nd/rd/th, not glued into words.
-        re_ordinal = re.compile(r'(?<!\w)(\d+)(?:\s|\u00A0)*(?:st|nd|rd|th)(?!\w)')
-        text = re.sub(r'(\d)\)', r'\1 : ', text)
-        text = re_ordinal.sub(lambda m: self.__ordinal_to_words(m, lang_iso1, is_num2words_compat), text)
-        # Symbol phonemes
-        ambiguous_symbols = {"-", "/", "*", "x"}
-        phonemes_list = language_math_phonemes.get(lang, language_math_phonemes[default_language_code])
-        replacements = {k: v for k, v in phonemes_list.items() if not k.isdigit() and k not in [',', '.']}
-        normal_replacements  = {k: v for k, v in replacements.items() if k not in ambiguous_symbols}
-        ambiguous_replacements = {k: v for k, v in replacements.items() if k in ambiguous_symbols}
-        # Replace unambiguous symbols everywhere
-        if normal_replacements:
-            sym_pat = r'(' + '|'.join(map(re.escape, normal_replacements.keys())) + r')'
-            text = re.sub(sym_pat, lambda m: f" {normal_replacements[m.group(1)]} ", text)
-        # Replace ambiguous symbols only in valid equation contexts
-        if ambiguous_replacements:
-            ambiguous_pattern = (
-                r'(?<!\S)'                   # no non-space before
-                r'(\d+)\s*([-/*x])\s*(\d+)'  # num SYMBOL num
-                r'(?!\S)'                    # no non-space after
-                r'|'                         # or
-                r'(?<!\S)([-/*x])\s*(\d+)(?!\S)'  # SYMBOL num
-            )
-            text = re.sub(ambiguous_pattern, lambda m: self._repl_ambiguous(m, ambiguous_replacements), text)
-        text = self._set_formatted_number(text, lang, lang_iso1, is_num2words_compat)
+        try:
+            # Matches any digits + optional space/NBSP + st/nd/rd/th, not glued into words.
+            re_ordinal = re.compile(r'(?<!\w)(\d+)(?:\s|\u00A0)*(?:st|nd|rd|th)(?!\w)')
+            text = re.sub(r'(\d)\)', r'\1 : ', text)
+            text = re_ordinal.sub(lambda m: self.__ordinal_to_words(m, lang_iso1, is_num2words_compat), text)
+            # Symbol phonemes
+            ambiguous_symbols = {"-", "/", "*", "x"}
+            phonemes_list = language_math_phonemes.get(lang, language_math_phonemes[default_language_code])
+            replacements = {k: v for k, v in phonemes_list.items() if not k.isdigit() and k not in [',', '.']}
+            normal_replacements  = {k: v for k, v in replacements.items() if k not in ambiguous_symbols}
+            ambiguous_replacements = {k: v for k, v in replacements.items() if k in ambiguous_symbols}
+            # Replace unambiguous symbols everywhere
+            if normal_replacements:
+                sym_pat = r'(' + '|'.join(map(re.escape, normal_replacements.keys())) + r')'
+                text = re.sub(sym_pat, lambda m: f" {normal_replacements[m.group(1)]} ", text)
+            # Replace ambiguous symbols only in valid equation contexts
+            if ambiguous_replacements:
+                ambiguous_pattern = (
+                    r'(?<!\S)'                   # no non-space before
+                    r'(\d+)\s*([-/*x])\s*(\d+)'  # num SYMBOL num
+                    r'(?!\S)'                    # no non-space after
+                    r'|'                         # or
+                    r'(?<!\S)([-/*x])\s*(\d+)(?!\S)'  # SYMBOL num
+                )
+                text = re.sub(ambiguous_pattern, lambda m: self._repl_ambiguous(m, ambiguous_replacements), text)
+            text = self._set_formatted_number(text, lang, lang_iso1, is_num2words_compat)
+        except Exception as e:
+            error = f'_math2words() error: {e}'
+            DependencyError(error)
+            return text
         return text
 
     def _roman2number(self, text):
@@ -1259,7 +1276,7 @@ class EPubProcessor:
         text = re.sub(r'^(?:\s*)([IVXLCDM]+)([.-])(?:\s*)$', self._repl_roman_standalone, text, flags=re.MULTILINE)
 
         # NEW: only convert whitespace-delimited tokens of length >= 2
-        # This avoids: 19C, 19�C, �C, AC/DC, CD-ROM, single-letter "I"
+        # This avoids: 19C, 19°C, °C, AC/DC, CD-ROM, single-letter "I"
         text = re.sub(r'(?<!\S)([IVXLCDM]{2,})(?!\S)', self._repl_roman_word, text)
 
         return text
@@ -1278,7 +1295,7 @@ class EPubProcessor:
             mapping = abbreviations_mapping[lang]
             # Sort keys by descending length so longer ones match first
             keys = sorted(mapping.keys(), key=len, reverse=True)
-            # Build a regex that only matches whole �words� (tokens) exactly
+            # Build a regex that only matches whole “words” (tokens) exactly
             pattern = re.compile(
                 r'(?<!\w)(' + '|'.join(re.escape(k) for k in keys) + r')(?!\w)',
                 flags=re.IGNORECASE
@@ -1290,7 +1307,7 @@ class EPubProcessor:
         text = re.sub(r'\b(?:[a-zA-Z]\.){1,}[a-zA-Z]?\b\.?', lambda m: m.group().replace('.', '').upper(), text)
         # Prepare SML tags
         text = self._filter_sml(text)
-        # Replace multiple newlines ("\n\n", "\r\r", "\n\r", etc.) with a �pause� 1.4sec
+        # Replace multiple newlines ("\n\n", "\r\r", "\n\r", etc.) with a ‡pause‡ 1.4sec
         pattern = r'(?:\r\n|\r|\n){2,}'
         text = re.sub(pattern, f" {TTS_SML['pause']} ", text)
         # Replace single newlines ("\n" or "\r") with spaces
