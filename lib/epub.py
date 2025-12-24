@@ -340,7 +340,7 @@ class EPubProcessor:
             toc_list = []
             for item in toc:
                 if hasattr(item, 'title'):
-                    normalized_title = self.normalize_text(
+                    normalized_title = self.normalize_english_text(
                         str(item.title),
                         language_,
                     )
@@ -457,6 +457,31 @@ class EPubProcessor:
             DependencyError(error)
             return None
 
+    def normalize_text(self, text, lang, lang_iso1, tts_engine, stanza_nlp, is_num2words_compat):
+        # If a Stanza NLP pipeline is available, use it for advanced text processing like date recognition
+        if stanza_nlp:
+            text = self._num2dateWithNLP(
+                text,
+                stanza_nlp,
+                lang,
+                lang_iso1,
+                tts_engine,
+                is_num2words_compat
+            )
+        # Convert Roman numerals, clock times, and mathematical expressions to words for better TTS
+        text = self._roman2number(text)  # Convert Roman numerals to Arabic numbers
+        text = self._clock2words(text, lang, lang_iso1, tts_engine, is_num2words_compat)  # Convert clock times to words
+        text = self._math2words(text, lang, lang_iso1, tts_engine, is_num2words_compat)  # Convert math expressions to words
+        
+        # Remove special characters that are not needed for TTS by replacing them with spaces
+        specialchars_remove_table = str.maketrans({ch: ' ' for ch in specialchars_remove})
+        text = text.translate(specialchars_remove_table)
+        # Perform final text normalization (e.g., handling abbreviations, punctuation) for better TTS quality
+        text = self.normalize_english_text(text, lang)
+        # Split the fully processed text into sentences for TTS based on language-specific rules
+        sentences = self.get_sentences(text, lang, tts_engine)
+        return sentences
+
     def filter_chapter(self, doc_chapter, lang, lang_iso1, tts_engine, stanza_nlp, is_num2words_compat):
         """
         Process an EPUB chapter document and convert it into a list of properly formatted sentences
@@ -499,34 +524,13 @@ class EPubProcessor:
                 error = 'No valid text found!'
                 print(error)
                 return None
-            # If a Stanza NLP pipeline is available, use it for advanced text processing like date recognition
-            if stanza_nlp:
-                text = self._num2dateWithNLP(
-                    text,
-                    stanza_nlp,
-                    lang,
-                    lang_iso1,
-                    tts_engine,
-                    is_num2words_compat
-                )
-            # Convert Roman numerals, clock times, and mathematical expressions to words for better TTS
-            text = self._roman2number(text)  # Convert Roman numerals to Arabic numbers
-            text = self._clock2words(text, lang, lang_iso1, tts_engine, is_num2words_compat)  # Convert clock times to words
-            text = self._math2words(text, lang, lang_iso1, tts_engine, is_num2words_compat)  # Convert math expressions to words
-            
-            # Remove special characters that are not needed for TTS by replacing them with spaces
-            specialchars_remove_table = str.maketrans({ch: ' ' for ch in specialchars_remove})
-            text = text.translate(specialchars_remove_table)
-            # Perform final text normalization (e.g., handling abbreviations, punctuation) for better TTS quality
-            text = self.normalize_text(text, lang)
-            # Split the fully processed text into sentences for TTS based on language-specific rules
-            sentences = self.get_sentences(text, lang, tts_engine)
+            sentences = self.normalize_text(text, lang, lang_iso1, tts_engine, stanza_nlp, is_num2words_compat)
             if len(sentences) == 0:
                 error = 'No sentences found!'
                 print(error)
                 return None
             # Return the processed sentences for TTS conversion
-            return self.get_sentences(text, lang, tts_engine)
+            return sentences
         except Exception as e:
             error = f'filter_chapter() error: {e}'
             DependencyError(error)
@@ -1287,7 +1291,7 @@ class EPubProcessor:
             text = re.sub(pattern, f" {value} ", text)
         return text
 
-    def normalize_text(self, text, lang):
+    def normalize_english_text(self, text, lang):
         # Remove emojis
         emoji_pattern = re.compile(f"[{''.join(emojis_list)}]+", flags=re.UNICODE)
         emoji_pattern.sub('', text)
