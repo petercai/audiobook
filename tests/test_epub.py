@@ -469,7 +469,7 @@ def test_get_cover(session_context, ebook_path, tmp_path):
     print(result)
 
 
-def test_filter_chapter(session_context, ebook_path, tmp_path):
+def test_filter_chapter_cn(session_context, ebook_path, tmp_path):
     context, session_id, session = session_context
     args = {
         "session": session_id,
