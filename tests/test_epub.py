@@ -3,13 +3,16 @@ import inspect
 import os
 import pytest
 from ebooklib import epub
-
+import stanza
+from lib.lang import year_to_decades_languages
 from lib.models import TTS_ENGINES
-from lib.conf import voices_dir
+from lib.conf import voices_dir, models_dir
 from lib.epub import EPubProcessor
 from lib.mock_session import SessionContextMock, set_process_dir
 
 import sys
+
+from lib.text_normalizer import TextNormalizer
 sys.stdout.reconfigure(encoding="utf-8")
 
 @pytest.fixture
@@ -489,7 +492,109 @@ def test_filter_chapter(session_context, ebook_path, tmp_path):
 
     processor = EPubProcessor()
     all_docs, toc = processor.get_epub_chapters(epubBook, session['language'])
+
+    toc_docs = map_docs_to_toc(all_docs, toc)
+    transcript_dir = os.path.join(session["process_dir"], "transcript")
+    toc_count = cache_transcript(processor, toc_docs, transcript_dir)
+
+    created_files = sum(1 for entry in os.scandir(transcript_dir) if entry.is_file())
+    assert created_files == toc_count
+
+def test_filter_chapter_4_dune(session_context, ebook_path, tmp_path):
+    context, session_id, session = session_context
+    args = {
+        "session": session_id,
+        'cancellation_requested': False,
+        "ebook": os.path.join(ebook_path, "Dune.epub"),
+        "device": "cpu",
+        "language": "eng",
+        "language_iso1": 'en',
+        "tts_engine": TTS_ENGINES['XTTSv2'],
+
+    }
+    # update session with args
+    session.update(args)
+    func_name = inspect.currentframe().f_code.co_name
+    set_process_dir(session, func_name)
     
+    ebook_ = session["ebook"]
+    epubBook = epub.read_epub(ebook_, {"ignore_ncx": True})
+
+    processor = EPubProcessor()
+    all_docs, toc = processor.get_epub_chapters(epubBook, session['language'])
+    toc_docs = map_docs_to_toc(all_docs, toc)
+    transcript_dir = os.path.join(session["process_dir"], "transcript")
+    toc_count = cache_transcript(processor, toc_docs, transcript_dir, session)
+    created_files = sum(1 for entry in os.scandir(transcript_dir) if entry.is_file())
+    assert created_files == toc_count
+    
+def test_filter_chapter_4_hunger_game(session_context, ebook_path, tmp_path):
+    context, session_id, session = session_context
+    args = {
+        "session": session_id,
+        'cancellation_requested': False,
+        "ebook": os.path.join(ebook_path, "The Hunger Games-2008 - The Hunger Games (Suzanne Collins) .epub"),
+        "device": "cpu",
+        "language": "eng",
+        "language_iso1": 'en',
+        "tts_engine": TTS_ENGINES['XTTSv2'],
+
+    }
+    # update session with args
+    session.update(args)
+    func_name = inspect.currentframe().f_code.co_name
+    set_process_dir(session, func_name)
+    
+    ebook_ = session["ebook"]
+    epubBook = epub.read_epub(ebook_, {"ignore_ncx": True})
+
+    processor = EPubProcessor()
+    all_docs, toc = processor.get_epub_chapters(epubBook, session['language'])
+    toc_docs = map_docs_to_toc(all_docs, toc)
+    transcript_dir = os.path.join(session["process_dir"], "transcript")
+    toc_count = cache_transcript(processor, toc_docs, transcript_dir, session)
+    created_files = sum(1 for entry in os.scandir(transcript_dir) if entry.is_file())
+    assert created_files == toc_count
+
+
+def cache_transcript(processor, toc_docs, transcript_dir, session):
+    os.makedirs(transcript_dir, exist_ok=True)
+    toc_count = len(toc_docs)
+    number_width = max(1, len(str(toc_count)))
+
+    language_ = session["language"]
+    language_iso_ = session["language_iso1"]
+    stanza_nlp = None
+    if language_ in year_to_decades_languages:
+        try:
+            # Download the required language model if not already present
+            stanza.download(language_iso_, model_dir=os.path.join(models_dir, 'stanza'), logging_level='WARN',
+                            verbose=False if session['offline_mode'] else None)
+        except Exception as e:
+            if session['offline_mode']:
+                print(
+                    f"Offline mode: Failed to find stanza model for '{language_iso_}'. Expected in '{os.path.join(models_dir, 'stanza')}'")
+            raise e
+        # Create a processing pipeline for tokenization and named entity recognition
+        stanza_nlp = stanza.Pipeline(language_iso_, processors='tokenize,ner')
+
+    for chapter_index, chapter_doc in enumerate(toc_docs.values(), 1):
+        chapter_sentences = processor.filter_chapter(
+            chapter_doc,
+            lang=language_,
+            lang_iso1=language_iso_,
+            tts_engine=session["tts_engine"],
+            stanza_nlp=stanza_nlp,
+            is_num2words_compat=TextNormalizer.get_num2words_compat(language_iso_),
+        )
+        chapter_filename = f"c{chapter_index:0{number_width}d}.txt"
+        chapter_path = os.path.join(transcript_dir, chapter_filename)
+        with open(chapter_path, "w", encoding="utf-8") as chapter_file:
+            chapter_file.write("\n".join(chapter_sentences))
+    return toc_count
+
+
+def map_docs_to_toc(all_docs, toc):
     doc_by_name = {}
     doc_by_basename = {}
     for doc in all_docs:
@@ -497,17 +602,6 @@ def test_filter_chapter(session_context, ebook_path, tmp_path):
         if doc_name:
             doc_by_name[doc_name] = doc
             doc_by_basename[os.path.basename(doc_name)] = doc
-
-    def iter_toc_items(items):
-        for item in items:
-            if isinstance(item, (list, tuple)) and len(item) == 2 and isinstance(item[1], (list, tuple)):
-                section, children = item
-                yield section
-                if children:
-                    yield from iter_toc_items(children)
-            else:
-                yield item
-
     toc_docs = {}
     for item in iter_toc_items(toc):
         title = getattr(item, "title", None)
@@ -518,25 +612,16 @@ def test_filter_chapter(session_context, ebook_path, tmp_path):
         doc = doc_by_name.get(href) or doc_by_name.get(href_base) or doc_by_basename.get(os.path.basename(href_base))
         if doc is not None:
             toc_docs[title] = doc
-    
-    transcript_dir = os.path.join(session["process_dir"], "transcript")
-    os.makedirs(transcript_dir, exist_ok=True)
-    toc_count = len(toc_docs)
-    number_width = max(1, len(str(toc_count)))
-    for chapter_index, chapter_doc in enumerate(toc_docs.values(), 1):
-        chapter_sentences = processor.filter_chapter(
-            chapter_doc,
-            lang='zho',
-            lang_iso1='zh',
-            tts_engine='xtts',
-            stanza_nlp=True,
-            is_num2words_compat=True
-        )
-        chapter_filename = f"c{chapter_index:0{number_width}d}.txt"
-        chapter_path = os.path.join(transcript_dir, chapter_filename)
-        with open(chapter_path, "w", encoding="utf-8") as chapter_file:
-            chapter_file.write("\n".join(chapter_sentences))
+    return toc_docs
 
-    created_files = sum(1 for entry in os.scandir(transcript_dir) if entry.is_file())
-    assert created_files == toc_count
+
+def iter_toc_items(items):
+    for item in items:
+        if isinstance(item, (list, tuple)) and len(item) == 2 and isinstance(item[1], (list, tuple)):
+            section, children = item
+            yield section
+            if children:
+                yield from iter_toc_items(children)
+        else:
+            yield item
 

@@ -26,6 +26,14 @@ refactor epub.py to a class EPubProcessor
 - convert2epub() is class method
 - update all impacted python files when required
 
+refactor tts text normalization function in class EPubProcessor in epub.py
+- create new class TextNormalizer in file text_normalizer.py
+- move method normalize_text() and all its dependencies to TextNormalizer class
+- try best to move all text normalization function code to TextNormalizer class to build a decouple TN layer
+- update all impacted python files/classes when required
+
+refactor tts text normalization function in class EPubProcessor in epub.py: 1. create new class TextNormalizer in file text_normalizer.py; 2.move method normalize_text() and all its dependencies to TextNormalizer class; 3.try best to move all text normalization function code to TextNormalizer class to build a decouple TN layer; 4.update all impacted python files/classes when required.
+
 move extract_custom_model() in functions.py into class EbookAudio in ebook_audio.py
 - update all impacted python files when required
 - don't change existing logic

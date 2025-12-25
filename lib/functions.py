@@ -417,19 +417,6 @@ def get_vram():
     msg = 'Could not detect GPU VRAM Capacity!'
     return 0
 
-def get_date_entities(text, stanza_nlp):
-    try:
-        doc = stanza_nlp(text)
-        date_spans = []
-        for ent in doc.ents:
-            if ent.type == 'DATE':
-                date_spans.append((ent.start_char, ent.end_char, ent.text))
-        return date_spans
-    except Exception as e:
-        error = f'get_date_entities() error: {e}'
-        print(error)
-        return False
-
 def get_num2words_compat(lang_iso1):
     try:
         test = num2words(1, lang=lang_iso1.replace('zh', 'zh_CN'))
