@@ -545,14 +545,13 @@ def test_filter_chapter_cn(session_context, ebook_path: str, tmp_path: str):
     epubBook = epub.read_epub(ebook_, {"ignore_ncx": True})
 
     processor = EPubProcessor()
-    all_docs, toc = processor.get_epub_chapters(epubBook, session['language'])
-
-    toc_docs = processor.map_filter_chapters_to_toc(all_docs, toc)
+    epub_docs, toc = processor.get_epub_chapters(epubBook, session['language'])
+    toc_epub_docs = processor.map_filter_chapters_to_toc(epub_docs, toc)
     transcript_dir = os.path.join(session["process_dir"], "transcript")
-    chapters = process_chapters(processor, toc_docs, transcript_dir, session)
-    created_files = cache_transcript_by_chapter(chapters, transcript_dir)
+    chapters_with_tn_sentences = process_chapters(processor, toc_epub_docs, transcript_dir, session)
+    cache_transcript_by_chapter(chapters_with_tn_sentences, transcript_dir)
     created_files = sum(1 for entry in os.scandir(transcript_dir) if entry.is_file())
-    assert created_files == len(toc_docs)
+    assert created_files == len(chapters_with_tn_sentences)
 
 def test_filter_chapter_4_dune(session_context, ebook_path: str, tmp_path: str):
     context, session_id, session = session_context

@@ -639,6 +639,22 @@ class TextNormalizer:
         return time_rx.sub(lambda m: self._repl_clock_num(m, lang_lc, is_num2words_compat, tts_engine, lang, lang_iso1), text)
 
     def _math2words(self, text, lang, lang_iso1, tts_engine, is_num2words_compat):
+        """
+        Normalize math-like tokens into spoken-friendly words.
+
+        This routine prepares mathematical expressions and numbers for TTS by:
+        - Converting ordinal forms like "1st", "2nd", "3rd", "4th" to words when
+          num2words is compatible for the target language.
+        - Expanding standalone symbols (e.g., "+", "=", "%") into their phoneme
+          equivalents using language_math_phonemes, while skipping digits and
+          the comma/period separators.
+        - Handling ambiguous symbols ("-", "/", "*", "x") only when they appear
+          in equation-like contexts such as "12-5" or "-7"; this avoids changing
+          hyphens and slashes used in normal prose.
+        - Normalizing formatted numbers and number ranges (commas, decimals, and
+          optional dash-separated ranges) before applying final number-to-words
+          conversion with _set_formatted_number.
+        """
         try:
             # Matches any digits + optional space/NBSP + st/nd/rd/th, not glued into words.
             re_ordinal = re.compile(r'(?<!\w)(\d+)(?:\s|\u00A0)*(?:st|nd|rd|th)(?!\w)')
