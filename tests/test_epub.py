@@ -1,6 +1,8 @@
 
 import inspect
 import os
+from typing import Any
+
 import pytest
 from ebooklib import epub
 import stanza
@@ -485,7 +487,6 @@ def test_get_chapter_sentences_4_dune(session_context, ebook_path: str, tmp_path
     session.update(args)
     func_name = inspect.currentframe().f_code.co_name
     set_process_dir(session, func_name)
-    
     ebook_ = session["ebook"]
     epubBook = epub.read_epub(ebook_, {"ignore_ncx": True})
 
@@ -522,12 +523,12 @@ def test_filter_chapter_cn(session_context, ebook_path: str, tmp_path: str):
     processor = EPubProcessor()
     all_docs, toc = processor.get_epub_chapters(epubBook, session['language'])
 
-    toc_docs = map_docs_to_toc(all_docs, toc)
+    toc_docs = map_filter_chapters_to_toc(all_docs, toc)
     transcript_dir = os.path.join(session["process_dir"], "transcript")
-    toc_count = cache_transcript(processor, toc_docs, transcript_dir)
-
+    chapters = process_chapters(processor, toc_docs, transcript_dir, session)
+    created_files = cache_transcript_by_chapter(chapters, transcript_dir)
     created_files = sum(1 for entry in os.scandir(transcript_dir) if entry.is_file())
-    assert created_files == toc_count
+    assert created_files == len(toc_docs)
 
 def test_filter_chapter_4_dune(session_context, ebook_path: str, tmp_path: str):
     context, session_id, session = session_context
@@ -550,12 +551,13 @@ def test_filter_chapter_4_dune(session_context, ebook_path: str, tmp_path: str):
     epubBook = epub.read_epub(ebook_, {"ignore_ncx": True})
 
     processor = EPubProcessor()
-    all_docs, toc = processor.get_epub_chapters(epubBook, session['language'])
-    toc_docs = map_docs_to_toc(all_docs, toc)
+    epub_docs, toc = processor.get_epub_chapters(epubBook, session['language'])
+    toc_epub_docs = map_filter_chapters_to_toc(epub_docs, toc)
     transcript_dir = os.path.join(session["process_dir"], "transcript")
-    toc_count = cache_transcript(processor, toc_docs, transcript_dir, session)
+    chapters_with_tn_sentences = process_chapters(processor, toc_epub_docs, transcript_dir, session)
+    cache_transcript_by_chapter(chapters_with_tn_sentences, transcript_dir)
     created_files = sum(1 for entry in os.scandir(transcript_dir) if entry.is_file())
-    assert created_files == toc_count
+    assert created_files == len(chapters_with_tn_sentences)
     
 def test_filter_chapter_4_hunger_game(session_context, ebook_path: str, tmp_path: str):
     context, session_id, session = session_context
@@ -578,15 +580,16 @@ def test_filter_chapter_4_hunger_game(session_context, ebook_path: str, tmp_path
     epubBook = epub.read_epub(ebook_, {"ignore_ncx": True})
 
     processor = EPubProcessor()
-    all_docs, toc = processor.get_epub_chapters(epubBook, session['language'])
-    toc_docs = map_docs_to_toc(all_docs, toc)
+    epub_docs, toc = processor.get_epub_chapters(epubBook, session['language'])
+    toc_epub_docs = map_filter_chapters_to_toc(epub_docs, toc)
     transcript_dir = os.path.join(session["process_dir"], "transcript")
-    toc_count = cache_transcript(processor, toc_docs, transcript_dir, session)
+    chapters_with_tn_sentences = process_chapters(processor, toc_epub_docs, transcript_dir, session)
+    cache_transcript_by_chapter(chapters_with_tn_sentences, transcript_dir)
     created_files = sum(1 for entry in os.scandir(transcript_dir) if entry.is_file())
-    assert created_files == toc_count
+    assert created_files == len(chapters_with_tn_sentences)
 
 
-def cache_transcript(processor, toc_docs, transcript_dir, session):
+def process_chapters(processor, toc_docs, transcript_dir, session):
     os.makedirs(transcript_dir, exist_ok=True)
     processed_chapters = []
     pending_sentences = []
@@ -633,19 +636,22 @@ def cache_transcript(processor, toc_docs, transcript_dir, session):
         else:
             processed_chapters.append(pending_sentences)
 
-    toc_count = len(processed_chapters)
-    number_width = max(1, len(str(toc_count)))
+    return processed_chapters
+    # return cache_transcript_by_chapter(processed_chapters, transcript_dir)
 
-    for chapter_index, chapter_sentences in enumerate(processed_chapters, 1):
+
+def cache_transcript_by_chapter(chapters, transcript_dir):
+    chapter_count = len(chapters)
+    number_width = max(1, len(str(chapter_count)))
+    for chapter_index, chapter_sentences in enumerate(chapters, 1):
         chapter_filename = f"c{chapter_index:0{number_width}d}.txt"
         chapter_path = os.path.join(transcript_dir, chapter_filename)
         with open(chapter_path, "w", encoding="utf-8") as chapter_file:
             chapter_file.write("\n".join(chapter_sentences))
+    return chapter_count
 
-    return toc_count
 
-
-def map_docs_to_toc(all_docs, toc):
+def map_filter_chapters_to_toc(all_docs: object, toc: object) -> dict[Any, Any]:
     doc_by_name = {}
     doc_by_basename = {}
     for doc in all_docs:
@@ -654,7 +660,7 @@ def map_docs_to_toc(all_docs, toc):
             doc_by_name[doc_name] = doc
             doc_by_basename[os.path.basename(doc_name)] = doc
     toc_docs = {}
-    for item in iter_toc_items(toc):
+    for item in toc_items_iter(toc):
         title = getattr(item, "title", None)
         href = getattr(item, "href", None) or getattr(item, "file_name", None)
         if not (title and href):
@@ -668,13 +674,13 @@ def map_docs_to_toc(all_docs, toc):
     return toc_docs
 
 
-def iter_toc_items(items):
+def toc_items_iter(items):
     for item in items:
         if isinstance(item, (list, tuple)) and len(item) == 2 and isinstance(item[1], (list, tuple)):
             section, children = item
             yield section
             if children:
-                yield from iter_toc_items(children)
+                yield from toc_items_iter(children)
         else:
             yield item
 

@@ -260,22 +260,10 @@ class EPubProcessor:
                 all_docs = all_docs[:chapters_to_process]
                 
             # Attempt to extract the book title for metadata
-            title = self.get_ebook_title(epubBook, all_docs)
-            
-            # Initialize Stanza NLP pipeline for languages that require advanced processing
-            # This is used for date recognition and other NLP tasks
-            stanza_nlp = None
-            if language_ in year_to_decades_languages:
-                try:
-                    # Download the required language model if not already present
-                    stanza.download(language_iso_, model_dir=os.path.join(models_dir, 'stanza'), logging_level='WARN', verbose=False if session['offline_mode'] else None)
-                except Exception as e:
-                    if session['offline_mode']:
-                        print(f"Offline mode: Failed to find stanza model for '{language_iso_}'. Expected in '{os.path.join(models_dir, 'stanza')}'")
-                    raise e
-                # Create a processing pipeline for tokenization and named entity recognition
-                stanza_nlp = stanza.Pipeline(language_iso_, processors='tokenize,ner')
-                
+            ebook_title = self.get_ebook_title(epubBook, all_docs)
+
+            stanza_nlp = self.init_stanza_nlp(language_iso_, session)
+
             # Check if the num2words library supports the current language
             # This determines how numbers will be converted to words
             is_num2words_compat = TextNormalizer.get_num2words_compat(language_iso_)
@@ -287,6 +275,9 @@ class EPubProcessor:
             # Initialize the chapters list to store processed content
             # todo: toc and chapter should be a list of dicts
             chapters = []
+            pending_sentences = []
+            toc_items = list(toc) if isinstance(toc, (list, tuple)) else None
+            merged_toc = [] if toc_items is not None else toc
 
             # Process each document (chapter) in the EPUB
             # The loop will iterate through all documents or a limited number if chapters_to_process is set
@@ -307,12 +298,31 @@ class EPubProcessor:
                     # If processing failed, stop further processing
                     break
                 elif len(sentences_list) > 0:
+                    if len(sentences_list) < 3:
+                        pending_sentences.extend(sentences_list)
+                        continue
+                    if pending_sentences:
+                        sentences_list = pending_sentences + sentences_list
+                        pending_sentences = []
                     # If successfully processed and contains content, add to chapters
                     chapters.append(sentences_list)
+                    if toc_items is not None and i < len(toc_items):
+                        merged_toc.append(toc_items[i])
+
+            if pending_sentences:
+                if chapters:
+                    chapters[-1].extend(pending_sentences)
+                else:
+                    chapters.append(pending_sentences)
+                    if toc_items is not None and toc_items:
+                        merged_toc.append(toc_items[0])
 
             # If chapters were limited, also limit the table of contents accordingly
             if chapters_to_process > 0:
-                toc = toc[:len(chapters)]
+                if toc_items is not None:
+                    merged_toc = merged_toc[:len(chapters)]
+                else:
+                    toc = toc[:len(chapters)]
 
             # Verify that at least one chapter was successfully processed
             if len(chapters) == 0:
@@ -320,13 +330,31 @@ class EPubProcessor:
                 return None, None
                 
             # Return the table of contents and processed chapters
-            return toc, chapters
+            return merged_toc, chapters
             
         except Exception as e:
             # Handle any unexpected errors during processing
             error = f'Error extracting main content pages: {e}'
             DependencyError(error)
             return None, None
+
+    def init_stanza_nlp(self, language_iso_, session):
+        # Initialize Stanza NLP pipeline for languages that require advanced processing
+        # This is used for date recognition and other NLP tasks
+        stanza_nlp = None
+        if language_iso_ in year_to_decades_languages:
+            try:
+                # Download the required language model if not already present
+                stanza.download(language_iso_, model_dir=os.path.join(models_dir, 'stanza'), logging_level='WARN',
+                                verbose=False if session['offline_mode'] else None)
+            except Exception as e:
+                if session['offline_mode']:
+                    print(
+                        f"Offline mode: Failed to find stanza model for '{language_iso_}'. Expected in '{os.path.join(models_dir, 'stanza')}'")
+                raise e
+            # Create a processing pipeline for tokenization and named entity recognition
+            stanza_nlp = stanza.Pipeline(language_iso_, processors='tokenize,ner')
+        return stanza_nlp
 
     def get_epub_chapters(self, epubBook, language_):
         try:
@@ -352,7 +380,7 @@ class EPubProcessor:
         ]
         return all_docs, toc
 
-    def _tuple_row(self, node, last_text_char=None, tokenizer_tts=True):
+    def _tuple_row_iterator(self, node, last_text_char=None, tokenizer_tts=True):
         """
         Recursively traverses a BeautifulSoup HTML node tree and yields structured content tuples.
 
@@ -394,7 +422,7 @@ class EPubProcessor:
                     name = child.name.lower()
                     # Handle heading tags (h1, h2, etc.).
                     if name in self.heading_tags:
-                        title = child.get_text(strip=True)
+                        title = child.get_text(separator=' ', strip=True)
                         if title:
                             yield ("heading", title)
                             # Update the last character seen.
@@ -410,7 +438,7 @@ class EPubProcessor:
                         # Check if the tag is one we should process for content (e.g., p, div, span).
                         if name in self.proc_tags:
                             # Recursively call this function on the child tag's content.
-                            for inner in self._tuple_row(child, last_text_char, tokenizer_tts):
+                            for inner in self._tuple_row_iterator(child, last_text_char, tokenizer_tts):
                                 return_data = True
                                 yield inner
                                 # Track the last character from any yielded text or heading.
@@ -433,7 +461,7 @@ class EPubProcessor:
                         # If the tag is not in our processable set, just traverse into it
                         # without adding any special breaks or pauses for the tag itself.
                         else:
-                            yield from self._tuple_row(child, last_text_char, tokenizer_tts)
+                            yield from self._tuple_row_iterator(child, last_text_char, tokenizer_tts)
 
         except Exception as e:
             error = f'filter_chapter() tuple_row() error: {e}'
@@ -533,7 +561,7 @@ class EPubProcessor:
             tag.decompose()
         # Recursively traverse the HTML body to extract content into a structured list of tuples.
         # Each tuple contains a type identifier and the corresponding content.
-        return list(self._tuple_row(content_root, is_tokenizer_tts))
+        return list(self._tuple_row_iterator(content_root, is_tokenizer_tts))
 
     def _to_flat_sentence_list_with_break(self, tuples_structured_sentence_list, is_tokenizer_tts, max_chars):
         # Process the structured list to build a flat list of text elements.
