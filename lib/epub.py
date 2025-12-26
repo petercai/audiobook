@@ -255,10 +255,6 @@ class EPubProcessor:
 
             toc_epub_docs = self.map_filter_chapters_to_toc(all_docs, toc)
 
-            # If chapters_to_process is specified, limit the documents and TOC to be processed
-            # if chapters_to_process > 0:
-            #     all_docs = all_docs[:chapters_to_process]
-                
             # Attempt to extract the book title for metadata
             ebook_title = self.get_ebook_title(epubBook, all_docs)
 
@@ -273,11 +269,8 @@ class EPubProcessor:
             print(msg)
 
             # Initialize the chapters list to store processed content
-            # todo: toc and chapter should be a list of dicts
-            chapters = []
+            processed_chapters = []
             pending_sentences = []
-            toc_items = list(toc) if isinstance(toc, (list, tuple)) else None
-            # merged_toc = [] if toc_items is not None else toc
 
             # Process each document (chapter) in the EPUB
             # The loop will iterate through all documents or a limited number if chapters_to_process is set
@@ -292,7 +285,6 @@ class EPubProcessor:
                     stanza_nlp, 
                     is_num2words_compat
                 )
-                
                 # Handle the result of chapter processing
                 if chapter_sentences is None:
                     # If processing failed, stop further processing
@@ -301,27 +293,27 @@ class EPubProcessor:
                     if len(chapter_sentences) < 3:
                         pending_sentences.extend(chapter_sentences)
                         continue
+                    chapter_sentences = [title] + chapter_sentences
                     if pending_sentences:
                         chapter_sentences = pending_sentences + chapter_sentences
                         pending_sentences = []
                     # If successfully processed and contains content, add to chapters
-                    chapters.append(chapter_sentences)
-
+                    processed_chapters.append(chapter_sentences)
 
             if pending_sentences:
-                if chapters:
-                    chapters[-1].extend(pending_sentences)
+                if processed_chapters:
+                    processed_chapters[-1].extend(pending_sentences)
                 else:
-                    chapters.append(pending_sentences)
+                    processed_chapters.append(pending_sentences)
 
 
             # Verify that at least one chapter was successfully processed
-            if len(chapters) == 0:
+            if len(processed_chapters) == 0:
                 error = 'No chapters found!'
                 return None, None
                 
             # Return the table of contents and processed chapters
-            return toc, chapters
+            return toc, processed_chapters
             
         except Exception as e:
             # Handle any unexpected errors during processing
