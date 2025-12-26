@@ -190,10 +190,10 @@ class TextNormalizer:
                         sudachi = dictionary.Dictionary().create()
                         mode = tokenizer.Tokenizer.SplitMode.C
                         result.extend([m.surface() for m in sudachi.tokenize(segment, mode) if m.surface().strip()])
-                    elif lang == 'kor':
-                        from korean_tokenizer import LTokenizer
-                        ltokenizer = LTokenizer()
-                        result.extend([t for t in ltokenizer.tokenize(segment) if t.strip()])
+                    # elif lang == 'kor':
+                    #     from korean_tokenizer import LTokenizer
+                    #     ltokenizer = LTokenizer()
+                    #     result.extend([t for t in ltokenizer.tokenize(segment) if t.strip()])
                     elif lang in ['tha', 'lao', 'mya', 'khm']:
                         from pythainlp import word_tokenize
                         result.extend([t for t in word_tokenize(segment, engine='newmm') if t.strip()])
