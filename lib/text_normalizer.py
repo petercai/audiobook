@@ -59,7 +59,7 @@ class TextNormalizer:
         # Perform final text normalization (e.g., handling abbreviations, punctuation) for better TTS quality
         text = self.normalize_english_text(text, lang)
         # Split the fully processed text into sentences for TTS based on language-specific rules
-        sentences = self.get_sentences(text, lang, tts_engine)
+        sentences = self._get_sentences(text, lang, tts_engine)
         return sentences
 
     def _num_repl(self, m, lang, lang_iso1, is_num2words_compat):
@@ -427,7 +427,7 @@ class TextNormalizer:
         val = self._roman_to_int(roman)
         return str(val)
 
-    def get_sentences(self, text, lang, tts_engine):
+    def _get_sentences(self, text, lang, tts_engine):
         """
         Splits a given text into a list of sentences based on language-specific rules
         and TTS engine character limits.
