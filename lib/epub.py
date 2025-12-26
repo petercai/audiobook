@@ -15,7 +15,7 @@ from lib.classes.tts_manager import TTSManager
 from lib.conf import default_audio_proc_format, ebook_formats, models_dir
 from lib.ebook_audio import EbookAudio
 from lib.functions import DependencyError
-from lib.lang import language_mapping, year_to_decades_languages
+from lib.lang import year_to_decades_languages
 from lib.models import TOKENIZER_FREE_TTS, TTS_SML
 from lib.text_normalizer import TextNormalizer
 
@@ -226,7 +226,6 @@ class EPubProcessor:
             session (dict): A dictionary containing session information including:
                 - 'cancellation_requested' (bool): Whether cancellation was requested
                 - 'language_iso1' (str): ISO 639-1 language code (e.g., 'en', 'fr')
-                - 'language' (str): Full language code (e.g., 'eng', 'fra')
                 - 'tts_engine' (str): Text-to-speech engine identifier
                 - Other session-specific data
         Returns:
@@ -244,12 +243,12 @@ class EPubProcessor:
                 
             # Extract language information from session for processing
             language_iso_ = session['language_iso1']  # e.g., 'en'
-            language_ = session['language']            # e.g., 'eng'
+            language_code = language_iso_ or session['language']  # fallback to ISO-639-3 if needed
             tts_engine_ = session['tts_engine']
             
             # Step 1: Extract TOC (Table of Contents) and document list
             # Get all documents in reading order and the table of contents
-            all_docs, toc = self.get_epub_chapters(epubBook, language_)
+            all_docs, toc = self.get_epub_chapters(epubBook, language_code)
             if not all_docs:
                 return [], []
 
@@ -279,8 +278,7 @@ class EPubProcessor:
                 # This includes number conversion, punctuation handling, and sentence segmentation
                 chapter_sentences = self.filter_chapter(
                     chapter_doc,
-                    language_, 
-                    language_iso_, 
+                    language_code,
                     tts_engine_, 
                     stanza_nlp, 
                     is_num2words_compat
@@ -339,15 +337,15 @@ class EPubProcessor:
             stanza_nlp = stanza.Pipeline(language_iso_, processors='tokenize,ner')
         return stanza_nlp
 
-    def get_epub_chapters(self, epubBook, language_):
+    def get_epub_chapters(self, epubBook, language_iso1):
         try:
             toc = epubBook.toc  # Extract TOC
             toc_list = []
             for item in toc:
                 if hasattr(item, 'title'):
-                    normalized_title = self.text_normalizer.normalize_english_text(
+                    normalized_title = self.text_normalizer.normalize_text(
                         str(item.title),
-                        language_,
+                        language_iso1,
                     )
                     if normalized_title is not None:
                         toc_list.append(normalized_title)
@@ -491,7 +489,7 @@ class EPubProcessor:
             DependencyError(error)
             return None
 
-    def filter_chapter(self, doc_chapter, lang, lang_iso1, tts_engine, stanza_nlp, is_num2words_compat):
+    def filter_chapter(self, doc_chapter, lang_iso1, tts_engine, stanza_nlp, is_num2words_compat):
         """
         Process an EPUB chapter document and convert it into a list of properly formatted sentences
         ready for text-to-speech conversion.
@@ -505,7 +503,6 @@ class EPubProcessor:
         
         Args:
             doc: ebooklib document object representing a chapter
-            lang: Language code (e.g., 'eng', 'fra')
             lang_iso1: ISO 639-1 language code (e.g., 'en', 'fr')
             tts_engine: Text-to-speech engine identifier
             stanza_nlp: Stanza NLP pipeline for advanced text processing
@@ -520,20 +517,20 @@ class EPubProcessor:
             if not tuples_structured_sentence_list:
                 return []
             # Get the maximum character limit for the current language to ensure proper sentence segmentation
-            max_chars = language_mapping[lang]['max_chars'] - 4
+            max_chars = self.text_normalizer.get_max_chars(lang_iso1)
             clean_list = self._to_flat_sentence_list_with_break(
                 tuples_structured_sentence_list,
                 is_tokenizer_tts,
                 max_chars
             )
             # Join the cleaned list into a single text string for further processing
-            text = ' '.join(clean_list)
+            paragraph = ' '.join(clean_list)
             # If the text is empty or contains no valid characters, return None to indicate no content
-            if not re.search(r"[^\W_]", text):
+            if not re.search(r"[^\W_]", paragraph):
                 error = 'No valid text found!'
                 print(error)
                 return None
-            sentences = self.text_normalizer.normalize_text(text, lang, lang_iso1, tts_engine, stanza_nlp, is_num2words_compat)
+            sentences = self.text_normalizer.normalize_text_4_tts(paragraph, lang_iso1, tts_engine, stanza_nlp, is_num2words_compat)
             if len(sentences) == 0:
                 error = 'No sentences found!'
                 print(error)

@@ -617,10 +617,10 @@ def process_chapters(processor, toc_docs, transcript_dir, session):
     processed_chapters = []
     pending_sentences = []
 
-    language_ = session["language"]
+    # language_ = session["language"]
     language_iso_ = session["language_iso1"]
     stanza_nlp = None
-    if language_ in year_to_decades_languages:
+    if language_iso_ in year_to_decades_languages:
         try:
             # Download the required language model if not already present
             stanza.download(language_iso_, model_dir=os.path.join(models_dir, 'stanza'), logging_level='WARN',
@@ -636,7 +636,7 @@ def process_chapters(processor, toc_docs, transcript_dir, session):
     for title, chapter_doc in toc_docs.items():
         chapter_sentences = processor.filter_chapter(
             chapter_doc,
-            lang=language_,
+            # lang=language_,
             lang_iso1=language_iso_,
             tts_engine=session["tts_engine"],
             stanza_nlp=stanza_nlp,
