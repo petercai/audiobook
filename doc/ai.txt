@@ -120,3 +120,13 @@ refactor the method
 Added CosyVoice as a first-class engine (lib/models.py) with XTTS-like defaults, dual model entries (CosyVoice2-0.5B zero-shot with default voices/zho/adult/male/yunyang.wav, CosyVoice-300M-SFT with five speaker IDs), and language gating for eng/zh-CN (lib/lang.py).
 Extended Coqui TTS wrapper to load CosyVoice models, cache zero-shot speakers, and synthesize both zero-shot and SFT flows while preserving samplerate handling and trim behaviour (lib/classes/tts_engines/coqui.py); headless sessions now fall back to valid CosyVoice fine-tuned choices and default speaker IDs (lib/headless_processor.py).
 Updated the UI to surface CosyVoice with the XTTS parameter tab, auto-fix fine-tuned selection, and present the five SFT speaker IDs in the voice dropdown while hiding preview/delete controls for those fixed voices (lib/web_ui.py).
+
+
+
+create pytest test cases to test class TextNormalizer
+- put all test cases into test file tests\test_text_normalizer.py
+- create test cases for all class methods
+- create test cases and related fixtures to cover all use cases the class and methods support
+- create test cases s and related fixtures to cover both english and chinesese use casese
+- don't use any mock, provide the reqired and real test data/fixture for testing
+- should reach 100% code coverage for TextNormalizer
