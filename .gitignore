@@ -6,3 +6,4 @@ models
 audiobooks/*
 .idea
 ebook2audiobook.egg-info
+syntrive/*

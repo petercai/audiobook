@@ -559,8 +559,8 @@ def test_filter_chapter_4_hunger_game(session_context, ebook_path, tmp_path):
 
 def cache_transcript(processor, toc_docs, transcript_dir, session):
     os.makedirs(transcript_dir, exist_ok=True)
-    toc_count = len(toc_docs)
-    number_width = max(1, len(str(toc_count)))
+    processed_chapters = []
+    pending_sentences = []
 
     language_ = session["language"]
     language_iso_ = session["language_iso1"]
@@ -578,7 +578,7 @@ def cache_transcript(processor, toc_docs, transcript_dir, session):
         # Create a processing pipeline for tokenization and named entity recognition
         stanza_nlp = stanza.Pipeline(language_iso_, processors='tokenize,ner')
 
-    for chapter_index, chapter_doc in enumerate(toc_docs.values(), 1):
+    for title, chapter_doc in toc_docs.items():
         chapter_sentences = processor.filter_chapter(
             chapter_doc,
             lang=language_,
@@ -587,10 +587,32 @@ def cache_transcript(processor, toc_docs, transcript_dir, session):
             stanza_nlp=stanza_nlp,
             is_num2words_compat=TextNormalizer.get_num2words_compat(language_iso_),
         )
+        if not chapter_sentences:
+            continue
+        if len(chapter_sentences) < 3:
+            pending_sentences.extend(chapter_sentences)
+            continue
+        chapter_sentences = [title] + chapter_sentences
+        if pending_sentences:
+            chapter_sentences = pending_sentences + chapter_sentences
+            pending_sentences = []
+        processed_chapters.append(chapter_sentences)
+
+    if pending_sentences:
+        if processed_chapters:
+            processed_chapters[-1].extend(pending_sentences)
+        else:
+            processed_chapters.append(pending_sentences)
+
+    toc_count = len(processed_chapters)
+    number_width = max(1, len(str(toc_count)))
+
+    for chapter_index, chapter_sentences in enumerate(processed_chapters, 1):
         chapter_filename = f"c{chapter_index:0{number_width}d}.txt"
         chapter_path = os.path.join(transcript_dir, chapter_filename)
         with open(chapter_path, "w", encoding="utf-8") as chapter_file:
             chapter_file.write("\n".join(chapter_sentences))
+
     return toc_count
 
 
@@ -611,6 +633,8 @@ def map_docs_to_toc(all_docs, toc):
         href_base = href.split("#", 1)[0]
         doc = doc_by_name.get(href) or doc_by_name.get(href_base) or doc_by_basename.get(os.path.basename(href_base))
         if doc is not None:
+            if not doc.title:
+                doc.title = title
             toc_docs[title] = doc
     return toc_docs
 
