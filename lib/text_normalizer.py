@@ -741,7 +741,7 @@ class TextNormalizer:
         try:
             # Matches any digits + optional space/NBSP + st/nd/rd/th, not glued into words.
             re_ordinal = re.compile(r'(?<!\w)(\d+)(?:\s|\u00A0)*(?:st|nd|rd|th)(?!\w)')
-            text = re.sub(r'(\d)\)', r'\1 : ', text)
+            text = re.sub(r'(\d)\)', r'\1 : ', str(text))
             text = re_ordinal.sub(lambda m: self.__ordinal_to_words(m, lang_iso1, is_num2words_compat), text)
             # Symbol phonemes
             ambiguous_symbols = {"-", "/", "*", "x"}
@@ -766,7 +766,7 @@ class TextNormalizer:
                 text = re.sub(ambiguous_pattern, lambda m: self._repl_ambiguous(m, ambiguous_replacements), text)
             text = self._set_formatted_number(text, lang_iso1, is_num2words_compat)
         except Exception as e:
-            error = f'_math2words() error: {e}'
+            error = f'_math2words() error: {e} for input: {text}'
             DependencyError(error)
             return text
         return text
