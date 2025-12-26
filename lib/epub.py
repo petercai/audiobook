@@ -213,7 +213,7 @@ class EPubProcessor:
             DependencyError(e)
             return None
 
-    def get_chapters_in_sentences(self, epubBook, session, chapters_to_process=0):
+    def get_chapters_in_sentences(self, epubBook, session):
         """
         Extract and process chapters from an EPUB book for text-to-speech conversion.
         
@@ -229,8 +229,6 @@ class EPubProcessor:
                 - 'language' (str): Full language code (e.g., 'eng', 'fra')
                 - 'tts_engine' (str): Text-to-speech engine identifier
                 - Other session-specific data
-            chapters_to_process (int): The number of chapters to process. If 0, all chapters are processed.
-                
         Returns:
             tuple: A tuple containing:
                 - toc (list): Table of contents entries as strings
@@ -255,9 +253,11 @@ class EPubProcessor:
             if not all_docs:
                 return [], []
 
+            toc_epub_docs = self.map_filter_chapters_to_toc(all_docs, toc)
+
             # If chapters_to_process is specified, limit the documents and TOC to be processed
-            if chapters_to_process > 0:
-                all_docs = all_docs[:chapters_to_process]
+            # if chapters_to_process > 0:
+            #     all_docs = all_docs[:chapters_to_process]
                 
             # Attempt to extract the book title for metadata
             ebook_title = self.get_ebook_title(epubBook, all_docs)
@@ -277,15 +277,15 @@ class EPubProcessor:
             chapters = []
             pending_sentences = []
             toc_items = list(toc) if isinstance(toc, (list, tuple)) else None
-            merged_toc = [] if toc_items is not None else toc
+            # merged_toc = [] if toc_items is not None else toc
 
             # Process each document (chapter) in the EPUB
             # The loop will iterate through all documents or a limited number if chapters_to_process is set
-            for i, doc in enumerate(all_docs):
+            for title, chapter_doc in toc_epub_docs.items():
                 # Process the chapter content with various text transformations
                 # This includes number conversion, punctuation handling, and sentence segmentation
-                sentences_list = self.filter_chapter(
-                    doc, 
+                chapter_sentences = self.filter_chapter(
+                    chapter_doc,
                     language_, 
                     language_iso_, 
                     tts_engine_, 
@@ -294,35 +294,26 @@ class EPubProcessor:
                 )
                 
                 # Handle the result of chapter processing
-                if sentences_list is None:
+                if chapter_sentences is None:
                     # If processing failed, stop further processing
                     break
-                elif len(sentences_list) > 0:
-                    if len(sentences_list) < 3:
-                        pending_sentences.extend(sentences_list)
+                elif len(chapter_sentences) > 0:
+                    if len(chapter_sentences) < 3:
+                        pending_sentences.extend(chapter_sentences)
                         continue
                     if pending_sentences:
-                        sentences_list = pending_sentences + sentences_list
+                        chapter_sentences = pending_sentences + chapter_sentences
                         pending_sentences = []
                     # If successfully processed and contains content, add to chapters
-                    chapters.append(sentences_list)
-                    if toc_items is not None and i < len(toc_items):
-                        merged_toc.append(toc_items[i])
+                    chapters.append(chapter_sentences)
+
 
             if pending_sentences:
                 if chapters:
                     chapters[-1].extend(pending_sentences)
                 else:
                     chapters.append(pending_sentences)
-                    if toc_items is not None and toc_items:
-                        merged_toc.append(toc_items[0])
 
-            # If chapters were limited, also limit the table of contents accordingly
-            if chapters_to_process > 0:
-                if toc_items is not None:
-                    merged_toc = merged_toc[:len(chapters)]
-                else:
-                    toc = toc[:len(chapters)]
 
             # Verify that at least one chapter was successfully processed
             if len(chapters) == 0:
@@ -330,7 +321,7 @@ class EPubProcessor:
                 return None, None
                 
             # Return the table of contents and processed chapters
-            return merged_toc, chapters
+            return toc, chapters
             
         except Exception as e:
             # Handle any unexpected errors during processing
@@ -379,6 +370,46 @@ class EPubProcessor:
             if item.id in spine_ids
         ]
         return all_docs, toc
+
+    def map_filter_chapters_to_toc(self, all_docs, toc):
+        doc_by_name = {}
+        doc_by_basename = {}
+        for doc in all_docs:
+            doc_name = getattr(doc, "file_name", None) or getattr(doc, "href", None)
+            if doc_name:
+                doc_by_name[doc_name] = doc
+                doc_by_basename[os.path.basename(doc_name)] = doc
+        toc_docs = {}
+        for item in self.toc_items_iter(toc):
+            toc_title = getattr(item, "title", None)
+            href = getattr(item, "href", None) or getattr(item, "file_name", None)
+            if not (toc_title and href):
+                continue
+            href_base = href.split("#", 1)[0]
+            doc = (
+                doc_by_name.get(href)
+                or doc_by_name.get(href_base)
+                or doc_by_basename.get(os.path.basename(href_base))
+            )
+            if doc is not None:
+                if not doc.title:
+                    doc.title = toc_title
+                toc_docs[toc_title] = doc
+        return toc_docs
+
+    def toc_items_iter(self, items):
+        for item in items:
+            if (
+                isinstance(item, (list, tuple))
+                and len(item) == 2
+                and isinstance(item[1], (list, tuple))
+            ):
+                section, children = item
+                yield section
+                if children:
+                    yield from self.toc_items_iter(children)
+            else:
+                yield item
 
     def _tuple_row_iterator(self, node, last_text_char=None, tokenizer_tts=True):
         """

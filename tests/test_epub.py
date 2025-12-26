@@ -1,7 +1,5 @@
-
 import inspect
 import os
-from typing import Any
 
 import pytest
 from ebooklib import epub
@@ -382,7 +380,7 @@ def test_show_chapters_and_sentences_en(session_context, ebook_path, tmp_path):
     epubBook = epub.read_epub(ebook_, {"ignore_ncx": True})
 
     processor = EPubProcessor()
-    toc, chapters = processor.get_chapters_in_sentences(epubBook, session, 7)
+    toc, chapters = processor.get_chapters_in_sentences(epubBook, session)
     # Assertions
     assert toc
     print(toc)
@@ -491,7 +489,7 @@ def test_get_chapter_sentences_4_dune(session_context, ebook_path: str, tmp_path
     epubBook = epub.read_epub(ebook_, {"ignore_ncx": True})
 
     processor = EPubProcessor()
-    toc, chapters = processor.get_chapters_in_sentences(epubBook, session, chapters_to_process=0)
+    toc, chapters = processor.get_chapters_in_sentences(epubBook, session)
     pass
     # toc_docs = map_docs_to_toc(chapters, toc)
     # transcript_dir = os.path.join(session["process_dir"], "transcript")
@@ -523,7 +521,7 @@ def test_filter_chapter_cn(session_context, ebook_path: str, tmp_path: str):
     processor = EPubProcessor()
     all_docs, toc = processor.get_epub_chapters(epubBook, session['language'])
 
-    toc_docs = map_filter_chapters_to_toc(all_docs, toc)
+    toc_docs = processor.map_filter_chapters_to_toc(all_docs, toc)
     transcript_dir = os.path.join(session["process_dir"], "transcript")
     chapters = process_chapters(processor, toc_docs, transcript_dir, session)
     created_files = cache_transcript_by_chapter(chapters, transcript_dir)
@@ -552,7 +550,7 @@ def test_filter_chapter_4_dune(session_context, ebook_path: str, tmp_path: str):
 
     processor = EPubProcessor()
     epub_docs, toc = processor.get_epub_chapters(epubBook, session['language'])
-    toc_epub_docs = map_filter_chapters_to_toc(epub_docs, toc)
+    toc_epub_docs = processor.map_filter_chapters_to_toc(epub_docs, toc)
     transcript_dir = os.path.join(session["process_dir"], "transcript")
     chapters_with_tn_sentences = process_chapters(processor, toc_epub_docs, transcript_dir, session)
     cache_transcript_by_chapter(chapters_with_tn_sentences, transcript_dir)
@@ -581,7 +579,7 @@ def test_filter_chapter_4_hunger_game(session_context, ebook_path: str, tmp_path
 
     processor = EPubProcessor()
     epub_docs, toc = processor.get_epub_chapters(epubBook, session['language'])
-    toc_epub_docs = map_filter_chapters_to_toc(epub_docs, toc)
+    toc_epub_docs = processor.map_filter_chapters_to_toc(epub_docs, toc)
     transcript_dir = os.path.join(session["process_dir"], "transcript")
     chapters_with_tn_sentences = process_chapters(processor, toc_epub_docs, transcript_dir, session)
     cache_transcript_by_chapter(chapters_with_tn_sentences, transcript_dir)
@@ -649,38 +647,4 @@ def cache_transcript_by_chapter(chapters, transcript_dir):
         with open(chapter_path, "w", encoding="utf-8") as chapter_file:
             chapter_file.write("\n".join(chapter_sentences))
     return chapter_count
-
-
-def map_filter_chapters_to_toc(all_docs: object, toc: object) -> dict[Any, Any]:
-    doc_by_name = {}
-    doc_by_basename = {}
-    for doc in all_docs:
-        doc_name = getattr(doc, "file_name", None) or getattr(doc, "href", None)
-        if doc_name:
-            doc_by_name[doc_name] = doc
-            doc_by_basename[os.path.basename(doc_name)] = doc
-    toc_docs = {}
-    for item in toc_items_iter(toc):
-        title = getattr(item, "title", None)
-        href = getattr(item, "href", None) or getattr(item, "file_name", None)
-        if not (title and href):
-            continue
-        href_base = href.split("#", 1)[0]
-        doc = doc_by_name.get(href) or doc_by_name.get(href_base) or doc_by_basename.get(os.path.basename(href_base))
-        if doc is not None:
-            if not doc.title:
-                doc.title = title
-            toc_docs[title] = doc
-    return toc_docs
-
-
-def toc_items_iter(items):
-    for item in items:
-        if isinstance(item, (list, tuple)) and len(item) == 2 and isinstance(item[1], (list, tuple)):
-            section, children = item
-            yield section
-            if children:
-                yield from toc_items_iter(children)
-        else:
-            yield item
 
