@@ -24,7 +24,7 @@ def ebook_path():
     return os.path.abspath('ebooks')
 
 @pytest.fixture
-def session_context(tmp_path):
+def session_context(tmp_path: str):
     """Fixture to create a temporary session context for tests."""
     session_id = "test-session"
     context = SessionContextMock(
@@ -416,7 +416,7 @@ def test_get_chapters_cn(session_context, ebook_path, tmp_path):
         for i, sentence in enumerate(chapter, 1):
             print(f"{i}: {sentence}")
 
-def test_get_epub_chapters_en(ebook_path):
+def test_get_epub_chapters_en(ebook_path: str):
     ebook_ = os.path.join(ebook_path, "jane-eyre-c12.epub")
     epubBook = epub.read_epub(ebook_, {"ignore_ncx": True})
     processor = EPubProcessor()
@@ -427,7 +427,7 @@ def test_get_epub_chapters_en(ebook_path):
     # for chapter in chapters:
     #     for i, sentence in enumerate(chapter, 1):
     #         print(f"{i}: {sentence}")
-def test_get_epub_chapters_cn(ebook_path):
+def test_get_epub_chapters_cn(ebook_path: str):
     ebook_ = os.path.join(ebook_path, "god-c12.epub")
     epubBook = epub.read_epub(ebook_, {"ignore_ncx": True})
     processor = EPubProcessor()
@@ -469,7 +469,36 @@ def test_get_cover(session_context, ebook_path, tmp_path):
     print(result)
 
 
-def test_filter_chapter_cn(session_context, ebook_path, tmp_path):
+def test_get_chapter_sentences_4_dune(session_context, ebook_path: str, tmp_path: str):
+    context, session_id, session = session_context
+    args = {
+        "session": session_id,
+        'cancellation_requested': False,
+        "ebook": os.path.join(ebook_path, "Dune.epub"),
+        "device": "cpu",
+        "language": "eng",
+        "language_iso1": 'en',
+        "tts_engine": TTS_ENGINES['XTTSv2'],
+
+    }
+    # update session with args
+    session.update(args)
+    func_name = inspect.currentframe().f_code.co_name
+    set_process_dir(session, func_name)
+    
+    ebook_ = session["ebook"]
+    epubBook = epub.read_epub(ebook_, {"ignore_ncx": True})
+
+    processor = EPubProcessor()
+    toc, chapters = processor.get_chapters_in_sentences(epubBook, session, chapters_to_process=0)
+    pass
+    # toc_docs = map_docs_to_toc(chapters, toc)
+    # transcript_dir = os.path.join(session["process_dir"], "transcript")
+    # toc_count = cache_transcript(processor, toc_docs, transcript_dir, session)
+    # created_files = sum(1 for entry in os.scandir(transcript_dir) if entry.is_file())
+    # assert created_files == toc_count
+
+def test_filter_chapter_cn(session_context, ebook_path: str, tmp_path: str):
     context, session_id, session = session_context
     args = {
         "session": session_id,
@@ -500,7 +529,7 @@ def test_filter_chapter_cn(session_context, ebook_path, tmp_path):
     created_files = sum(1 for entry in os.scandir(transcript_dir) if entry.is_file())
     assert created_files == toc_count
 
-def test_filter_chapter_4_dune(session_context, ebook_path, tmp_path):
+def test_filter_chapter_4_dune(session_context, ebook_path: str, tmp_path: str):
     context, session_id, session = session_context
     args = {
         "session": session_id,
@@ -528,7 +557,7 @@ def test_filter_chapter_4_dune(session_context, ebook_path, tmp_path):
     created_files = sum(1 for entry in os.scandir(transcript_dir) if entry.is_file())
     assert created_files == toc_count
     
-def test_filter_chapter_4_hunger_game(session_context, ebook_path, tmp_path):
+def test_filter_chapter_4_hunger_game(session_context, ebook_path: str, tmp_path: str):
     context, session_id, session = session_context
     args = {
         "session": session_id,
