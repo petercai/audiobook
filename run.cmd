@@ -64,3 +64,5 @@ uv pip install --no-deps -e ../CosyVoice/third_party/Matcha-TTS
 pytest tests/test_epub.py::test_filter_chapter
 pytest tests/test_epub.py::test_process_epub_chapters_en
 pytest tests/test_epub.py::test_process_epub_chapters_zh
+pytest tests/test_text_normalizer.py::test_normalize_text_4_tts_chinese
+pytest tests/test_text_normalizer.py

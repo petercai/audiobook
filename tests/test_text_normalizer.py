@@ -63,9 +63,10 @@ def test_normalize_text_4_tts_english(tn):
 
 
 def test_normalize_text_4_tts_chinese(tn):
-    text = "\u7b2cIV\u7ae0 12:30"
+    text = "第IV章 12:30"
     out = tn.normalize_text_4_tts(text, "zho", tts_engine=None, stanza_nlp=None, is_num2words_compat=False)
     assert isinstance(out, list)
+    print(','.join(out))
     assert out
 
 
@@ -105,21 +106,22 @@ def test_split_inclusive(tn):
 
 def test_segment_ideogramms_zho_real(tn):
     import jieba
-    out = tn._segment_ideogramms(f"\u4f60\u597d{TTS_SML['break']}\u4e16\u754c", "zho")
+    out = tn._segment_ideogramms(f"你好{TTS_SML['break']}世界", "zho")
     assert TTS_SML["break"] in out
+    print(out)
     assert any(token.strip() for token in out)
 
 
 def test_segment_ideogramms_jpn_real(tn):
     import sudachipy
-    out = tn._segment_ideogramms("\u65e5\u672c\u8a9e", "jpn")
+    out = tn._segment_ideogramms("日本語", "jpn")
     assert isinstance(out, list)
     assert out
 
 
 def test_segment_ideogramms_thai_real(tn):
     import pythainlp
-    out = tn._segment_ideogramms("\u0e2a\u0e27\u0e31\u0e2a\u0e14\u0e35", "tha")
+    out = tn._segment_ideogramms("สวัสดี", "tha")
     assert isinstance(out, list)
     assert out
 
@@ -229,7 +231,7 @@ def test_get_sentences_non_ideogram(tn):
 
 
 def test_get_sentences_ideogram_real(tn):
-    out = tn._get_sentences("\u4f60\u597d\u4e16\u754c", "zho", None)
+    out = tn._get_sentences("你好世界", "zho", None)
     assert isinstance(out, list)
     assert out
 
@@ -292,6 +294,14 @@ def test_normalize_text_english_and_chinese(tn):
     assert "Okay" in out
     assert '"test"' in out
 
-    out_cn = tn.normalize_text("\u4f60\u597d (\u6d4b\u8bd5)", "zho")
+    input = "你好 (测试)"
+    out_cn = tn.normalize_text(input, "zh")
     assert isinstance(out_cn, str)
-    assert "\"\u6d4b\u8bd5\"" in out_cn
+    print(f"{input} --> {out_cn}")
+    assert "\"测试\"" in out_cn
+    
+    input = "你好!测试80%"
+    out_cn = tn.normalize_text(input, "zh")
+    assert isinstance(out_cn, str)
+    print(f"{input} --> {out_cn}")
+    assert "百分之" in out_cn
