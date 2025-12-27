@@ -44,6 +44,7 @@ uv pip install numba==0.58.1 llvmlite==0.41.1
 uv pip install gradio==5.42.0
 uv pip install protobuf==3.20.3
 uv pip install "gradio==5.42.0"
+uv pip install "torch==2.8.*" "torchaudio==2.8.*"
 
 
 uv pip install --no-deps matcha-tts
@@ -53,8 +54,12 @@ uv pip install --no-deps -e /path/to/matcha-tts
 # Or directly from Git
 uv pip install --no-deps git+https://github.com/<org>/matcha-tts.git
 
-
+# mac
 uv pip install -e ../tts/CosyVoice
+# win
+uv pip install --no-deps -e ../CosyVoice/
+uv pip install --no-deps -e ../CosyVoice/third_party/Matcha-TTS
+
 
 pytest tests/test_epub.py::test_filter_chapter
 pytest tests/test_epub.py::test_process_epub_chapters_en

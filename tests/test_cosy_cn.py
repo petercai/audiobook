@@ -9,6 +9,7 @@ from lib.classes.tts_manager import TTSManager
 from lib.mock_session import SessionContextMock, set_process_dir
 
 tts_text = '二愣子睁大着双眼，直直望着茅草和烂泥糊成的黑屋顶，身上盖着的旧棉被，已呈深黄色，看不出原来的本来面目，还若有若无的散发着淡淡的霉味。'
+tts_text = '自从读过克莱因于20世纪70年代撰写的一篇论文的草稿之后，我曾一度非常推崇他关于消防员专业技能的研究，他的著作《力量的源泉》也给我留下了深刻的印象.'
 tts_text_en = 'Maintaining your ability to learn translates into increased marketability, improved career optionsand higher salaries.'
 
 @pytest.fixture
