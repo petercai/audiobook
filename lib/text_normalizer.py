@@ -25,8 +25,10 @@ from lib.models import TTS_SML
 
 
 class TextNormalizer:
-    def __init__(self):
+    def __init__(self, lang_iso1=None):
         self.sml_tokens = set(TTS_SML.values())
+        lang_to_check = lang_iso1 or default_language_code
+        self.is_num2words_compat = self.get_num2words_compat(lang_to_check)
 
     @staticmethod
     @lru_cache(maxsize=128)
@@ -119,20 +121,19 @@ class TextNormalizer:
         except Exception:
             return False
 
-    def normalize_text_4_tts(self, paragraph, lang_iso1, tts_engine, stanza_nlp, is_num2words_compat):
+    def normalize_text_4_tts(self, paragraph, lang_iso1, tts_engine, stanza_nlp):
         # If a Stanza NLP pipeline is available, use it for advanced text processing like date recognition
         if stanza_nlp:
             paragraph = self._num2dateWithNLP(
                 paragraph,
                 stanza_nlp,
                 lang_iso1,
-                tts_engine,
-                is_num2words_compat
+                tts_engine
             )
         # Convert Roman numerals, clock times, and mathematical expressions to words for better TTS
         paragraph = self._roman2number(paragraph)  # Convert Roman numerals to Arabic numbers
-        paragraph = self._clock2words(paragraph, lang_iso1, tts_engine, is_num2words_compat)  # Convert clock times to words
-        paragraph = self._math2words(paragraph, lang_iso1, tts_engine, is_num2words_compat)  # Convert math expressions to words
+        paragraph = self._clock2words(paragraph, lang_iso1, tts_engine)  # Convert clock times to words
+        paragraph = self._math2words(paragraph, lang_iso1, tts_engine)  # Convert math expressions to words
 
         # Remove special characters that are not needed for TTS by replacing them with spaces
         specialchars_remove_table = str.maketrans({ch: ' ' for ch in specialchars_remove})
@@ -143,18 +144,18 @@ class TextNormalizer:
         sentences = self._get_sentences(paragraph, lang_iso1, tts_engine)
         return sentences
 
-    def _num_repl(self, m, lang_iso1, is_num2words_compat):
+    def _num_repl(self, m, lang_iso1):
         s = m.group(0)
         # leave years alone (already handled above)
         if re.fullmatch(r"\d{4}", s):
             return s
         n = float(s) if "." in s else int(s)
-        if is_num2words_compat:
+        if self.is_num2words_compat:
             return num2words(n, lang=self._num2words_lang(lang_iso1))
         else:
-            return self._math2words(m, lang_iso1, None, is_num2words_compat)
+            return self._math2words(m, lang_iso1, None)
 
-    def _num2dateWithNLP(self, text, stanza_nlp, lang_iso1, tts_engine, is_num2words_compat):
+    def _num2dateWithNLP(self, text, stanza_nlp, lang_iso1, tts_engine):
         # Regex for ordinal numbers (e.g., 1st, 2nd) to convert them to words
         re_ordinal = re.compile(
             r'(?<!\w)(0?[1-9]|[12][0-9]|3[01])(?:\s|\u00A0)*(?:st|nd|rd|th)(?!\w)',
@@ -178,22 +179,22 @@ class TextNormalizer:
                     # 1) Convert 4-digit years to words using the _year2words method
                     processed = re.sub(
                         r"\b\d{4}\b",
-                        lambda m: self._year2words(m.group(), lang_iso1, is_num2words_compat),
+                        lambda m: self._year2words(m.group(), lang_iso1),
                         date_text
                     )
                     # 2) Convert ordinal days to words based on num2words compatibility
-                    if is_num2words_compat:
+                    if self.is_num2words_compat:
                         processed = re_ordinal.sub(
                             lambda m: num2words(int(m.group(1)), to="ordinal", lang=self._num2words_lang(lang_iso1)),
                             processed
                         )
                     else:
                         processed = re_ordinal.sub(
-                            lambda m: self._math2words(m.group(), lang_iso1, tts_engine, is_num2words_compat),
+                            lambda m: self._math2words(m.group(), lang_iso1, tts_engine),
                             processed
                         )
                     # 3) Convert other numbers to words, skipping years which were already processed
-                    processed = re_num.sub(lambda m: self._num_repl(m, lang_iso1, is_num2words_compat), processed)
+                    processed = re_num.sub(lambda m: self._num_repl(m, lang_iso1), processed)
                     result.append(processed)
                     last_pos = end
                 # Add any remaining text after the last date span
@@ -201,20 +202,20 @@ class TextNormalizer:
                 text = ''.join(result)
             else:
                 # If no date entities are found, process ordinals and years separately
-                if is_num2words_compat:
+                if self.is_num2words_compat:
                     text = re_ordinal.sub(
                         lambda m: num2words(int(m.group(1)), to="ordinal", lang=self._num2words_lang(lang_iso1)),
                         text
                     )
                 else:
                     text = re_ordinal.sub(
-                        lambda m: self._math2words(int(m.group(1)), lang_iso1, tts_engine, is_num2words_compat),
+                        lambda m: self._math2words(int(m.group(1)), lang_iso1, tts_engine),
                         text
                     )
                 # Convert 4-digit years to words
                 text = re.sub(
                     r"\b\d{4}\b",
-                    lambda m: self._year2words(m.group(), lang_iso1, is_num2words_compat),
+                    lambda m: self._year2words(m.group(), lang_iso1),
                     text
                 )
         return text
@@ -337,20 +338,20 @@ class TextNormalizer:
                 return expansion
         return token  # fallback
 
-    def _n2w(self, n: int, lang_iso1, is_num2words_compat, tts_engine) -> str:
+    def _n2w(self, n: int, lang_iso1, tts_engine) -> str:
         _n2w_cache = {}
         iso1, lang_iso3 = self._resolve_lang_codes(lang_iso1)
-        key = (n, iso1, lang_iso3, is_num2words_compat)
+        key = (n, iso1, lang_iso3, self.is_num2words_compat)
         if key in _n2w_cache:
             return _n2w_cache[key]
-        if is_num2words_compat:
+        if self.is_num2words_compat:
             word = num2words(n, lang=self._num2words_lang(lang_iso1))
         else:
-            word = self._math2words(n, lang_iso1, tts_engine, is_num2words_compat)
+            word = self._math2words(n, lang_iso1, tts_engine)
         _n2w_cache[key] = word
         return word
 
-    def _repl_clock_num(self, m: re.Match, lang_iso1, is_num2words_compat, tts_engine) -> str:
+    def _repl_clock_num(self, m: re.Match, lang_iso1, tts_engine) -> str:
         _, lang_iso3 = self._resolve_lang_codes(lang_iso1)
         lc = language_clock.get(lang_iso3) if 'language_clock' in globals() else None
         # Parse hh[:mm[:ss]]
@@ -366,11 +367,11 @@ class TextNormalizer:
             return m.group(0)
         # If no language clock rules, just say numbers plainly
         if not lc:
-            parts = [self._n2w(h, lang_iso1, is_num2words_compat, tts_engine)]
+            parts = [self._n2w(h, lang_iso1, tts_engine)]
             if mnt != 0:
-                parts.append(self._n2w(mnt, lang_iso1, is_num2words_compat, tts_engine))
+                parts.append(self._n2w(mnt, lang_iso1, tts_engine))
             if sec is not None and sec > 0:
-                parts.append(self._n2w(sec, lang_iso1, is_num2words_compat, tts_engine))
+                parts.append(self._n2w(sec, lang_iso1, tts_engine))
             return " ".join(parts)
 
         next_hour = (h + 1) % 24
@@ -380,25 +381,25 @@ class TextNormalizer:
             if h in special_hours:
                 phrase = special_hours[h]
             else:
-                phrase = lc["oclock"].format(hour=self._n2w(h, lang_iso1, is_num2words_compat, tts_engine))
+                phrase = lc["oclock"].format(hour=self._n2w(h, lang_iso1, tts_engine))
         elif mnt == 15:
-            phrase = lc["quarter_past"].format(hour=self._n2w(h, lang_iso1, is_num2words_compat, tts_engine))
+            phrase = lc["quarter_past"].format(hour=self._n2w(h, lang_iso1, tts_engine))
         elif mnt == 30:
             # German "halb drei" (= 2:30) uses next hour
             if lang_iso3 == "deu":
-                phrase = lc["half_past"].format(next_hour=self._n2w(next_hour, lang_iso1, is_num2words_compat, tts_engine))
+                phrase = lc["half_past"].format(next_hour=self._n2w(next_hour, lang_iso1, tts_engine))
             else:
-                phrase = lc["half_past"].format(hour=self._n2w(h, lang_iso1, is_num2words_compat, tts_engine))
+                phrase = lc["half_past"].format(hour=self._n2w(h, lang_iso1, tts_engine))
         elif mnt == 45:
-            phrase = lc["quarter_to"].format(next_hour=self._n2w(next_hour, lang_iso1, is_num2words_compat, tts_engine))
+            phrase = lc["quarter_to"].format(next_hour=self._n2w(next_hour, lang_iso1, tts_engine))
         elif mnt < 30:
-            phrase = lc["past"].format(hour=self._n2w(h, lang_iso1, is_num2words_compat, tts_engine), minute=self._n2w(mnt, lang_iso1, is_num2words_compat, tts_engine)) if mnt != 0 else lc["oclock"].format(hour=self._n2w(h, lang_iso1, is_num2words_compat, tts_engine))
+            phrase = lc["past"].format(hour=self._n2w(h, lang_iso1, tts_engine), minute=self._n2w(mnt, lang_iso1, tts_engine)) if mnt != 0 else lc["oclock"].format(hour=self._n2w(h, lang_iso1, tts_engine))
         else:
             minute_to_hour = 60 - mnt
-            phrase = lc["to"].format(next_hour=self._n2w(next_hour, lang_iso1, is_num2words_compat, tts_engine), minute=self._n2w(minute_to_hour, lang_iso1, is_num2words_compat, tts_engine))
+            phrase = lc["to"].format(next_hour=self._n2w(next_hour, lang_iso1, tts_engine), minute=self._n2w(minute_to_hour, lang_iso1, tts_engine))
         # Append seconds if present
         if sec is not None and sec > 0:
-            second_phrase = lc["second"].format(second=self._n2w(sec, lang_iso1, is_num2words_compat, tts_engine))
+            second_phrase = lc["second"].format(second=self._n2w(sec, lang_iso1, tts_engine))
             phrase = lc["full"].format(phrase=phrase, second_phrase=second_phrase)
         return phrase
 
@@ -414,7 +415,7 @@ class TextNormalizer:
             integer_part = tok.replace(',', '')
             return "{:,}".format(int(integer_part))
 
-    def _clean_single_num(self, num_str, lang_iso1, is_num2words_compat):
+    def _clean_single_num(self, num_str, lang_iso1):
         max_single_value: int = 999_999_999_999_999_999
         tok = unicodedata.normalize('NFKC', num_str)
         if tok.lower() in ('inf', 'infinity', 'nan'):
@@ -430,7 +431,7 @@ class TextNormalizer:
         # Normalize commas before final output
         tok = self._normalize_commas(tok)
 
-        if is_num2words_compat:
+        if self.is_num2words_compat:
             return num2words(num, lang=self._num2words_lang(lang_iso1))
         else:
             _, lang_iso3 = self._resolve_lang_codes(lang_iso1)
@@ -440,10 +441,10 @@ class TextNormalizer:
             )
             return ' '.join(phoneme_map.get(ch, ch) for ch in str(num))
 
-    def _clean_formatted_number_match(self, match, lang_iso1, is_num2words_compat):
-        first_num = self._clean_single_num(match.group(1), lang_iso1, is_num2words_compat)
+    def _clean_formatted_number_match(self, match, lang_iso1):
+        first_num = self._clean_single_num(match.group(1), lang_iso1)
         dash_char = match.group(2) or ''
-        second_num = self._clean_single_num(match.group(3), lang_iso1, is_num2words_compat) if match.group(3) else ''
+        second_num = self._clean_single_num(match.group(3), lang_iso1) if match.group(3) else ''
         trailing = match.group(4) or ''
         if second_num:
             return f"{first_num}{dash_char}{second_num}{trailing}"
@@ -458,9 +459,9 @@ class TextNormalizer:
             return f"{ambiguous_replacements[match.group(3)]} {match.group(4)}"
         return match.group(0)
 
-    def __ordinal_to_words(self, m, lang_iso1, is_num2words_compat):
+    def __ordinal_to_words(self, m, lang_iso1):
         n = int(m.group(1))
-        if is_num2words_compat:
+        if self.is_num2words_compat:
             try:
                 from num2words import num2words
                 return num2words(n, to="ordinal", lang=self._num2words_lang(lang_iso1))
@@ -681,7 +682,7 @@ class TextNormalizer:
             print(error)
             return False
 
-    def _set_formatted_number(self, text: str, lang_iso1: str, is_num2words_compat: bool, max_single_value: int = 999_999_999_999_999_999):
+    def _set_formatted_number(self, text: str, lang_iso1: str, max_single_value: int = 999_999_999_999_999_999):
         # match up to 18 digits, optional ",." groups (allowing spaces or NBSP after comma), optional decimal of up to 12 digits
         # handle optional range with dash/en dash/em dash between numbers, and allow trailing punctuation
         number_re = re.compile(
@@ -693,9 +694,9 @@ class TextNormalizer:
             re.UNICODE
         )
 
-        return number_re.sub(lambda m: self._clean_formatted_number_match(m, lang_iso1, is_num2words_compat), text)
+        return number_re.sub(lambda m: self._clean_formatted_number_match(m, lang_iso1), text)
 
-    def _year2words(self, year_str, lang_iso1, is_num2words_compat):
+    def _year2words(self, year_str, lang_iso1):
         try:
             year = int(year_str)
             first_two = int(year_str[:2])
@@ -703,11 +704,11 @@ class TextNormalizer:
             _, lang_iso3 = self._resolve_lang_codes(lang_iso1)
             lang_iso3 = lang_iso3 if lang_iso3 in language_math_phonemes.keys() else default_language_code
             if not year_str.isdigit() or len(year_str) != 4 or last_two < 10:
-                if is_num2words_compat:
+                if self.is_num2words_compat:
                     return num2words(year, lang=self._num2words_lang(lang_iso1))
                 else:
                     return ' '.join(language_math_phonemes[lang_iso3].get(ch, ch) for ch in year_str)
-            if is_num2words_compat:
+            if self.is_num2words_compat:
                 return f"{num2words(first_two, lang=self._num2words_lang(lang_iso1))} {num2words(last_two, lang=self._num2words_lang(lang_iso1))}"
             else:
                 return ' '.join(language_math_phonemes[lang_iso3].get(ch, ch) for ch in first_two) + ' ' + ' '.join(language_math_phonemes[lang_iso3].get(ch, ch) for ch in last_two)
@@ -717,11 +718,11 @@ class TextNormalizer:
             raise
             return False
 
-    def _clock2words(self, text, lang_iso1, tts_engine, is_num2words_compat):
+    def _clock2words(self, text, lang_iso1, tts_engine):
         time_rx = re.compile(r'(\d{1,2})[:.](\d{1,2})(?:[:.](\d{1,2}))?')
-        return time_rx.sub(lambda m: self._repl_clock_num(m, lang_iso1, is_num2words_compat, tts_engine), text)
+        return time_rx.sub(lambda m: self._repl_clock_num(m, lang_iso1, tts_engine), text)
 
-    def _math2words(self, text, lang_iso1, tts_engine, is_num2words_compat):
+    def _math2words(self, text, lang_iso1, tts_engine):
         """
         Normalize math-like tokens into spoken-friendly words.
 
@@ -742,7 +743,7 @@ class TextNormalizer:
             # Matches any digits + optional space/NBSP + st/nd/rd/th, not glued into words.
             re_ordinal = re.compile(r'(?<!\w)(\d+)(?:\s|\u00A0)*(?:st|nd|rd|th)(?!\w)')
             text = re.sub(r'(\d)\)', r'\1 : ', str(text))
-            text = re_ordinal.sub(lambda m: self.__ordinal_to_words(m, lang_iso1, is_num2words_compat), text)
+            text = re_ordinal.sub(lambda m: self.__ordinal_to_words(m, lang_iso1), text)
             # Symbol phonemes
             ambiguous_symbols = {"-", "/", "*", "x"}
             _, lang_iso3 = self._resolve_lang_codes(lang_iso1)
@@ -764,7 +765,7 @@ class TextNormalizer:
                     r'(?<!\S)([-/*x])\s*(\d+)(?!\S)'  # SYMBOL num
                 )
                 text = re.sub(ambiguous_pattern, lambda m: self._repl_ambiguous(m, ambiguous_replacements), text)
-            text = self._set_formatted_number(text, lang_iso1, is_num2words_compat)
+            text = self._set_formatted_number(text, lang_iso1)
         except Exception as e:
             error = f'_math2words() error: {e} for input: {text}'
             DependencyError(error)

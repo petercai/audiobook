@@ -11,7 +11,13 @@ from lib.text_normalizer import TextNormalizer
 @pytest.fixture
 def tn():
     TextNormalizer._resolve_lang_codes.cache_clear()
-    return TextNormalizer()
+    return TextNormalizer("en")
+
+
+@pytest.fixture
+def tn_no_num2words():
+    TextNormalizer._resolve_lang_codes.cache_clear()
+    return TextNormalizer("zzz")
 
 
 @pytest.fixture(scope="session")
@@ -52,19 +58,20 @@ def test_get_max_chars():
 
 
 def test_get_num2words_compat_returns_bool():
-    assert isinstance(TextNormalizer.get_num2words_compat("en"), bool)
+    assert isinstance(TextNormalizer("en").is_num2words_compat, bool)
 
 
 def test_normalize_text_4_tts_english(tn):
     text = "Chapter IV. Meet at 01:15. 2+3=5."
-    out = tn.normalize_text_4_tts(text, "en", tts_engine=None, stanza_nlp=None, is_num2words_compat=True)
+    out = tn.normalize_text_4_tts(text, "en", tts_engine=None, stanza_nlp=None)
     assert isinstance(out, list)
     assert out
 
 
-def test_normalize_text_4_tts_chinese(tn):
+def test_normalize_text_4_tts_chinese():
     text = "第IV章 12:30"
-    out = tn.normalize_text_4_tts(text, "zho", tts_engine=None, stanza_nlp=None, is_num2words_compat=False)
+    tn = TextNormalizer("zho")
+    out = tn.normalize_text_4_tts(text, "zho", tts_engine=None, stanza_nlp=None)
     assert isinstance(out, list)
     print(','.join(out))
     assert out
@@ -72,29 +79,29 @@ def test_normalize_text_4_tts_chinese(tn):
 
 def test_num_repl_year_and_number(tn):
     match_year = re.match(r"(\d+)", "2024")
-    assert tn._num_repl(match_year, "en", True) == "2024"
+    assert tn._num_repl(match_year, "en") == "2024"
 
     match_num = re.match(r"(\d+)", "12")
-    out = tn._num_repl(match_num, "en", True)
+    out = tn._num_repl(match_num, "en")
     assert isinstance(out, str)
 
 
 def test_num2date_with_nlp_spans(tn, stanza_nlp):
     text = "On 1st 2024, 3."
-    out = tn._num2dateWithNLP(text, stanza_nlp, "en", tts_engine=None, is_num2words_compat=True)
+    out = tn._num2dateWithNLP(text, stanza_nlp, "en", tts_engine=None)
     assert isinstance(out, str)
     assert out
 
 
-def test_num2date_with_nlp_no_spans(tn, stanza_nlp):
+def test_num2date_with_nlp_no_spans(tn_no_num2words, stanza_nlp):
     text = "Today is 1st 2024"
-    out = tn._num2dateWithNLP(text, stanza_nlp, "en", tts_engine=None, is_num2words_compat=False)
+    out = tn_no_num2words._num2dateWithNLP(text, stanza_nlp, "en", tts_engine=None)
     assert isinstance(out, str)
 
 
 def test_num2date_with_nlp_no_numbers(tn):
     text = "No numbers here"
-    out = tn._num2dateWithNLP(text, stanza_nlp=None, lang_iso1="en", tts_engine=None, is_num2words_compat=True)
+    out = tn._num2dateWithNLP(text, stanza_nlp=None, lang_iso1="en", tts_engine=None)
     assert out == text
 
 
@@ -143,20 +150,20 @@ def test_repl_abbreviations(tn):
     assert tn._repl_abbreviations(match, mapping) == "Doctor"
 
 
-def test_n2w_paths(tn):
-    assert isinstance(tn._n2w(5, "en", True, None), str)
-    assert tn._n2w(5, "en", False, None) == 5
+def test_n2w_paths(tn, tn_no_num2words):
+    assert isinstance(tn._n2w(5, "en", None), str)
+    assert isinstance(tn_no_num2words._n2w(5, "en", None), str)
 
 
 def test_repl_clock_num_invalid_time(tn):
     m = re.match(r"(\d{1,2})[:.](\d{1,2})(?:[:.](\d{1,2}))?", "25:00")
-    assert tn._repl_clock_num(m, "en", True, None) == "25:00"
+    assert tn._repl_clock_num(m, "en", None) == "25:00"
 
 
 def test_repl_clock_num_branches(tn):
     def repl(text):
         m = re.match(r"(\d{1,2})[:.](\d{1,2})(?:[:.](\d{1,2}))?", text)
-        return tn._repl_clock_num(m, "en", True, None)
+        return tn._repl_clock_num(m, "en", None)
 
     assert repl("00:00") == "midnight"
     assert "quarter" in repl("01:15")
@@ -173,11 +180,11 @@ def test_normalize_commas(tn):
 
 
 def test_clean_single_num(tn):
-    assert tn._clean_single_num("inf", "en", True) == "inf"
-    assert tn._clean_single_num("nan", "en", True) == "nan"
-    assert tn._clean_single_num("not-a-number", "en", True) == "not-a-number"
-    assert tn._clean_single_num("1e9999", "en", True) == "1e9999"
-    assert isinstance(tn._clean_single_num("1234", "en", True), str)
+    assert tn._clean_single_num("inf", "en") == "inf"
+    assert tn._clean_single_num("nan", "en") == "nan"
+    assert tn._clean_single_num("not-a-number", "en") == "not-a-number"
+    assert tn._clean_single_num("1e9999", "en") == "1e9999"
+    assert isinstance(tn._clean_single_num("1234", "en"), str)
 
 
 def test_clean_formatted_number_match(tn):
@@ -190,7 +197,7 @@ def test_clean_formatted_number_match(tn):
         re.UNICODE,
     )
     m = number_re.match("12-34")
-    out = tn._clean_formatted_number_match(m, "en", False)
+    out = tn._clean_formatted_number_match(m, "en")
     assert "-" in out
 
 
@@ -201,11 +208,11 @@ def test_repl_ambiguous(tn):
     assert tn._repl_ambiguous(m, ambiguous) == "2 minus 3"
 
 
-def test_ordinal_to_words(tn):
+def test_ordinal_to_words(tn, tn_no_num2words):
     m = re.match(r"(\d+)", "1")
-    out = tn._TextNormalizer__ordinal_to_words(m, "en", True)
+    out = tn._TextNormalizer__ordinal_to_words(m, "en")
     assert isinstance(out, str)
-    out = tn._TextNormalizer__ordinal_to_words(m, "en", False)
+    out = tn_no_num2words._TextNormalizer__ordinal_to_words(m, "en")
     assert out == "1"
 
 
@@ -250,31 +257,31 @@ def test_get_date_entities_error(tn):
 
 
 def test_set_formatted_number(tn):
-    out = tn._set_formatted_number("1,234-5", "en", True)
+    out = tn._set_formatted_number("1,234-5", "en")
     assert out
 
 
-def test_year2words_branches(tn):
-    out = tn._year2words("2001", "en", True)
+def test_year2words_branches(tn, tn_no_num2words):
+    out = tn._year2words("2001", "en")
     assert isinstance(out, str)
-    out = tn._year2words("2001", "en", False)
+    out = tn_no_num2words._year2words("2001", "en")
     assert isinstance(out, str)
-    out = tn._year2words("2005", "en", True)
+    out = tn._year2words("2005", "en")
     assert isinstance(out, str)
 
 
 def test_clock2words_wrapper(tn):
-    out = tn._clock2words("1:02", "en", None, True)
+    out = tn._clock2words("1:02", "en", None)
     assert isinstance(out, str)
 
 
 def test_math2words(tn):
-    out = tn._math2words("1st 2+3", "en", None, True)
+    out = tn._math2words("1st 2+3", "en", None)
     assert isinstance(out, str)
 
 
 def test_math2words_error(tn):
-    assert tn._math2words(None, "en", None, True) is None
+    assert tn._math2words(None, "en", None) is None
 
 
 def test_roman2number(tn):

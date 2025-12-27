@@ -411,26 +411,29 @@ def get_vram():
     msg = 'Could not detect GPU VRAM Capacity!'
     return 0
 
-def _get_text_normalizer():
+def _get_text_normalizer(lang_iso1=None):
     from lib.text_normalizer import TextNormalizer
-    if not hasattr(_get_text_normalizer, "_instance"):
-        _get_text_normalizer._instance = TextNormalizer()
-    return _get_text_normalizer._instance
+    if not hasattr(_get_text_normalizer, "_instances"):
+        _get_text_normalizer._instances = {}
+    lang_key = (lang_iso1 or default_language_code).strip().lower()
+    if lang_key not in _get_text_normalizer._instances:
+        _get_text_normalizer._instances[lang_key] = TextNormalizer(lang_iso1)
+    return _get_text_normalizer._instances[lang_key]
 
 def get_num2words_compat(lang_iso1):
-    return _get_text_normalizer().get_num2words_compat(lang_iso1)
+    return _get_text_normalizer(lang_iso1).is_num2words_compat
 
-def set_formatted_number(text: str, lang_iso1: str, is_num2words_compat: bool, max_single_value: int = 999_999_999_999_999_999):
-    return _get_text_normalizer()._set_formatted_number(text, lang_iso1, is_num2words_compat, max_single_value)
+def set_formatted_number(text: str, lang_iso1: str, max_single_value: int = 999_999_999_999_999_999):
+    return _get_text_normalizer(lang_iso1)._set_formatted_number(text, lang_iso1, max_single_value)
 
-def year2words(year_str, lang_iso1, is_num2words_compat):
-    return _get_text_normalizer()._year2words(year_str, lang_iso1, is_num2words_compat)
+def year2words(year_str, lang_iso1):
+    return _get_text_normalizer(lang_iso1)._year2words(year_str, lang_iso1)
 
-def clock2words(text, lang_iso1, tts_engine, is_num2words_compat):
-    return _get_text_normalizer()._clock2words(text, lang_iso1, tts_engine, is_num2words_compat)
+def clock2words(text, lang_iso1, tts_engine):
+    return _get_text_normalizer(lang_iso1)._clock2words(text, lang_iso1, tts_engine)
 
-def math2words(text, lang_iso1, tts_engine, is_num2words_compat):
-    return _get_text_normalizer()._math2words(text, lang_iso1, tts_engine, is_num2words_compat)
+def math2words(text, lang_iso1, tts_engine):
+    return _get_text_normalizer(lang_iso1)._math2words(text, lang_iso1, tts_engine)
 
 def roman2number(text):
     return _get_text_normalizer()._roman2number(text)
@@ -439,7 +442,7 @@ def filter_sml(text):
     return _get_text_normalizer()._filter_sml(text)
 
 def normalize_text(text, lang_iso1, tts_engine):
-    return _get_text_normalizer().normalize_text(text, lang_iso1)
+    return _get_text_normalizer(lang_iso1).normalize_text(text, lang_iso1)
 
 def delete_unused_tmp_dirs(web_dir, days, session):
     dir_array = [

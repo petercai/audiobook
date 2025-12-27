@@ -633,6 +633,7 @@ def process_chapters(processor, toc_docs, transcript_dir, session):
         # Create a processing pipeline for tokenization and named entity recognition
         stanza_nlp = stanza.Pipeline(language_iso_, processors='tokenize,ner')
 
+    processor.text_normalizer = TextNormalizer(language_iso_)
     for title, chapter_doc in toc_docs.items():
         chapter_sentences = processor.filter_chapter(
             chapter_doc,
@@ -640,7 +641,6 @@ def process_chapters(processor, toc_docs, transcript_dir, session):
             lang_iso1=language_iso_,
             tts_engine=session["tts_engine"],
             stanza_nlp=stanza_nlp,
-            is_num2words_compat=TextNormalizer.get_num2words_compat(language_iso_),
         )
         if not chapter_sentences:
             continue

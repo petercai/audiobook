@@ -130,3 +130,12 @@ create pytest test cases to test class TextNormalizer
 - create test cases s and related fixtures to cover both english and chinesese use casese
 - don't use any mock, provide the reqired and real test data/fixture for testing
 - should reach 100% code coverage for TextNormalizer
+
+
+
+
+Updated TextNormalizer to hold is_num2words_compat as an instance var set only in __init__, 
+removed the flag from all method signatures, 
+and wired all call sites to rely on the instance state. 
+This keeps compatibility logic internal and removes the external dependency on the flag across the codebase and tests. 
+Changes are in text_normalizer.py, epub.py, functions.py, test_text_normalizer.py, and test_epub.py.

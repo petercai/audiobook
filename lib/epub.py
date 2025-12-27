@@ -246,6 +246,8 @@ class EPubProcessor:
             language_code = language_iso_ or session['language']  # fallback to ISO-639-3 if needed
             tts_engine_ = session['tts_engine']
             
+            self.text_normalizer = TextNormalizer(language_iso_ or language_code)
+
             # Step 1: Extract TOC (Table of Contents) and document list
             # Get all documents in reading order and the table of contents
             all_docs, toc = self.get_epub_chapters(epubBook, language_code)
@@ -258,10 +260,6 @@ class EPubProcessor:
             ebook_title = self.get_ebook_title(epubBook, all_docs)
 
             stanza_nlp = self.init_stanza_nlp(language_iso_, session)
-
-            # Check if the num2words library supports the current language
-            # This determines how numbers will be converted to words
-            is_num2words_compat = TextNormalizer.get_num2words_compat(language_iso_)
             
             # Inform user that numerical and mathematical content analysis is beginning
             msg = 'Analyzing numbers, maths signs, dates and time to convert in words...'
@@ -280,8 +278,7 @@ class EPubProcessor:
                     chapter_doc,
                     language_code,
                     tts_engine_, 
-                    stanza_nlp, 
-                    is_num2words_compat
+                    stanza_nlp
                 )
                 # Handle the result of chapter processing
                 if chapter_sentences is None:
@@ -489,7 +486,7 @@ class EPubProcessor:
             DependencyError(error)
             return None
 
-    def filter_chapter(self, doc_chapter, lang_iso1, tts_engine, stanza_nlp, is_num2words_compat):
+    def filter_chapter(self, doc_chapter, lang_iso1, tts_engine, stanza_nlp):
         """
         Process an EPUB chapter document and convert it into a list of properly formatted sentences
         ready for text-to-speech conversion.
@@ -506,8 +503,6 @@ class EPubProcessor:
             lang_iso1: ISO 639-1 language code (e.g., 'en', 'fr')
             tts_engine: Text-to-speech engine identifier
             stanza_nlp: Stanza NLP pipeline for advanced text processing
-            is_num2words_compat: Boolean indicating if num2words library supports the language
-            
         Returns:
             list: List of processed sentences ready for TTS conversion, or None if errors occur
         """
@@ -530,7 +525,7 @@ class EPubProcessor:
                 error = 'No valid text found!'
                 print(error)
                 return None
-            sentences = self.text_normalizer.normalize_text_4_tts(paragraph, lang_iso1, tts_engine, stanza_nlp, is_num2words_compat)
+            sentences = self.text_normalizer.normalize_text_4_tts(paragraph, lang_iso1, tts_engine, stanza_nlp)
             if len(sentences) == 0:
                 error = 'No sentences found!'
                 print(error)
