@@ -151,7 +151,7 @@ class EBookProcessor:
                             self.gpu_check(self.is_gui_process, session)
 
                             # 8. Convert the source ebook to EPUB format, which is the standard for processing.
-                            epub_processor = EPubProcessor()
+                            epub_processor = EPubProcessor(session)
                             if epub_processor.convert2epub(session):
                                 # 9. Process the EPUB: extract text, generate TTS, and create the audiobook.
                                 progress_status, passed = self.process_epub(session)
@@ -409,7 +409,7 @@ class EBookProcessor:
                 return err, False
 
             # Convert all chapters in the EPUB to audio files
-            epub_processor = EPubProcessor()
+            epub_processor = EPubProcessor(session)
             if not epub_processor.convert_chapters2audio(session):
                 return "convert_chapters2audio() failed!", False
                 
@@ -494,7 +494,7 @@ class EBookProcessor:
         """
         try:
             # Create an instance of the EPubProcessor
-            epub_processor = EPubProcessor()
+            epub_processor = EPubProcessor(session)
             # Get the metadata from the session, or create an empty dictionary if it doesn't exist
             metadata = dict(session["metadata"]) if "metadata" in session else {}
             # Iterate over the metadata items

@@ -420,20 +420,17 @@ def _get_text_normalizer(lang_iso1=None):
         _get_text_normalizer._instances[lang_key] = TextNormalizer(lang_iso1)
     return _get_text_normalizer._instances[lang_key]
 
-def get_num2words_compat(lang_iso1):
-    return _get_text_normalizer(lang_iso1).is_num2words_compat
-
 def set_formatted_number(text: str, lang_iso1: str, max_single_value: int = 999_999_999_999_999_999):
-    return _get_text_normalizer(lang_iso1)._set_formatted_number(text, lang_iso1, max_single_value)
+    return _get_text_normalizer(lang_iso1)._set_formatted_number(text, max_single_value)
 
 def year2words(year_str, lang_iso1):
-    return _get_text_normalizer(lang_iso1)._year2words(year_str, lang_iso1)
+    return _get_text_normalizer(lang_iso1)._year2words(year_str)
 
 def clock2words(text, lang_iso1, tts_engine):
-    return _get_text_normalizer(lang_iso1)._clock2words(text, lang_iso1, tts_engine)
+    return _get_text_normalizer(lang_iso1)._clock2words(text, tts_engine)
 
 def math2words(text, lang_iso1, tts_engine):
-    return _get_text_normalizer(lang_iso1)._math2words(text, lang_iso1, tts_engine)
+    return _get_text_normalizer(lang_iso1)._math2words(text, tts_engine)
 
 def roman2number(text):
     return _get_text_normalizer()._roman2number(text)
@@ -442,7 +439,7 @@ def filter_sml(text):
     return _get_text_normalizer()._filter_sml(text)
 
 def normalize_text(text, lang_iso1, tts_engine):
-    return _get_text_normalizer(lang_iso1).normalize_text(text, lang_iso1)
+    return _get_text_normalizer(lang_iso1).normalize_text(text)
 
 def delete_unused_tmp_dirs(web_dir, days, session):
     dir_array = [

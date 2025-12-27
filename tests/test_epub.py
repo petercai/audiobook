@@ -36,7 +36,7 @@ def session_context(tmp_path: str):
             # "chapters_dir_sentences": os.path.join(process_dir, "chapters", "sentences"),
             "ebook_list": None,
             "device": "cpu",
-            "language": "eng",
+            
             "language_iso1": "en",
             "tts_engine": TTS_ENGINES['XTTSv2'],
             "output_format": "m4b",
@@ -99,7 +99,7 @@ def test_convert2epub(session_context, ebook_path, tmp_path):
     session['ebook'] = str(input_file)
     session['epub_path'] = tmp_path+  "/book_gen.epub"
 
-    processor = EPubProcessor()
+    processor = EPubProcessor(session)
     result = processor.convert2epub(session)
 
 def test_process_epub_cn(session_context, ebook_path, tmp_path):
@@ -149,7 +149,7 @@ def test_process_epub_en(session_context, ebook_path, tmp_path):
     args = {
         "ebook": os.path.join(ebook_path, "jane-eyre-c12.epub"),
         "device": "cpu",
-        "language": "eng",
+        
         "language_iso1": "en",
         "tts_engine": TTS_ENGINES['XTTSv2'],
         "output_format": "m4b",
@@ -185,7 +185,7 @@ def test_process_epub_en_mps(session_context, ebook_path, tmp_path):
     args = {
         "ebook": os.path.join(ebook_path, "jane-eyre-c12.epub"),
         "device": "mps",
-        "language": "eng",
+        
         "language_iso1": "en",
         "tts_engine": TTS_ENGINES['XTTSv2'],
         "output_format": "m4b",
@@ -258,7 +258,7 @@ def test_process_epub_chapters_en(session_context, ebook_path, tmp_path):
         "ebook": os.path.join(ebook_path, "jane-eyre-c12.epub"),
         "ebook_list": None,
         "device": "cpu",
-        "language": "eng",
+        
         "language_iso1": "en",
         "tts_engine": TTS_ENGINES['XTTSv2'],
         "output_format": "m4b",
@@ -332,7 +332,7 @@ def test_process_epub_metadata_en(session_context, ebook_path, tmp_path):
         'cancellation_requested': False,
         "ebook": os.path.join(ebook_path, "Dune.epub"),
         "device": "cpu",
-        "language": "eng",
+        
         "language_iso1": 'en',
         "tts_engine": TTS_ENGINES['XTTSv2'],
         "output_format": "m4b",
@@ -368,7 +368,7 @@ def test_show_chapters_and_sentences_en(session_context, ebook_path, tmp_path):
     args = {
         "ebook": os.path.join(ebook_path, "jane-eyre-c12.epub"),
         "device": "cpu",
-        "language": "eng",
+        
         "language_iso1": 'en',
         "tts_engine": TTS_ENGINES['XTTSv2'],
     }
@@ -379,7 +379,7 @@ def test_show_chapters_and_sentences_en(session_context, ebook_path, tmp_path):
     ebook_ = session["ebook"]
     epubBook = epub.read_epub(ebook_, {"ignore_ncx": True})
 
-    processor = EPubProcessor()
+    processor = EPubProcessor(session)
     toc, chapters = processor.get_chapters_in_sentences(epubBook, session)
     # Assertions
     assert toc
@@ -406,7 +406,7 @@ def test_get_chapters_cn(session_context, ebook_path, tmp_path):
     ebook_ = session["ebook"]
     epubBook = epub.read_epub(ebook_, {"ignore_ncx": True})
 
-    processor = EPubProcessor()
+    processor = EPubProcessor(session)
     toc, chapters = processor.get_chapters_in_sentences(epubBook, session)
     # Assertions
     assert toc
@@ -416,28 +416,6 @@ def test_get_chapters_cn(session_context, ebook_path, tmp_path):
         for i, sentence in enumerate(chapter, 1):
             print(f"{i}: {sentence}")
 
-def test_get_epub_chapters_en(ebook_path: str):
-    ebook_ = os.path.join(ebook_path, "jane-eyre-c12.epub")
-    epubBook = epub.read_epub(ebook_, {"ignore_ncx": True})
-    processor = EPubProcessor()
-    docs, toc = processor.get_epub_chapters(epubBook, "eng")
-    assert toc
-    print(toc)
-    assert docs
-    # for chapter in chapters:
-    #     for i, sentence in enumerate(chapter, 1):
-    #         print(f"{i}: {sentence}")
-def test_get_epub_chapters_cn(ebook_path: str):
-    ebook_ = os.path.join(ebook_path, "god-c12.epub")
-    epubBook = epub.read_epub(ebook_, {"ignore_ncx": True})
-    processor = EPubProcessor()
-    docs, toc = processor.get_epub_chapters(epubBook, "zho")
-    assert toc
-    print(toc)
-    assert docs
-    # for chapter in chapters:
-    #     for i, sentence in enumerate(chapter, 1):
-    #         print(f"{i}: {sentence}")
 
 def test_get_cover(session_context, ebook_path, tmp_path):
     context, session_id, session = session_context
@@ -462,13 +440,41 @@ def test_get_cover(session_context, ebook_path, tmp_path):
     ebook_ = session["ebook"]
     epubBook = epub.read_epub(ebook_, {"ignore_ncx": True})
 
-    processor = EPubProcessor()
+    processor = EPubProcessor(session)
     result = processor.get_cover(epubBook, session)
     # Assertions
     assert result
     print(result)
 
 
+def test_get_chapter_sentences_cn(session_context, ebook_path: str, tmp_path: str):
+    context, session_id, session = session_context
+    args = {
+        "session": session_id,
+        'cancellation_requested': False,
+        "ebook": os.path.join(ebook_path, "思考,快与慢.epub"),
+        "device": "cpu",
+        "add_toc_title": False,
+        "language_iso1": 'zh',
+        "tts_engine": TTS_ENGINES['XTTSv2'],
+
+    }
+    # update session with args
+    session.update(args)
+    func_name = inspect.currentframe().f_code.co_name
+    set_process_dir(session, func_name)
+    ebook_ = session["ebook"]
+    epubBook = epub.read_epub(ebook_, {"ignore_ncx": True})
+
+    processor = EPubProcessor(session)
+    toc, chapters_with_tn_sentences = processor.get_chapters_in_sentences(epubBook, session)
+    transcript_dir = os.path.join(session["process_dir"], "transcript")
+    os.makedirs(transcript_dir, exist_ok=True)
+    cache_transcript_by_chapter(chapters_with_tn_sentences, transcript_dir)
+    created_files = sum(1 for entry in os.scandir(transcript_dir) if entry.is_file())
+    assert created_files >= 38
+    assert created_files == len(chapters_with_tn_sentences)
+    
 def test_get_chapter_sentences_4_dune(session_context, ebook_path: str, tmp_path: str):
     context, session_id, session = session_context
     args = {
@@ -476,7 +482,7 @@ def test_get_chapter_sentences_4_dune(session_context, ebook_path: str, tmp_path
         'cancellation_requested': False,
         "ebook": os.path.join(ebook_path, "Dune.epub"),
         "device": "cpu",
-        "language": "eng",
+        "add_toc_title": True,
         "language_iso1": 'en',
         "tts_engine": TTS_ENGINES['XTTSv2'],
 
@@ -488,12 +494,13 @@ def test_get_chapter_sentences_4_dune(session_context, ebook_path: str, tmp_path
     ebook_ = session["ebook"]
     epubBook = epub.read_epub(ebook_, {"ignore_ncx": True})
 
-    processor = EPubProcessor()
+    processor = EPubProcessor(session)
     toc, chapters_with_tn_sentences = processor.get_chapters_in_sentences(epubBook, session)
     transcript_dir = os.path.join(session["process_dir"], "transcript")
     os.makedirs(transcript_dir, exist_ok=True)
     cache_transcript_by_chapter(chapters_with_tn_sentences, transcript_dir)
     created_files = sum(1 for entry in os.scandir(transcript_dir) if entry.is_file())
+    assert created_files == 48
     assert created_files == len(chapters_with_tn_sentences)
 
 def test_get_chapter_sentences_4_hunger_games(session_context, ebook_path: str, tmp_path: str):
@@ -503,7 +510,7 @@ def test_get_chapter_sentences_4_hunger_games(session_context, ebook_path: str, 
         'cancellation_requested': False,
         "ebook": os.path.join(ebook_path, "The Hunger Games-2008 - The Hunger Games (Suzanne Collins) .epub"),
         "device": "cpu",
-        "language": "eng",
+        "add_toc_title": True,        
         "language_iso1": 'en',
         "tts_engine": TTS_ENGINES['XTTSv2'],
 
@@ -514,13 +521,13 @@ def test_get_chapter_sentences_4_hunger_games(session_context, ebook_path: str, 
     set_process_dir(session, func_name)
     ebook_ = session["ebook"]
     epubBook = epub.read_epub(ebook_, {"ignore_ncx": True})
-
-    processor = EPubProcessor()
+    processor = EPubProcessor(session)
     toc, chapters_with_tn_sentences = processor.get_chapters_in_sentences(epubBook, session)
     transcript_dir = os.path.join(session["process_dir"], "transcript")
     os.makedirs(transcript_dir, exist_ok=True)
     cache_transcript_by_chapter(chapters_with_tn_sentences, transcript_dir)
     created_files = sum(1 for entry in os.scandir(transcript_dir) if entry.is_file())
+    assert created_files == 27 
     assert created_files == len(chapters_with_tn_sentences)
 
 def test_filter_chapter_cn(session_context, ebook_path: str, tmp_path: str):
@@ -530,27 +537,25 @@ def test_filter_chapter_cn(session_context, ebook_path: str, tmp_path: str):
         'cancellation_requested': False,
         "ebook": os.path.join(ebook_path, "思考,快与慢.epub"),
         "device": "cpu",
-        "language": "zho",
         "language_iso1": 'zh',
         "tts_engine": TTS_ENGINES['XTTSv2'],
 
     }
-
     # update session with args
     session.update(args)
     func_name = inspect.currentframe().f_code.co_name
     set_process_dir(session, func_name)
-    
     ebook_ = session["ebook"]
     epubBook = epub.read_epub(ebook_, {"ignore_ncx": True})
-
-    processor = EPubProcessor()
-    epub_docs, toc = processor.get_epub_chapters(epubBook, session['language'])
+    processor = EPubProcessor(session)
+    processor.text_normalizer = TextNormalizer(session['language_iso1'])
+    epub_docs, toc = processor.get_epub_chapters(epubBook)
     toc_epub_docs = processor.map_filter_chapters_to_toc(epub_docs, toc)
     transcript_dir = os.path.join(session["process_dir"], "transcript")
     chapters_with_tn_sentences = process_chapters(processor, toc_epub_docs, transcript_dir, session)
     cache_transcript_by_chapter(chapters_with_tn_sentences, transcript_dir)
     created_files = sum(1 for entry in os.scandir(transcript_dir) if entry.is_file())
+    assert created_files >= 38 
     assert created_files == len(chapters_with_tn_sentences)
 
 def test_filter_chapter_4_dune(session_context, ebook_path: str, tmp_path: str):
@@ -560,7 +565,7 @@ def test_filter_chapter_4_dune(session_context, ebook_path: str, tmp_path: str):
         'cancellation_requested': False,
         "ebook": os.path.join(ebook_path, "Dune.epub"),
         "device": "cpu",
-        "language": "eng",
+        
         "language_iso1": 'en',
         "tts_engine": TTS_ENGINES['XTTSv2'],
 
@@ -573,13 +578,15 @@ def test_filter_chapter_4_dune(session_context, ebook_path: str, tmp_path: str):
     ebook_ = session["ebook"]
     epubBook = epub.read_epub(ebook_, {"ignore_ncx": True})
 
-    processor = EPubProcessor()
-    epub_docs, toc = processor.get_epub_chapters(epubBook, session['language'])
+    processor = EPubProcessor(session)
+    processor.text_normalizer = TextNormalizer(session['language_iso1'])
+    epub_docs, toc = processor.get_epub_chapters(epubBook)
     toc_epub_docs = processor.map_filter_chapters_to_toc(epub_docs, toc)
     transcript_dir = os.path.join(session["process_dir"], "transcript")
     chapters_with_tn_sentences = process_chapters(processor, toc_epub_docs, transcript_dir, session)
     cache_transcript_by_chapter(chapters_with_tn_sentences, transcript_dir)
     created_files = sum(1 for entry in os.scandir(transcript_dir) if entry.is_file())
+    assert created_files == 48
     assert created_files == len(chapters_with_tn_sentences)
     
 def test_filter_chapter_4_hunger_game(session_context, ebook_path: str, tmp_path: str):
@@ -589,7 +596,7 @@ def test_filter_chapter_4_hunger_game(session_context, ebook_path: str, tmp_path
         'cancellation_requested': False,
         "ebook": os.path.join(ebook_path, "The Hunger Games-2008 - The Hunger Games (Suzanne Collins) .epub"),
         "device": "cpu",
-        "language": "eng",
+        
         "language_iso1": 'en',
         "tts_engine": TTS_ENGINES['XTTSv2'],
 
@@ -602,13 +609,15 @@ def test_filter_chapter_4_hunger_game(session_context, ebook_path: str, tmp_path
     ebook_ = session["ebook"]
     epubBook = epub.read_epub(ebook_, {"ignore_ncx": True})
 
-    processor = EPubProcessor()
-    epub_docs, toc = processor.get_epub_chapters(epubBook, session['language'])
+    processor = EPubProcessor(session)
+    processor.text_normalizer = TextNormalizer(session['language_iso1'])
+    epub_docs, toc = processor.get_epub_chapters(epubBook)
     toc_epub_docs = processor.map_filter_chapters_to_toc(epub_docs, toc)
     transcript_dir = os.path.join(session["process_dir"], "transcript")
     chapters_with_tn_sentences = process_chapters(processor, toc_epub_docs, transcript_dir, session)
     cache_transcript_by_chapter(chapters_with_tn_sentences, transcript_dir)
     created_files = sum(1 for entry in os.scandir(transcript_dir) if entry.is_file())
+    assert created_files == 27 
     assert created_files == len(chapters_with_tn_sentences)
 
 
@@ -637,8 +646,6 @@ def process_chapters(processor, toc_docs, transcript_dir, session):
     for title, chapter_doc in toc_docs.items():
         chapter_sentences = processor.filter_chapter(
             chapter_doc,
-            # lang=language_,
-            lang_iso1=language_iso_,
             tts_engine=session["tts_engine"],
             stanza_nlp=stanza_nlp,
         )

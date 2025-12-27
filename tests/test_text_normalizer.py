@@ -10,13 +10,13 @@ from lib.text_normalizer import TextNormalizer
 
 @pytest.fixture
 def tn():
-    TextNormalizer._resolve_lang_codes.cache_clear()
+    TextNormalizer.resolve_lang_codes.cache_clear()
     return TextNormalizer("en")
 
 
 @pytest.fixture
 def tn_no_num2words():
-    TextNormalizer._resolve_lang_codes.cache_clear()
+    TextNormalizer.resolve_lang_codes.cache_clear()
     return TextNormalizer("zzz")
 
 
@@ -31,19 +31,19 @@ def test_init_sets_sml_tokens(tn):
 
 
 def test_resolve_lang_codes_variants():
-    TextNormalizer._resolve_lang_codes.cache_clear()
-    iso1, iso3 = TextNormalizer._resolve_lang_codes("en")
+    TextNormalizer.resolve_lang_codes.cache_clear()
+    iso1, iso3 = TextNormalizer.resolve_lang_codes("en")
     assert iso1 == "en"
     assert iso3
 
-    iso1, iso3 = TextNormalizer._resolve_lang_codes("eng")
+    iso1, iso3 = TextNormalizer.resolve_lang_codes("eng")
     assert iso3
 
-    iso1, iso3 = TextNormalizer._resolve_lang_codes("zh-CN")
+    iso1, iso3 = TextNormalizer.resolve_lang_codes("zh-CN")
     assert iso1 == "zh"
     assert iso3
 
-    iso1, iso3 = TextNormalizer._resolve_lang_codes("zzz")
+    iso1, iso3 = TextNormalizer.resolve_lang_codes("zzz")
     assert iso3 == "zzz" or iso3 == default_language_code
 
 
@@ -54,7 +54,7 @@ def test_num2words_lang():
 
 
 def test_get_max_chars():
-    assert TextNormalizer.get_max_chars("en") > 0
+    assert TextNormalizer("en").get_max_chars() > 0
 
 
 def test_get_num2words_compat_returns_bool():
@@ -63,7 +63,7 @@ def test_get_num2words_compat_returns_bool():
 
 def test_normalize_text_4_tts_english(tn):
     text = "Chapter IV. Meet at 01:15. 2+3=5."
-    out = tn.normalize_text_4_tts(text, "en", tts_engine=None, stanza_nlp=None)
+    out = tn.normalize_text_4_tts(text, tts_engine=None, stanza_nlp=None)
     assert isinstance(out, list)
     assert out
 
@@ -71,7 +71,7 @@ def test_normalize_text_4_tts_english(tn):
 def test_normalize_text_4_tts_chinese():
     text = "第IV章 12:30"
     tn = TextNormalizer("zho")
-    out = tn.normalize_text_4_tts(text, "zho", tts_engine=None, stanza_nlp=None)
+    out = tn.normalize_text_4_tts(text, tts_engine=None, stanza_nlp=None)
     assert isinstance(out, list)
     print(','.join(out))
     assert out
@@ -79,29 +79,29 @@ def test_normalize_text_4_tts_chinese():
 
 def test_num_repl_year_and_number(tn):
     match_year = re.match(r"(\d+)", "2024")
-    assert tn._num_repl(match_year, "en") == "2024"
+    assert tn._num_repl(match_year) == "2024"
 
     match_num = re.match(r"(\d+)", "12")
-    out = tn._num_repl(match_num, "en")
+    out = tn._num_repl(match_num)
     assert isinstance(out, str)
 
 
 def test_num2date_with_nlp_spans(tn, stanza_nlp):
     text = "On 1st 2024, 3."
-    out = tn._num2dateWithNLP(text, stanza_nlp, "en", tts_engine=None)
+    out = tn._num2dateWithNLP(text, stanza_nlp, tts_engine=None)
     assert isinstance(out, str)
     assert out
 
 
 def test_num2date_with_nlp_no_spans(tn_no_num2words, stanza_nlp):
     text = "Today is 1st 2024"
-    out = tn_no_num2words._num2dateWithNLP(text, stanza_nlp, "en", tts_engine=None)
+    out = tn_no_num2words._num2dateWithNLP(text, stanza_nlp, tts_engine=None)
     assert isinstance(out, str)
 
 
 def test_num2date_with_nlp_no_numbers(tn):
     text = "No numbers here"
-    out = tn._num2dateWithNLP(text, stanza_nlp=None, lang_iso1="en", tts_engine=None)
+    out = tn._num2dateWithNLP(text, stanza_nlp=None, tts_engine=None)
     assert out == text
 
 
@@ -113,7 +113,7 @@ def test_split_inclusive(tn):
 
 def test_segment_ideogramms_zho_real(tn):
     import jieba
-    out = tn._segment_ideogramms(f"你好{TTS_SML['break']}世界", "zho")
+    out = TextNormalizer("zho")._segment_ideogramms(f"你好{TTS_SML['break']}世界")
     assert TTS_SML["break"] in out
     print(out)
     assert any(token.strip() for token in out)
@@ -121,20 +121,20 @@ def test_segment_ideogramms_zho_real(tn):
 
 def test_segment_ideogramms_jpn_real(tn):
     import sudachipy
-    out = tn._segment_ideogramms("日本語", "jpn")
+    out = TextNormalizer("jpn")._segment_ideogramms("日本語")
     assert isinstance(out, list)
     assert out
 
 
 def test_segment_ideogramms_thai_real(tn):
     import pythainlp
-    out = tn._segment_ideogramms("สวัสดี", "tha")
+    out = TextNormalizer("tha")._segment_ideogramms("สวัสดี")
     assert isinstance(out, list)
     assert out
 
 
 def test_segment_ideogramms_default_language(tn):
-    out = tn._segment_ideogramms("abc", "en")
+    out = tn._segment_ideogramms("abc")
     assert out == ["abc"]
 
 
@@ -151,19 +151,19 @@ def test_repl_abbreviations(tn):
 
 
 def test_n2w_paths(tn, tn_no_num2words):
-    assert isinstance(tn._n2w(5, "en", None), str)
-    assert isinstance(tn_no_num2words._n2w(5, "en", None), str)
+    assert isinstance(tn._n2w(5, None), str)
+    assert isinstance(tn_no_num2words._n2w(5, None), str)
 
 
 def test_repl_clock_num_invalid_time(tn):
     m = re.match(r"(\d{1,2})[:.](\d{1,2})(?:[:.](\d{1,2}))?", "25:00")
-    assert tn._repl_clock_num(m, "en", None) == "25:00"
+    assert tn._repl_clock_num(m, None) == "25:00"
 
 
 def test_repl_clock_num_branches(tn):
     def repl(text):
         m = re.match(r"(\d{1,2})[:.](\d{1,2})(?:[:.](\d{1,2}))?", text)
-        return tn._repl_clock_num(m, "en", None)
+        return tn._repl_clock_num(m, None)
 
     assert repl("00:00") == "midnight"
     assert "quarter" in repl("01:15")
@@ -180,11 +180,11 @@ def test_normalize_commas(tn):
 
 
 def test_clean_single_num(tn):
-    assert tn._clean_single_num("inf", "en") == "inf"
-    assert tn._clean_single_num("nan", "en") == "nan"
-    assert tn._clean_single_num("not-a-number", "en") == "not-a-number"
-    assert tn._clean_single_num("1e9999", "en") == "1e9999"
-    assert isinstance(tn._clean_single_num("1234", "en"), str)
+    assert tn._clean_single_num("inf") == "inf"
+    assert tn._clean_single_num("nan") == "nan"
+    assert tn._clean_single_num("not-a-number") == "not-a-number"
+    assert tn._clean_single_num("1e9999") == "1e9999"
+    assert isinstance(tn._clean_single_num("1234"), str)
 
 
 def test_clean_formatted_number_match(tn):
@@ -197,7 +197,7 @@ def test_clean_formatted_number_match(tn):
         re.UNICODE,
     )
     m = number_re.match("12-34")
-    out = tn._clean_formatted_number_match(m, "en")
+    out = tn._clean_formatted_number_match(m)
     assert "-" in out
 
 
@@ -210,9 +210,9 @@ def test_repl_ambiguous(tn):
 
 def test_ordinal_to_words(tn, tn_no_num2words):
     m = re.match(r"(\d+)", "1")
-    out = tn._TextNormalizer__ordinal_to_words(m, "en")
+    out = tn._TextNormalizer__ordinal_to_words(m)
     assert isinstance(out, str)
-    out = tn_no_num2words._TextNormalizer__ordinal_to_words(m, "en")
+    out = tn_no_num2words._TextNormalizer__ordinal_to_words(m)
     assert out == "1"
 
 
@@ -232,19 +232,19 @@ def test_roman_helpers(tn):
 
 def test_get_sentences_non_ideogram(tn):
     text = f"Hello, world! {TTS_SML['break']} One, two, three, four, five."
-    out = tn._get_sentences(text, "en", None)
+    out = tn._get_sentences(text, None)
     assert isinstance(out, list)
     assert TTS_SML["break"] in out
 
 
 def test_get_sentences_ideogram_real(tn):
-    out = tn._get_sentences("你好世界", "zho", None)
+    out = TextNormalizer("zho")._get_sentences("你好世界", None)
     assert isinstance(out, list)
     assert out
 
 
 def test_get_sentences_error(tn):
-    assert tn._get_sentences(None, "en", None) is None
+    assert tn._get_sentences(None, None) is None
 
 
 def test_get_date_entities_real(tn, stanza_nlp):
@@ -257,31 +257,31 @@ def test_get_date_entities_error(tn):
 
 
 def test_set_formatted_number(tn):
-    out = tn._set_formatted_number("1,234-5", "en")
+    out = tn._set_formatted_number("1,234-5")
     assert out
 
 
 def test_year2words_branches(tn, tn_no_num2words):
-    out = tn._year2words("2001", "en")
+    out = tn._year2words("2001")
     assert isinstance(out, str)
-    out = tn_no_num2words._year2words("2001", "en")
+    out = tn_no_num2words._year2words("2001")
     assert isinstance(out, str)
-    out = tn._year2words("2005", "en")
+    out = tn._year2words("2005")
     assert isinstance(out, str)
 
 
 def test_clock2words_wrapper(tn):
-    out = tn._clock2words("1:02", "en", None)
+    out = tn._clock2words("1:02", None)
     assert isinstance(out, str)
 
 
 def test_math2words(tn):
-    out = tn._math2words("1st 2+3", "en", None)
+    out = tn._math2words("1st 2+3", None)
     assert isinstance(out, str)
 
 
 def test_math2words_error(tn):
-    assert tn._math2words(None, "en", None) is None
+    assert tn._math2words(None, None) is None
 
 
 def test_roman2number(tn):
@@ -296,19 +296,19 @@ def test_filter_sml(tn):
 
 
 def test_normalize_text_english_and_chinese(tn):
-    out = tn.normalize_text("Dr. ok (test)", "en")
+    out = tn.normalize_text("Dr. ok (test)")
     assert isinstance(out, str)
     assert "Okay" in out
     assert '"test"' in out
 
     input = "你好 (测试)"
-    out_cn = tn.normalize_text(input, "zh")
+    out_cn = TextNormalizer("zh").normalize_text(input)
     assert isinstance(out_cn, str)
     print(f"{input} --> {out_cn}")
     assert "\"测试\"" in out_cn
     
     input = "你好!测试80%"
-    out_cn = tn.normalize_text(input, "zh")
+    out_cn = TextNormalizer("zh").normalize_text(input)
     assert isinstance(out_cn, str)
     print(f"{input} --> {out_cn}")
     assert "百分之" in out_cn

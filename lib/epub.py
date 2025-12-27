@@ -23,9 +23,9 @@ is_gui_process = False
 
 class EPubProcessor:
 
-    def __init__(self):
+    def __init__(self, session):
         self.ebook_audio = EbookAudio()
-        self.text_normalizer = TextNormalizer()
+        self.text_normalizer = TextNormalizer(session['language_iso1'])
         self.heading_tags = {"h1", "h2", "h3", "h4", "h5", "h6"}
         self.break_tags = {"p", "div", "li", "br", "hr"}
         self.pause_tags = {"ol", "ul"}
@@ -243,24 +243,25 @@ class EPubProcessor:
                 
             # Extract language information from session for processing
             language_iso_ = session['language_iso1']  # e.g., 'en'
-            language_code = language_iso_ or session['language']  # fallback to ISO-639-3 if needed
+            # language_code = language_iso_ or session['language']  # fallback to ISO-639-3 if needed
             tts_engine_ = session['tts_engine']
             
-            self.text_normalizer = TextNormalizer(language_iso_ or language_code)
+            # self.text_normalizer = TextNormalizer(language_iso_ or language_code)
 
             # Step 1: Extract TOC (Table of Contents) and document list
             # Get all documents in reading order and the table of contents
-            all_docs, toc = self.get_epub_chapters(epubBook, language_code)
+            all_docs, toc = self.get_epub_chapters(epubBook)
             if not all_docs:
                 return [], []
 
             toc_epub_docs = self.map_filter_chapters_to_toc(all_docs, toc)
 
             # Attempt to extract the book title for metadata
-            ebook_title = self.get_ebook_title(epubBook, all_docs)
+            # ebook_title = self.get_ebook_title(epubBook, all_docs)
 
             stanza_nlp = self.init_stanza_nlp(language_iso_, session)
-            
+            is_add_toc_title_to_chapters = session.get('add_toc_title', False)
+
             # Inform user that numerical and mathematical content analysis is beginning
             msg = 'Analyzing numbers, maths signs, dates and time to convert in words...'
             print(msg)
@@ -276,19 +277,19 @@ class EPubProcessor:
                 # This includes number conversion, punctuation handling, and sentence segmentation
                 chapter_sentences = self.filter_chapter(
                     chapter_doc,
-                    language_code,
+                    # language_code,
                     tts_engine_, 
                     stanza_nlp
                 )
                 # Handle the result of chapter processing
                 if chapter_sentences is None:
-                    # If processing failed, stop further processing
-                    break
+                    # If not sentences were extracted, skip this chapter
+                    continue
                 elif len(chapter_sentences) > 0:
                     if len(chapter_sentences) < 3:
                         pending_sentences.extend(chapter_sentences)
                         continue
-                    chapter_sentences = [title] + chapter_sentences
+                    chapter_sentences = [title] + chapter_sentences if is_add_toc_title_to_chapters else chapter_sentences
                     if pending_sentences:
                         chapter_sentences = pending_sentences + chapter_sentences
                         pending_sentences = []
@@ -334,16 +335,13 @@ class EPubProcessor:
             stanza_nlp = stanza.Pipeline(language_iso_, processors='tokenize,ner')
         return stanza_nlp
 
-    def get_epub_chapters(self, epubBook, language_iso1):
+    def get_epub_chapters(self, epubBook):
         try:
             toc = epubBook.toc  # Extract TOC
             toc_list = []
             for item in toc:
                 if hasattr(item, 'title'):
-                    normalized_title = self.text_normalizer.normalize_text(
-                        str(item.title),
-                        language_iso1,
-                    )
+                    normalized_title = self.text_normalizer.normalize_text(str(item.title))
                     if normalized_title is not None:
                         toc_list.append(normalized_title)
         except Exception as toc_error:
@@ -486,7 +484,7 @@ class EPubProcessor:
             DependencyError(error)
             return None
 
-    def filter_chapter(self, doc_chapter, lang_iso1, tts_engine, stanza_nlp):
+    def filter_chapter(self, doc_chapter, tts_engine, stanza_nlp):
         """
         Process an EPUB chapter document and convert it into a list of properly formatted sentences
         ready for text-to-speech conversion.
@@ -512,7 +510,7 @@ class EPubProcessor:
             if not tuples_structured_sentence_list:
                 return []
             # Get the maximum character limit for the current language to ensure proper sentence segmentation
-            max_chars = self.text_normalizer.get_max_chars(lang_iso1)
+            max_chars = self.text_normalizer.get_max_chars()
             clean_list = self._to_flat_sentence_list_with_break(
                 tuples_structured_sentence_list,
                 is_tokenizer_tts,
@@ -525,7 +523,7 @@ class EPubProcessor:
                 error = 'No valid text found!'
                 print(error)
                 return None
-            sentences = self.text_normalizer.normalize_text_4_tts(paragraph, lang_iso1, tts_engine, stanza_nlp)
+            sentences = self.text_normalizer.normalize_text_4_tts(paragraph, tts_engine, stanza_nlp)
             if len(sentences) == 0:
                 error = 'No sentences found!'
                 print(error)

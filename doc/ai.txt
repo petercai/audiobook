@@ -139,3 +139,10 @@ removed the flag from all method signatures,
 and wired all call sites to rely on the instance state. 
 This keeps compatibility logic internal and removes the external dependency on the flag across the codebase and tests. 
 Changes are in text_normalizer.py, epub.py, functions.py, test_text_normalizer.py, and test_epub.py.
+
+
+Updated TextNormalizer to hold lang_iso1 as an instance var set only in __init__, 
+removed the flag from all method signatures, 
+and wired all call sites to rely on the instance state. 
+This keeps compatibility logic internal and removes the external dependency on the flag across the codebase and tests. 
+Changes are in text_normalizer.py, epub.py, functions.py, test_text_normalizer.py, and test_epub.py.
