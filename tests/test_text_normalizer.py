@@ -6,7 +6,8 @@ import stanza
 from lib.lang import default_language_code, resolve_lang_codes
 from lib.models import TTS_SML
 from lib.text_normalizer import TextNormalizer
-
+from wetext import Normalizer as ZhNormalizer
+from wetext import Normalizer as EnNormalizer
 
 @pytest.fixture
 def tn():
@@ -309,6 +310,21 @@ def test_normalize_text_english_and_chinese(tn):
     
     input = "你好!测试80%"
     out_cn = TextNormalizer("zh").normalize_text(input)
+    assert isinstance(out_cn, str)
+    print(f"{input} --> {out_cn}")
+    assert "百分之" in out_cn
+
+
+def test_normalize_wetext_chinese(tn):
+    zh_tn_model = ZhNormalizer(remove_erhua=False)
+    input = "你好 (测试)"
+    out_cn = zh_tn_model.normalize(input)
+    assert isinstance(out_cn, str)
+    print(f"{input} --> {out_cn}")
+    assert "测试" in out_cn
+    
+    input = "你好!测试80%"
+    out_cn = zh_tn_model.normalize(input)
     assert isinstance(out_cn, str)
     print(f"{input} --> {out_cn}")
     assert "百分之" in out_cn

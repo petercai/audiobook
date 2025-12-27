@@ -45,7 +45,8 @@ uv pip install gradio==5.42.0
 uv pip install protobuf==3.20.3
 uv pip install "gradio==5.42.0"
 uv pip install "torch==2.8.*" "torchaudio==2.8.*"
-
+uv pip install stanza==1.11.0
+uv pip install "wetext>=0.1.2"
 
 uv pip install --no-deps matcha-tts
 
