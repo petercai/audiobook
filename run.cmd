@@ -63,10 +63,28 @@ uv pip install --no-deps git+https://github.com/<org>/matcha-tts.git
 
 # mac
 uv pip install -e ../tts/CosyVoice
+# linux
+uv pip install --no-deps -e ../cosyvoice
 # win
 uv pip install --no-deps -e ../CosyVoice/
 uv pip install --no-deps -e ../CosyVoice/third_party/Matcha-TTS
 
+
+cd models/tts/CosyVoice-ttsfrd/
+unzip resource.zip -d .
+uv pip install ttsfrd_dependency-0.1-py3-none-any.whl
+uv pip install ttsfrd-0.4.2-cp310-cp310-linux_x86_64.whl
+
+## Linux
+
+# folder storage usage
+du -h --max-depth=1 | sort -hr
+
+# disk usage
+df -h
+
+@REM Also check mounted volumes:
+lsblk
 
 pytest tests/test_epub.py::test_filter_chapter
 pytest tests/test_epub.py::test_process_epub_chapters_en
