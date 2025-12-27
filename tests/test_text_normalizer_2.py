@@ -1,13 +1,12 @@
 import pytest
 from unittest.mock import patch
 
-from lib.text_normalizer import TextNormalizer
-from lib.lang import default_language_code
+from lib.lang import default_language_code, resolve_lang_codes
 
 
 class TestTextNormalizerResolveLangCodes:
     """
-    Test suite for the _resolve_lang_codes static method in the TextNormalizer class.
+    Test suite for the resolve_lang_codes helper in lib.lang.
     """
 
     @pytest.mark.parametrize("input_lang, expected_iso1, expected_iso3", [
@@ -51,11 +50,11 @@ class TestTextNormalizerResolveLangCodes:
     ])
     def test_resolve_lang_codes_with_iso639(self, input_lang, expected_iso1, expected_iso3):
         """Tests language code resolution when the iso639 library is available."""
-        TextNormalizer.resolve_lang_codes.cache_clear()
-        iso1, iso3 = TextNormalizer.resolve_lang_codes(input_lang)
+        resolve_lang_codes.cache_clear()
+        iso1, iso3 = resolve_lang_codes(input_lang)
         assert iso1 == expected_iso1
         assert iso3 == expected_iso3
-        TextNormalizer.resolve_lang_codes.cache_clear()
+        resolve_lang_codes.cache_clear()
 
     @patch.dict('sys.modules', {'iso639': None})
     @pytest.mark.parametrize("input_lang, expected_iso1, expected_iso3", [
@@ -70,30 +69,29 @@ class TestTextNormalizerResolveLangCodes:
     ])
     def test_resolve_lang_codes_no_iso639(self, input_lang, expected_iso1, expected_iso3):
         """Tests language code resolution when the iso639 library is mocked as unavailable."""
-        TextNormalizer.resolve_lang_codes.cache_clear()
-        iso1, iso3 = TextNormalizer.resolve_lang_codes(input_lang)
+        resolve_lang_codes.cache_clear()
+        iso1, iso3 = resolve_lang_codes(input_lang)
         assert iso1 == expected_iso1
         assert iso3 == expected_iso3
-        TextNormalizer.resolve_lang_codes.cache_clear()
+        resolve_lang_codes.cache_clear()
 
     def test_lru_cache_on_resolve_lang_codes(self):
         """Tests that the lru_cache is working as expected."""
-        TextNormalizer.resolve_lang_codes.cache_clear()
+        resolve_lang_codes.cache_clear()
 
         # First call, should be a miss
-        TextNormalizer.resolve_lang_codes("en")
-        assert TextNormalizer.resolve_lang_codes.cache_info().hits == 0
-        assert TextNormalizer.resolve_lang_codes.cache_info().misses == 1
+        resolve_lang_codes("en")
+        assert resolve_lang_codes.cache_info().hits == 0
+        assert resolve_lang_codes.cache_info().misses == 1
 
         # Second call with same arg, should be a hit
-        TextNormalizer.resolve_lang_codes("en")
-        assert TextNormalizer.resolve_lang_codes.cache_info().hits == 1
-        assert TextNormalizer.resolve_lang_codes.cache_info().misses == 1
+        resolve_lang_codes("en")
+        assert resolve_lang_codes.cache_info().hits == 1
+        assert resolve_lang_codes.cache_info().misses == 1
 
         # Third call with different arg, should be a miss
-        TextNormalizer.resolve_lang_codes("fr")
-        assert TextNormalizer.resolve_lang_codes.cache_info().hits == 1
-        assert TextNormalizer.resolve_lang_codes.cache_info().misses == 2
+        resolve_lang_codes("fr")
+        assert resolve_lang_codes.cache_info().hits == 1
+        assert resolve_lang_codes.cache_info().misses == 2
 
-        TextNormalizer.resolve_lang_codes.cache_clear()
-
+        resolve_lang_codes.cache_clear()

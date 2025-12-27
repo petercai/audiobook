@@ -17,6 +17,7 @@ from lib.lang import (
     punctuation_split_hard_set,
     punctuation_split_soft_set,
     punctuation_switch,
+    resolve_lang_codes,
     roman_numbers_tuples,
     specialchars_mapping,
     specialchars_remove,
@@ -27,74 +28,8 @@ from lib.models import TTS_SML
 class TextNormalizer:
     def __init__(self, lang_iso1=None):
         self.sml_tokens = set(TTS_SML.values())
-        self.lang_iso1, self.lang_iso3 = TextNormalizer.resolve_lang_codes((lang_iso1 or default_language_code).strip())
-        self.is_num2words_compat = self.get_num2words_compat(self.lang_iso1)
-
-    @staticmethod
-    @lru_cache(maxsize=128)
-    def resolve_lang_codes(lang_iso1):
-        """
-        Resolve an input language code into ISO 639-1 and ISO 639-3 forms.
-
-        This helper accepts various inputs (e.g., "en", "eng", "zh-CN") and
-        returns a tuple (iso1, iso3):
-        - iso1 is the two-letter ISO 639-1 code when it can be determined.
-        - iso3 is the three-letter ISO 639-3 code used by internal mappings.
-        
-        lru_cache is a standard-library decorator that memoizes function results using a Least Recently Used cache. 
-        It avoids repeating the same work for identical inputs by returning a stored result instead of recomputing. 
-        Here it’s useful because _resolve_lang_codes is called many times during normalization, 
-        and iso639 lookups (plus string parsing) can be relatively expensive. 
-        Caching keeps this cheap and consistent across repeated calls.        
-
-        Resolution flow:
-        1) Normalize input by stripping whitespace and lowercasing.
-        2) If input length is 2, treat it as ISO-1 and use iso639 to map to ISO-3.
-        3) If input length is 3, treat it as ISO-3 and use iso639 to map to ISO-1.
-        4) If input includes a region/script tag (e.g., "zh-CN"), take the base
-           before "-" and treat it as ISO-1 when it is 2 letters.
-        5) If ISO-3 is still unknown but the raw input matches a key in
-           language_mapping, accept it as ISO-3.
-        6) If no ISO-3 can be resolved, fall back to default_language_code.
-
-        The function tolerates missing iso639 data: it returns whichever code
-        it can infer and still guarantees a non-empty ISO-3 via the fallback.
-        """
-        lang_iso1 = (lang_iso1 or "").strip().lower()
-        iso1 = None
-        iso3 = None
-        languages = None
-        if lang_iso1:
-            try:
-                from iso639 import languages as iso_languages
-                languages = iso_languages
-            except Exception:
-                languages = None
-            if len(lang_iso1) == 2:
-                iso1 = lang_iso1
-                if languages:
-                    lang_obj = languages.get(part1=iso1)
-                    if lang_obj and lang_obj.part3:
-                        iso3 = lang_obj.part3
-            elif len(lang_iso1) == 3:
-                iso3 = lang_iso1
-                if languages:
-                    lang_obj = languages.get(part3=iso3)
-                    if lang_obj and lang_obj.part1:
-                        iso1 = lang_obj.part1
-            else:
-                base = lang_iso1.split("-", 1)[0]
-                if len(base) == 2:
-                    iso1 = base
-                    if languages:
-                        lang_obj = languages.get(part1=iso1)
-                        if lang_obj and lang_obj.part3:
-                            iso3 = lang_obj.part3
-        if not iso3 and lang_iso1 in language_mapping:
-            iso3 = lang_iso1
-        if not iso3:
-            iso3 = default_language_code
-        return iso1, iso3
+        self.lang_iso1, self.lang_iso3 = resolve_lang_codes((lang_iso1 or default_language_code).strip())
+        self.is_num2words_compat = self._get_num2words_compat(self.lang_iso1)
 
     @staticmethod
     @lru_cache(maxsize=128)
@@ -109,9 +44,9 @@ class TextNormalizer:
     def get_max_chars(self):
         return language_mapping[self.lang_iso3]['max_chars'] - 4
 
-    def get_num2words_compat(self, lang_iso1):
+    def _get_num2words_compat(self, lang_iso1):
         try:
-            num2words(1, lang=TextNormalizer._num2words_lang(lang_iso1))
+            num2words(1, lang=lang_iso1)
             return True
         except NotImplementedError:
             return False

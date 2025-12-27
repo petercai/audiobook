@@ -3,20 +3,20 @@ import regex as re
 import pytest
 import stanza
 
-from lib.lang import default_language_code
+from lib.lang import default_language_code, resolve_lang_codes
 from lib.models import TTS_SML
 from lib.text_normalizer import TextNormalizer
 
 
 @pytest.fixture
 def tn():
-    TextNormalizer.resolve_lang_codes.cache_clear()
+    resolve_lang_codes.cache_clear()
     return TextNormalizer("en")
 
 
 @pytest.fixture
 def tn_no_num2words():
-    TextNormalizer.resolve_lang_codes.cache_clear()
+    resolve_lang_codes.cache_clear()
     return TextNormalizer("zzz")
 
 
@@ -31,19 +31,19 @@ def test_init_sets_sml_tokens(tn):
 
 
 def test_resolve_lang_codes_variants():
-    TextNormalizer.resolve_lang_codes.cache_clear()
-    iso1, iso3 = TextNormalizer.resolve_lang_codes("en")
+    resolve_lang_codes.cache_clear()
+    iso1, iso3 = resolve_lang_codes("en")
     assert iso1 == "en"
     assert iso3
 
-    iso1, iso3 = TextNormalizer.resolve_lang_codes("eng")
+    iso1, iso3 = resolve_lang_codes("eng")
     assert iso3
 
-    iso1, iso3 = TextNormalizer.resolve_lang_codes("zh-CN")
+    iso1, iso3 = resolve_lang_codes("zh-CN")
     assert iso1 == "zh"
     assert iso3
 
-    iso1, iso3 = TextNormalizer.resolve_lang_codes("zzz")
+    iso1, iso3 = resolve_lang_codes("zzz")
     assert iso3 == "zzz" or iso3 == default_language_code
 
 
