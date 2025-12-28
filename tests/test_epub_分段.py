@@ -101,7 +101,7 @@ def test_get_chapter_sentences_思考快与慢(
         "device": "cpu",
         "add_toc_title": False,
         "language_iso1": "zh",
-        "tts_engine": TTS_ENGINES["XTTSv2"],
+        "tts_engine": TTS_ENGINES["COSYVOICE"],
     }
     # update session with args
     session.update(args)
@@ -131,7 +131,7 @@ def test_get_chapter_sentences_剑来(session_context, ebook_path: str, tmp_path
         "device": "cpu",
         "add_toc_title": True,
         "language_iso1": "zh",
-        "tts_engine": TTS_ENGINES["XTTSv2"],
+        "tts_engine": TTS_ENGINES["COSYVOICE"],
     }
     # update session with args
     session.update(args)
@@ -163,7 +163,7 @@ def test_get_chapter_sentences_一句顶一万句(
         "device": "cpu",
         "add_toc_title": False,
         "language_iso1": "zh",
-        "tts_engine": TTS_ENGINES["XTTSv2"],
+        "tts_engine": TTS_ENGINES["COSYVOICE"],
     }
     # update session with args
     session.update(args)
@@ -195,7 +195,7 @@ def test_get_chapter_sentences_纯真年代(
         "device": "cpu",
         "add_toc_title": False,
         "language_iso1": "zh",
-        "tts_engine": TTS_ENGINES["XTTSv2"],
+        "tts_engine": TTS_ENGINES["COSYVOICE"],
     }
     # update session with args
     session.update(args)
@@ -315,7 +315,7 @@ def test_filter_chapter_思考快与慢(session_context, ebook_path: str, tmp_pa
         "ebook": os.path.join(ebook_path, "思考,快与慢.epub"),
         "device": "cpu",
         "language_iso1": "zh",
-        "tts_engine": TTS_ENGINES["XTTSv2"],
+        "tts_engine": TTS_ENGINES["COSYVOICE"],
     }
     # update session with args
     session.update(args)
@@ -354,7 +354,7 @@ def test_filter_chapter_一句顶一万句(session_context, ebook_path: str, tmp
         "ebook": os.path.join(ebook_path, "一句顶一万句 (刘震云).epub"),
         "device": "cpu",
         "language_iso1": "zh",
-        "tts_engine": TTS_ENGINES["XTTSv2"],
+        "tts_engine": TTS_ENGINES["COSYVOICE"],
     }
     # update session with args
     session.update(args)

@@ -395,7 +395,7 @@ class EPubProcessor:
             else:
                 yield item
 
-    def _tagged_tuple_paragraphs_iterator(self, node, last_text_char=None, tokenizer_tts=True):
+    def _tagged_tuple_paragraphs_iterator(self, node, last_text_char=None, tokenizer_tts=True, lan_code='en'):
         """
         Recursively traverses a BeautifulSoup HTML node tree and yields structured content tuples.
 
@@ -457,6 +457,7 @@ class EPubProcessor:
                         # Check if the tag is one we should process for content (e.g., p, div, span).
                         if name in self.proc_tags:
                             # Recursively call this function on the child tag's content.
+                            # todo: in English(lan_code=en), when <span> has only single letter at the begin of a paragraph or setence, it should combine with the following word
                             for inner in self._tagged_tuple_paragraphs_iterator(child, last_text_char, tokenizer_tts):
                                 return_data = True
                                 yield inner
