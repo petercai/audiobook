@@ -338,12 +338,12 @@ class EPubProcessor:
     def get_epub_chapters(self, epubBook):
         try:
             toc = epubBook.toc  # Extract TOC
-            toc_list = []
-            for item in toc:
-                if hasattr(item, 'title'):
-                    normalized_title = self.text_normalizer.normalize_text(str(item.title))
-                    if normalized_title is not None:
-                        toc_list.append(normalized_title)
+            # toc_list = []
+            # for item in toc:
+            #     if hasattr(item, 'title'):
+            #         normalized_title = self.text_normalizer.normalize_text(str(item.title))
+            #         if normalized_title is not None:
+            #             toc_list.append(normalized_title)
         except Exception as toc_error:
             error = f"Error extracting TOC: {toc_error}"
             print(error)
@@ -471,7 +471,7 @@ class EPubProcessor:
                                     if tokenizer_tts and not (last_text_char and (last_text_char.isalnum() or last_text_char.isspace())):
                                         yield ("break", TTS_SML['break'])
                                 # If the TTS needs it, yield a pause after headings or list containers for better pacing.
-                                elif tokenizer_tts and name in self.heading_tags or name in self.pause_tags:
+                                elif tokenizer_tts and (name in self.heading_tags or name in self.pause_tags):
                                     yield ("pause", TTS_SML['pause'])
 
                         # If the tag is not in our processable set, just traverse into it
@@ -574,7 +574,7 @@ class EPubProcessor:
             tag.decompose()
         # Recursively traverse the HTML body to extract content into a structured list of tuples.
         # Each tuple contains a type identifier and the corresponding content.
-        return list(self._tuple_row_iterator(content_root, is_tokenizer_tts))
+        return list(self._tuple_row_iterator(content_root, tokenizer_tts=is_tokenizer_tts))
 
     def _to_flat_sentence_list_with_break(self, tuples_structured_sentence_list, is_tokenizer_tts, max_chars):
         # Process the structured list to build a flat list of text elements.
