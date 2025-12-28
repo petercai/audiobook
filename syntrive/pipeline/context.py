@@ -1,0 +1,17 @@
+"""Pipeline execution context and artifact storage."""
+
+class PipelineContext:
+    def __init__(self, config, artifacts=None, telemetry=None):
+        ...
+
+    def get(self, key, default=None):
+        ...
+
+    def set(self, key, value):
+        ...
+
+    def add_artifact(self, name, artifact):
+        ...
+
+    def list_artifacts(self):
+        ...

@@ -1,0 +1,15 @@
+"""Base stage contracts and results."""
+
+class StageResult:
+    def __init__(self, name, artifacts=None, metrics=None, errors=None):
+        ...
+
+class BaseStage:
+    def __init__(self, name):
+        ...
+
+    def run(self, context):
+        ...
+
+    def validate(self, context):
+        ...

@@ -1,0 +1,11 @@
+"""Pipeline orchestration for ordered stages."""
+
+class Pipeline:
+    def __init__(self, stages=None, registry=None):
+        ...
+
+    def add_stage(self, stage):
+        ...
+
+    def run(self, context):
+        ...
