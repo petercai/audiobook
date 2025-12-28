@@ -17,7 +17,7 @@ TTS_ENGINES = {
     "COSYVOICE": "cosyvoice"
 }
 
-TOKENIZER_FREE_TTS = ["voxcpm", "indextts"]
+TOKENIZER_FREE_TTS = ["voxcpm", "indextts", "cosyvoice"]
 
 TTS_VOICE_CONVERSION = {
     "freevc24": {"path": "voice_conversion_models/multilingual/vctk/freevc24", "samplerate": 24000},

@@ -254,7 +254,7 @@ class EPubProcessor:
             if not all_docs:
                 return [], []
 
-            toc_epub_docs = self.map_chapters_to_toc(all_docs, toc)
+            toc_epub_docs = self.filter_chapters_with_toc(all_docs, toc)
 
             # Attempt to extract the book title for metadata
             # ebook_title = self.get_ebook_title(epubBook, all_docs)
@@ -277,7 +277,6 @@ class EPubProcessor:
                 # This includes number conversion, punctuation handling, and sentence segmentation
                 chapter_sentences = self.filter_chapter(
                     chapter_doc,
-                    # language_code,
                     tts_engine_, 
                     stanza_nlp
                 )
@@ -356,7 +355,7 @@ class EPubProcessor:
         ]
         return all_docs, toc
 
-    def map_chapters_to_toc(self, all_docs, toc):
+    def filter_chapters_with_toc(self, all_docs, toc):
         doc_by_name = {}
         doc_by_basename = {}
         for doc in all_docs:
@@ -506,13 +505,13 @@ class EPubProcessor:
         """
         try:
             is_tokenizer_tts = tts_engine not in TOKENIZER_FREE_TTS
-            tuples_structured_sentence_list = self.extract_chapter_structured_sentence_list(doc_chapter, is_tokenizer_tts)
-            if not tuples_structured_sentence_list:
+            tuples_structured_paragraph_list = self.extract_chapter_structured_paragraphes(doc_chapter, is_tokenizer_tts)
+            if not tuples_structured_paragraph_list:
                 return []
             # Get the maximum character limit for the current language to ensure proper sentence segmentation
             max_chars = self.text_normalizer.get_max_chars()
             clean_list = self._to_flat_sentence_list_with_break(
-                tuples_structured_sentence_list,
+                tuples_structured_paragraph_list,
                 is_tokenizer_tts,
                 max_chars
             )
@@ -535,7 +534,27 @@ class EPubProcessor:
             DependencyError(error)
             return None
 
-    def extract_chapter_structured_sentence_list(self, doc_chapter, is_tokenizer_tts):
+    def extract_chapter_structured_paragraphes(self, doc_chapter: ebooklib.epub.EpubItem, is_tokenizer_tts: bool) -> list[tuple[str, str]]:
+        """
+        Extracts structured paragraphs from an EPUB chapter document.
+
+        This method parses the HTML content of an EPUB chapter, filters out
+        non-content sections (like TOC, frontmatter), removes script and style tags,
+        and then recursively traverses the remaining HTML to extract text, headings,
+        and tables into a structured list of tuples. Each tuple indicates the type
+        of content (e.g., "text", "heading", "table", "break", "pause") and its payload.
+
+        Args:
+            doc_chapter (ebooklib.epub.EpubItem): The ebooklib document object representing a chapter.
+            is_tokenizer_tts (bool): A flag indicating whether the TTS engine requires
+                                     explicit SML tokens for pausing and sentence breaking.
+
+        Returns:
+            list[tuple[str, str]]: A list of tuples, where each tuple is (type, content).
+                                   'type' can be "text", "heading", "table", "break", or "pause".
+                                   'content' is the corresponding string or BeautifulSoup Tag.
+                                   Returns an empty list if the chapter is empty or an excluded type.
+        """
         # Decode the HTML content of the chapter from the ebook document.
         raw_html = doc_chapter.get_content().decode("utf-8")
         # Parse the HTML using BeautifulSoup to create a navigable structure.
@@ -576,26 +595,26 @@ class EPubProcessor:
         # Each tuple contains a type identifier and the corresponding content.
         return list(self._tuple_row_iterator(content_root, tokenizer_tts=is_tokenizer_tts))
 
-    def _to_flat_sentence_list_with_break(self, tuples_structured_sentence_list, is_tokenizer_tts, max_chars):
+    def _to_flat_sentence_list_with_break(self, tuples_structured_paragraph_list, is_tokenizer_tts, max_chars):
         # Process the structured list to build a flat list of text elements.
-        text_list = []
+        paragraph_text_list = []
         handled_tables = set()  # Keep track of tables we've already processed
         prev_typ = None  # Track the previous element type to avoid duplicate breaks/pauses
-        for typ, payload in tuples_structured_sentence_list:
+        for typ, paragraph in tuples_structured_paragraph_list:
             if typ == "heading":
                 # Add heading text to the list after stripping whitespace
-                text_list.append(payload.strip())
+                paragraph_text_list.append(paragraph.strip())
             elif typ == "break":
                 # Avoid adding multiple consecutive break tokens which could cause unwanted pauses
                 if prev_typ != 'break' and is_tokenizer_tts:
-                    text_list.append(TTS_SML['break'])
+                    paragraph_text_list.append(TTS_SML['break'])
             elif typ == 'pause' and is_tokenizer_tts:
                 # Avoid adding multiple consecutive pause tokens which could cause unwanted pauses
                 if prev_typ != 'pause':
-                    text_list.append(TTS_SML['pause'])
+                    paragraph_text_list.append(TTS_SML['pause'])
             elif typ == "table":
                 # Convert HTML tables into a readable string format for TTS
-                table = payload
+                table = paragraph
                 # Skip if we've already processed this table (to avoid duplicates)
                 if table in handled_tables:
                     prev_typ = typ
@@ -621,19 +640,19 @@ class EPubProcessor:
                         # Otherwise, just join the cells with separators
                         line = " - ".join(cells)
                     if line:
-                        text_list.append(line.strip())
+                        paragraph_text_list.append(line.strip())
             else:
                 # Handle regular text content
-                text = payload.strip()
+                text = paragraph.strip()
                 if text:
-                    text_list.append(text)
+                    paragraph_text_list.append(text)
             prev_typ = typ
         # Clean the list by merging short sentences that were separated by a break.
         # This helps create more natural speech flow by avoiding too many short utterances.
         clean_list = []
         i = 0
-        while i < len(text_list):
-            current = text_list[i]
+        while i < len(paragraph_text_list):
+            current = paragraph_text_list[i]
             # Check if the current item is a break token
             if current == "‡break‡":
                 if clean_list:
@@ -644,8 +663,8 @@ class EPubProcessor:
                         continue
                     # If the previous text ends with alphanumeric or space, try to merge with next sentence
                     if prev and (prev[-1].isalnum() or prev[-1] == ' '):
-                        if i + 1 < len(text_list):
-                            next_sentence = text_list[i + 1]
+                        if i + 1 < len(paragraph_text_list):
+                            next_sentence = paragraph_text_list[i + 1]
                             # Calculate the length if we merge the previous text with the next sentence
                             merged_length = len(prev.rstrip()) + 1 + len(next_sentence.lstrip())
                             # Merge if the combined length is within the character limit.
