@@ -305,7 +305,6 @@ def test_process_epub_metadata_cn(session_context, ebook_path, tmp_path):
     func_name = inspect.currentframe().f_code.co_name
     set_process_dir(session, func_name)
     session['epub_path'] = session['ebook']
-
     # Instantiate EBookProcessor
     from lib.headless_processor import EBookProcessor
     ebook_processor = EBookProcessor()
@@ -313,10 +312,8 @@ def test_process_epub_metadata_cn(session_context, ebook_path, tmp_path):
     basename = os.path.basename(session["ebook"])
     name_splits = os.path.splitext(basename)
     session["filename_noext"] = name_splits[0]
-
     # Process the EPUB
     status, success = ebook_processor.prepare_epub_metadata(session, epubBook)
-
     # Assertions
     assert success is True
     metadata = session['metadata']
@@ -332,7 +329,6 @@ def test_process_epub_metadata_en(session_context, ebook_path, tmp_path):
         'cancellation_requested': False,
         "ebook": os.path.join(ebook_path, "Dune.epub"),
         "device": "cpu",
-        
         "language_iso1": 'en',
         "tts_engine": TTS_ENGINES['XTTSv2'],
         "output_format": "m4b",
@@ -343,7 +339,6 @@ def test_process_epub_metadata_en(session_context, ebook_path, tmp_path):
     func_name = inspect.currentframe().f_code.co_name
     set_process_dir(session, func_name)
     session['epub_path'] = session['ebook']
-
     # Instantiate EBookProcessor
     from lib.headless_processor import EBookProcessor
     ebook_processor = EBookProcessor()
@@ -351,10 +346,8 @@ def test_process_epub_metadata_en(session_context, ebook_path, tmp_path):
     basename = os.path.basename(session["ebook"])
     name_splits = os.path.splitext(basename)
     session["filename_noext"] = name_splits[0]
-
     # Process the EPUB
     status, success = ebook_processor.prepare_epub_metadata(session, epubBook)
-
     # Assertions
     assert success is True
     metadata = session['metadata']
@@ -445,354 +438,3 @@ def test_get_cover(session_context, ebook_path, tmp_path):
     # Assertions
     assert result
     print(result)
-
-
-def test_get_chapter_sentences_cn(session_context, ebook_path: str, tmp_path: str):
-    context, session_id, session = session_context
-    args = {
-        "session": session_id,
-        'cancellation_requested': False,
-        "ebook": os.path.join(ebook_path, "思考,快与慢.epub"),
-        "device": "cpu",
-        "add_toc_title": False,
-        "language_iso1": 'zh',
-        "tts_engine": TTS_ENGINES['XTTSv2'],
-
-    }
-    # update session with args
-    session.update(args)
-    func_name = inspect.currentframe().f_code.co_name
-    set_process_dir(session, func_name)
-    ebook_ = session["ebook"]
-    epubBook = epub.read_epub(ebook_, {"ignore_ncx": True})
-
-    processor = EPubProcessor(session)
-    toc, chapters_with_tn_sentences = processor.get_chapters_in_sentences(epubBook, session)
-    transcript_dir = os.path.join(session["process_dir"], "transcript")
-    os.makedirs(transcript_dir, exist_ok=True)
-    cache_transcript_by_chapter(chapters_with_tn_sentences, transcript_dir)
-    created_files = sum(1 for entry in os.scandir(transcript_dir) if entry.is_file())
-    assert created_files >= 38
-    assert created_files == len(chapters_with_tn_sentences)
-    
-
-def test_get_chapter_sentences_剑来(session_context, ebook_path: str, tmp_path: str):
-    context, session_id, session = session_context
-    args = {
-        "session": session_id,
-        'cancellation_requested': False,
-        "ebook": os.path.join(ebook_path, "剑来 (烽火戏诸侯).epub"),
-        "device": "cpu",
-        "add_toc_title": True,
-        "language_iso1": 'zh',
-        "tts_engine": TTS_ENGINES['XTTSv2'],
-
-    }
-    # update session with args
-    session.update(args)
-    func_name = inspect.currentframe().f_code.co_name
-    set_process_dir(session, func_name)
-    ebook_ = session["ebook"]
-    epubBook = epub.read_epub(ebook_, {"ignore_ncx": True})
-
-    processor = EPubProcessor(session)
-    toc, chapters_with_tn_sentences = processor.get_chapters_in_sentences(epubBook, session)
-    transcript_dir = os.path.join(session["process_dir"], "transcript")
-    os.makedirs(transcript_dir, exist_ok=True)
-    cache_transcript_by_chapter(chapters_with_tn_sentences, transcript_dir)
-    created_files = sum(1 for entry in os.scandir(transcript_dir) if entry.is_file())
-    assert created_files >= 38
-    assert created_files == len(chapters_with_tn_sentences)
-    
-def test_get_chapter_sentences_一句顶一万句(session_context, ebook_path: str, tmp_path: str):
-    context, session_id, session = session_context
-    args = {
-        "session": session_id,
-        'cancellation_requested': False,
-        "ebook": os.path.join(ebook_path, "一句顶一万句 (刘震云).epub"),
-        "device": "cpu",
-        "add_toc_title": False,
-        "language_iso1": 'zh',
-        "tts_engine": TTS_ENGINES['XTTSv2'],
-
-    }
-    # update session with args
-    session.update(args)
-    func_name = inspect.currentframe().f_code.co_name
-    set_process_dir(session, func_name)
-    ebook_ = session["ebook"]
-    epubBook = epub.read_epub(ebook_, {"ignore_ncx": True})
-
-    processor = EPubProcessor(session)
-    toc, chapters_with_tn_sentences = processor.get_chapters_in_sentences(epubBook, session)
-    transcript_dir = os.path.join(session["process_dir"], "transcript")
-    os.makedirs(transcript_dir, exist_ok=True)
-    cache_transcript_by_chapter(chapters_with_tn_sentences, transcript_dir)
-    created_files = sum(1 for entry in os.scandir(transcript_dir) if entry.is_file())
-    assert created_files ==24
-    assert created_files == len(chapters_with_tn_sentences)
-    
-def test_get_chapter_sentences_纯真年代(session_context, ebook_path: str, tmp_path: str):
-    context, session_id, session = session_context
-    args = {
-        "session": session_id,
-        'cancellation_requested': False,
-        "ebook": os.path.join(ebook_path, "纯真年代(伊迪丝华顿) .epub"),
-        "device": "cpu",
-        "add_toc_title": False,
-        "language_iso1": 'zh',
-        "tts_engine": TTS_ENGINES['XTTSv2'],
-
-    }
-    # update session with args
-    session.update(args)
-    func_name = inspect.currentframe().f_code.co_name
-    set_process_dir(session, func_name)
-    ebook_ = session["ebook"]
-    epubBook = epub.read_epub(ebook_, {"ignore_ncx": True})
-
-    processor = EPubProcessor(session)
-    toc, chapters_with_tn_sentences = processor.get_chapters_in_sentences(epubBook, session)
-    transcript_dir = os.path.join(session["process_dir"], "transcript")
-    os.makedirs(transcript_dir, exist_ok=True)
-    cache_transcript_by_chapter(chapters_with_tn_sentences, transcript_dir)
-    created_files = sum(1 for entry in os.scandir(transcript_dir) if entry.is_file())
-    assert created_files ==24
-    assert created_files == len(chapters_with_tn_sentences)
-    
-def test_get_chapter_sentences_4_dune(session_context, ebook_path: str, tmp_path: str):
-    context, session_id, session = session_context
-    args = {
-        "session": session_id,
-        'cancellation_requested': False,
-        "ebook": os.path.join(ebook_path, "Dune.epub"),
-        "device": "cpu",
-        "add_toc_title": True,
-        "language_iso1": 'en',
-        "tts_engine": TTS_ENGINES['XTTSv2'],
-
-    }
-    # update session with args
-    session.update(args)
-    func_name = inspect.currentframe().f_code.co_name
-    set_process_dir(session, func_name)
-    ebook_ = session["ebook"]
-    epubBook = epub.read_epub(ebook_, {"ignore_ncx": True})
-
-    processor = EPubProcessor(session)
-    toc, chapters_with_tn_sentences = processor.get_chapters_in_sentences(epubBook, session)
-    transcript_dir = os.path.join(session["process_dir"], "transcript")
-    os.makedirs(transcript_dir, exist_ok=True)
-    cache_transcript_by_chapter(chapters_with_tn_sentences, transcript_dir)
-    created_files = sum(1 for entry in os.scandir(transcript_dir) if entry.is_file())
-    assert created_files == 48
-    assert created_files == len(chapters_with_tn_sentences)
-
-def test_get_chapter_sentences_4_hunger_games(session_context, ebook_path: str, tmp_path: str):
-    context, session_id, session = session_context
-    args = {
-        "session": session_id,
-        'cancellation_requested': False,
-        "ebook": os.path.join(ebook_path, "The Hunger Games-2008 - The Hunger Games (Suzanne Collins) .epub"),
-        "device": "cpu",
-        "add_toc_title": True,        
-        "language_iso1": 'en',
-        "tts_engine": TTS_ENGINES['XTTSv2'],
-
-    }
-    # update session with args
-    session.update(args)
-    func_name = inspect.currentframe().f_code.co_name
-    set_process_dir(session, func_name)
-    ebook_ = session["ebook"]
-    epubBook = epub.read_epub(ebook_, {"ignore_ncx": True})
-    processor = EPubProcessor(session)
-    toc, chapters_with_tn_sentences = processor.get_chapters_in_sentences(epubBook, session)
-    transcript_dir = os.path.join(session["process_dir"], "transcript")
-    os.makedirs(transcript_dir, exist_ok=True)
-    cache_transcript_by_chapter(chapters_with_tn_sentences, transcript_dir)
-    created_files = sum(1 for entry in os.scandir(transcript_dir) if entry.is_file())
-    assert created_files == 27 
-    assert created_files == len(chapters_with_tn_sentences)
-
-def test_filter_chapter_cn(session_context, ebook_path: str, tmp_path: str):
-    context, session_id, session = session_context
-    args = {
-        "session": session_id,
-        'cancellation_requested': False,
-        "ebook": os.path.join(ebook_path, "思考,快与慢.epub"),
-        "device": "cpu",
-        "language_iso1": 'zh',
-        "tts_engine": TTS_ENGINES['XTTSv2'],
-
-    }
-    # update session with args
-    session.update(args)
-    func_name = inspect.currentframe().f_code.co_name
-    set_process_dir(session, func_name)
-    ebook_ = session["ebook"]
-    epubBook = epub.read_epub(ebook_, {"ignore_ncx": True})
-    processor = EPubProcessor(session)
-    processor.text_normalizer = TextNormalizer(session['language_iso1'])
-    epub_docs, toc = processor.get_epub_chapters(epubBook)
-    toc_epub_docs = processor.map_chapters_to_toc(epub_docs, toc)
-    transcript_dir = os.path.join(session["process_dir"], "transcript")
-    chapters_with_tn_sentences = process_chapters(processor, toc_epub_docs, transcript_dir, session)
-    cache_transcript_by_chapter(chapters_with_tn_sentences, transcript_dir)
-    created_files = sum(1 for entry in os.scandir(transcript_dir) if entry.is_file())
-    assert created_files >= 38 
-    assert created_files == len(chapters_with_tn_sentences)
-
-def test_filter_chapter_一句顶一万句(session_context, ebook_path: str, tmp_path: str):
-    context, session_id, session = session_context
-    args = {
-        "session": session_id,
-        'cancellation_requested': False,
-        "ebook": os.path.join(ebook_path, "一句顶一万句 (刘震云).epub"),
-        "device": "cpu",
-        "language_iso1": 'zh',
-        "tts_engine": TTS_ENGINES['XTTSv2'],
-
-    }
-    # update session with args
-    session.update(args)
-    func_name = inspect.currentframe().f_code.co_name
-    set_process_dir(session, func_name)
-    ebook_ = session["ebook"]
-    epubBook = epub.read_epub(ebook_, {"ignore_ncx": True})
-    processor = EPubProcessor(session)
-    processor.text_normalizer = TextNormalizer(session['language_iso1'])
-    epub_docs, toc = processor.get_epub_chapters(epubBook)
-    toc_items = list(processor.toc_items_iter(toc))
-    assert len(toc_items) == 26
-    toc_epub_docs = processor.map_chapters_to_toc(epub_docs, toc)
-    assert len(toc_epub_docs) == 26
-    transcript_dir = os.path.join(session["process_dir"], "transcript")
-    chapters_with_tn_sentences = process_chapters(processor, toc_epub_docs, transcript_dir, session)
-    cache_transcript_by_chapter(chapters_with_tn_sentences, transcript_dir)
-    created_files = sum(1 for entry in os.scandir(transcript_dir) if entry.is_file())
-    assert created_files ==24
-    assert created_files == len(chapters_with_tn_sentences)
-
-def test_filter_chapter_4_dune(session_context, ebook_path: str, tmp_path: str):
-    context, session_id, session = session_context
-    args = {
-        "session": session_id,
-        'cancellation_requested': False,
-        "ebook": os.path.join(ebook_path, "Dune.epub"),
-        "device": "cpu",
-        
-        "language_iso1": 'en',
-        "tts_engine": TTS_ENGINES['XTTSv2'],
-
-    }
-    # update session with args
-    session.update(args)
-    func_name = inspect.currentframe().f_code.co_name
-    set_process_dir(session, func_name)
-    
-    ebook_ = session["ebook"]
-    epubBook = epub.read_epub(ebook_, {"ignore_ncx": True})
-
-    processor = EPubProcessor(session)
-    processor.text_normalizer = TextNormalizer(session['language_iso1'])
-    epub_docs, toc = processor.get_epub_chapters(epubBook)
-    toc_epub_docs = processor.map_chapters_to_toc(epub_docs, toc)
-    transcript_dir = os.path.join(session["process_dir"], "transcript")
-    chapters_with_tn_sentences = process_chapters(processor, toc_epub_docs, transcript_dir, session)
-    cache_transcript_by_chapter(chapters_with_tn_sentences, transcript_dir)
-    created_files = sum(1 for entry in os.scandir(transcript_dir) if entry.is_file())
-    assert created_files == 48
-    assert created_files == len(chapters_with_tn_sentences)
-    
-def test_filter_chapter_4_hunger_game(session_context, ebook_path: str, tmp_path: str):
-    context, session_id, session = session_context
-    args = {
-        "session": session_id,
-        'cancellation_requested': False,
-        "ebook": os.path.join(ebook_path, "The Hunger Games-2008 - The Hunger Games (Suzanne Collins) .epub"),
-        "device": "cpu",
-        
-        "language_iso1": 'en',
-        "tts_engine": TTS_ENGINES['XTTSv2'],
-
-    }
-    # update session with args
-    session.update(args)
-    func_name = inspect.currentframe().f_code.co_name
-    set_process_dir(session, func_name)
-    
-    ebook_ = session["ebook"]
-    epubBook = epub.read_epub(ebook_, {"ignore_ncx": True})
-
-    processor = EPubProcessor(session)
-    processor.text_normalizer = TextNormalizer(session['language_iso1'])
-    epub_docs, toc = processor.get_epub_chapters(epubBook)
-    toc_epub_docs = processor.map_chapters_to_toc(epub_docs, toc)
-    transcript_dir = os.path.join(session["process_dir"], "transcript")
-    chapters_with_tn_sentences = process_chapters(processor, toc_epub_docs, transcript_dir, session)
-    cache_transcript_by_chapter(chapters_with_tn_sentences, transcript_dir)
-    created_files = sum(1 for entry in os.scandir(transcript_dir) if entry.is_file())
-    assert created_files == 27 
-    assert created_files == len(chapters_with_tn_sentences)
-
-
-def process_chapters(processor, toc_docs, transcript_dir, session):
-    os.makedirs(transcript_dir, exist_ok=True)
-    processed_chapters = []
-    pending_sentences = []
-
-    # language_ = session["language"]
-    language_iso_ = session["language_iso1"]
-    stanza_nlp = None
-    if language_iso_ in year_to_decades_languages:
-        try:
-            # Download the required language model if not already present
-            stanza.download(language_iso_, model_dir=os.path.join(models_dir, 'stanza'), logging_level='WARN',
-                            verbose=False if session['offline_mode'] else None)
-        except Exception as e:
-            if session['offline_mode']:
-                print(
-                    f"Offline mode: Failed to find stanza model for '{language_iso_}'. Expected in '{os.path.join(models_dir, 'stanza')}'")
-            raise e
-        # Create a processing pipeline for tokenization and named entity recognition
-        stanza_nlp = stanza.Pipeline(language_iso_, processors='tokenize,ner')
-
-    processor.text_normalizer = TextNormalizer(language_iso_)
-    for chapter_doc, title  in toc_docs.items():
-        chapter_sentences = processor.filter_chapter(
-            chapter_doc,
-            tts_engine=session["tts_engine"],
-            stanza_nlp=stanza_nlp,
-        )
-        if not chapter_sentences:
-            continue
-        if len(chapter_sentences) < 3:
-            pending_sentences.extend(chapter_sentences)
-            continue
-        chapter_sentences = [title] + chapter_sentences
-        if pending_sentences:
-            chapter_sentences = pending_sentences + chapter_sentences
-            pending_sentences = []
-        processed_chapters.append(chapter_sentences)
-
-    if pending_sentences:
-        if processed_chapters:
-            processed_chapters[-1].extend(pending_sentences)
-        else:
-            processed_chapters.append(pending_sentences)
-
-    return processed_chapters
-    # return cache_transcript_by_chapter(processed_chapters, transcript_dir)
-
-
-def cache_transcript_by_chapter(chapters, transcript_dir):
-    chapter_count = len(chapters)
-    number_width = max(1, len(str(chapter_count)))
-    for chapter_index, chapter_sentences in enumerate(chapters, 1):
-        chapter_filename = f"c{chapter_index:0{number_width}d}.txt"
-        chapter_path = os.path.join(transcript_dir, chapter_filename)
-        with open(chapter_path, "w", encoding="utf-8") as chapter_file:
-            chapter_file.write("\n".join(chapter_sentences))
-    return chapter_count
-
