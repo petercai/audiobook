@@ -461,11 +461,6 @@ class EPubProcessor:
                     name = child.name.lower()
                     # Handle heading tags (h1, h2, etc.).
                     if name in self.heading_tags:
-                        if pending_span_letter:
-                            yield ("text", pending_span_letter)
-                            last_text_char = pending_span_letter[-1]
-                            node_has_text = True
-                            pending_span_letter = None
                         title = child.get_text(separator=' ', strip=True)
                         if not title:
                             title_attr = child.get("title")
@@ -479,11 +474,6 @@ class EPubProcessor:
 
                     # Handle table tags. The table content will be processed later.
                     elif name == "table":
-                        if pending_span_letter:
-                            yield ("text", pending_span_letter)
-                            last_text_char = pending_span_letter[-1]
-                            node_has_text = True
-                            pending_span_letter = None
                         yield ("table", child)
 
                     # Handle other tags that are part of the processable set.

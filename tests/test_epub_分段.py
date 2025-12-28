@@ -129,7 +129,7 @@ def test_get_chapter_sentences_剑来(session_context, ebook_path: str, tmp_path
         "cancellation_requested": False,
         "ebook": os.path.join(ebook_path, "剑来 (烽火戏诸侯).epub"),
         "device": "cpu",
-        "add_toc_title": True,
+        "add_toc_title": False,
         "language_iso1": "zh",
         "tts_engine": TTS_ENGINES["COSYVOICE"],
     }
