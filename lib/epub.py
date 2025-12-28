@@ -421,22 +421,51 @@ class EPubProcessor:
                    the corresponding data (string, bs4.Tag, or SML token).
         """
         try:
+            pending_span_letter = None
+            node_has_text = False
             # Iterate over each child of the current HTML node.
             for child in node.children:
                 # If the child is a text string (not a tag).
                 if isinstance(child, NavigableString):
-                    text = child.strip()
+                    raw_text = str(child)
+                    text = raw_text.strip()
+                    if pending_span_letter and raw_text and raw_text[0].isspace() and not text:
+                        yield ("text", pending_span_letter)
+                        last_text_char = pending_span_letter[-1]
+                        node_has_text = True
+                        pending_span_letter = None
+                        continue
                     # Yield the text if it's not empty.
                     if text:
+                        if pending_span_letter:
+                            if raw_text and raw_text[0].isspace():
+                                yield ("text", pending_span_letter)
+                                last_text_char = pending_span_letter[-1]
+                                node_has_text = True
+                                pending_span_letter = None
+                            elif text[0].isalpha():
+                                text = pending_span_letter + text
+                                pending_span_letter = None
+                            else:
+                                yield ("text", pending_span_letter)
+                                last_text_char = pending_span_letter[-1]
+                                node_has_text = True
+                                pending_span_letter = None
                         yield ("text", text)
                         # Update the last character seen to track context for break insertion.
                         last_text_char = text[-1] if text else last_text_char
+                        node_has_text = True
 
                 # If the child is an HTML tag.
                 elif isinstance(child, Tag):
                     name = child.name.lower()
                     # Handle heading tags (h1, h2, etc.).
                     if name in self.heading_tags:
+                        if pending_span_letter:
+                            yield ("text", pending_span_letter)
+                            last_text_char = pending_span_letter[-1]
+                            node_has_text = True
+                            pending_span_letter = None
                         title = child.get_text(separator=' ', strip=True)
                         if not title:
                             title_attr = child.get("title")
@@ -446,9 +475,15 @@ class EPubProcessor:
                             yield ("heading", title)
                             # Update the last character seen.
                             last_text_char = title[-1] if title else last_text_char
+                            node_has_text = True
 
                     # Handle table tags. The table content will be processed later.
                     elif name == "table":
+                        if pending_span_letter:
+                            yield ("text", pending_span_letter)
+                            last_text_char = pending_span_letter[-1]
+                            node_has_text = True
+                            pending_span_letter = None
                         yield ("table", child)
 
                     # Handle other tags that are part of the processable set.
@@ -456,14 +491,39 @@ class EPubProcessor:
                         return_data = False
                         # Check if the tag is one we should process for content (e.g., p, div, span).
                         if name in self.proc_tags:
+                            if (
+                                name == "span"
+                                and lan_code == "en"
+                                and not pending_span_letter
+                            ):
+                                span_text = child.get_text(strip=True)
+                                is_sentence_start = last_text_char is None or last_text_char in ".!?"
+                                if (
+                                    span_text
+                                    and len(span_text) == 1
+                                    and span_text.isalpha()
+                                    and (not node_has_text or is_sentence_start)
+                                ):
+                                    pending_span_letter = span_text
+                                    return_data = True
+                                    continue
                             # Recursively call this function on the child tag's content.
-                            # todo: in English(lan_code=en), when <span> has only single letter at the begin of a paragraph or setence, it should combine with the following word
-                            for inner in self._tagged_tuple_paragraphs_iterator(child, last_text_char, tokenizer_tts):
+                            for inner in self._tagged_tuple_paragraphs_iterator(child, last_text_char, tokenizer_tts, lan_code):
+                                if pending_span_letter:
+                                    if inner[0] == "text" and inner[1] and inner[1][0].isalpha():
+                                        inner = ("text", pending_span_letter + inner[1].lstrip())
+                                        pending_span_letter = None
+                                    else:
+                                        yield ("text", pending_span_letter)
+                                        last_text_char = pending_span_letter[-1]
+                                        node_has_text = True
+                                        pending_span_letter = None
                                 return_data = True
                                 yield inner
                                 # Track the last character from any yielded text or heading.
                                 if inner[0] in ("text", "heading") and inner[1]:
                                     last_text_char = inner[1][-1]
+                                    node_has_text = True
 
                             # After processing a tag's content, decide if a break or pause is needed.
                             if return_data:
@@ -481,7 +541,15 @@ class EPubProcessor:
                         # If the tag is not in our processable set, just traverse into it
                         # without adding any special breaks or pauses for the tag itself.
                         else:
-                            yield from self._tagged_tuple_paragraphs_iterator(child, last_text_char, tokenizer_tts)
+                            if pending_span_letter:
+                                yield ("text", pending_span_letter)
+                                last_text_char = pending_span_letter[-1]
+                                node_has_text = True
+                                pending_span_letter = None
+                            yield from self._tagged_tuple_paragraphs_iterator(child, last_text_char, tokenizer_tts, lan_code)
+
+            if pending_span_letter:
+                yield ("text", pending_span_letter)
 
         except Exception as e:
             error = f'filter_chapter() tuple_row() error: {e}'
@@ -519,6 +587,7 @@ class EPubProcessor:
                 is_tokenizer_tts,
                 self.text_normalizer.get_max_chars()
             )
+            # todo: only XTTS kind tts for English requires to join paragraphs/sentences -> mormalize -> split
             # Join the cleaned list into a single text string for further processing
             merged_chapter = ' '.join(paragraph_list)
             # If the text is empty or contains no valid characters, return None to indicate no content
@@ -597,7 +666,11 @@ class EPubProcessor:
             tag.decompose()
         # Recursively traverse the HTML body to extract content into a structured list of tuples.
         # Each tuple contains a type identifier and the corresponding content.
-        return list(self._tagged_tuple_paragraphs_iterator(content_root, tokenizer_tts=is_tokenizer_tts))
+        return list(self._tagged_tuple_paragraphs_iterator(
+            content_root,
+            tokenizer_tts=is_tokenizer_tts,
+            lan_code=self.text_normalizer.lang_iso1
+        ))
 
     def _flat_paragraphes_with_break(self, tuples_tagged_paragraph_list: list[tuple[str, any]], is_tokenizer_tts: bool, max_chars: int) -> list[str]:
         """

@@ -436,6 +436,7 @@ class TextNormalizer:
         val = self._roman_to_int(roman)
         return str(val)
 
+    # todo move to SentenseSplitter
     def split_sentences(self, text, tts_engine):
         """
         Splits a given text into a list of sentences based on language-specific rules
