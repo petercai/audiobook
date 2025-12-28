@@ -254,7 +254,7 @@ class EPubProcessor:
             if not all_docs:
                 return [], []
 
-            toc_epub_docs = self.map_filter_chapters_to_toc(all_docs, toc)
+            toc_epub_docs = self.map_chapters_to_toc(all_docs, toc)
 
             # Attempt to extract the book title for metadata
             # ebook_title = self.get_ebook_title(epubBook, all_docs)
@@ -272,7 +272,7 @@ class EPubProcessor:
 
             # Process each document (chapter) in the EPUB
             # The loop will iterate through all documents or a limited number if chapters_to_process is set
-            for title, chapter_doc in toc_epub_docs.items():
+            for chapter_doc, title in toc_epub_docs.items():
                 # Process the chapter content with various text transformations
                 # This includes number conversion, punctuation handling, and sentence segmentation
                 chapter_sentences = self.filter_chapter(
@@ -356,7 +356,7 @@ class EPubProcessor:
         ]
         return all_docs, toc
 
-    def map_filter_chapters_to_toc(self, all_docs, toc):
+    def map_chapters_to_toc(self, all_docs, toc):
         doc_by_name = {}
         doc_by_basename = {}
         for doc in all_docs:
@@ -379,7 +379,7 @@ class EPubProcessor:
             if doc is not None:
                 if not doc.title:
                     doc.title = toc_title
-                toc_docs[toc_title] = doc
+                toc_docs[doc] = toc_title
         return toc_docs
 
     def toc_items_iter(self, items):
@@ -506,7 +506,7 @@ class EPubProcessor:
         """
         try:
             is_tokenizer_tts = tts_engine not in TOKENIZER_FREE_TTS
-            tuples_structured_sentence_list = self._extract_chapter_structured_sentence_list(doc_chapter, is_tokenizer_tts)
+            tuples_structured_sentence_list = self.extract_chapter_structured_sentence_list(doc_chapter, is_tokenizer_tts)
             if not tuples_structured_sentence_list:
                 return []
             # Get the maximum character limit for the current language to ensure proper sentence segmentation
@@ -535,7 +535,7 @@ class EPubProcessor:
             DependencyError(error)
             return None
 
-    def _extract_chapter_structured_sentence_list(self, doc_chapter, is_tokenizer_tts):
+    def extract_chapter_structured_sentence_list(self, doc_chapter, is_tokenizer_tts):
         # Decode the HTML content of the chapter from the ebook document.
         raw_html = doc_chapter.get_content().decode("utf-8")
         # Parse the HTML using BeautifulSoup to create a navigable structure.
