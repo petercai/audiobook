@@ -151,16 +151,18 @@ class EBookProcessor:
                             self.gpu_check(self.is_gui_process, session)
 
                             # 8. Convert the source ebook to EPUB format, which is the standard for processing.
-                            epub_processor = EPubProcessor(session)
-                            if epub_processor.convert2epub(session):
-                                # 9. Process the EPUB: extract text, generate TTS, and create the audiobook.
-                                progress_status, passed = self.process_epub(session)
-                                if passed:
-                                    return progress_status, True
-                                else:
-                                    error = progress_status
+                            # 8. onely support epub now. no need to convert
+                            # epub_processor = EPubProcessor(session)
+                            session["epub_path"] = session["ebook"]
+                            # if epub_processor.convert2epub(session):
+                            # 9. Process the EPUB: extract text, generate TTS, and create the audiobook.
+                            progress_status, passed = self.process_epub(session)
+                            if passed:
+                                return progress_status, True
                             else:
-                                error = "convert2epub() failed!"
+                                error = progress_status
+                            # else:
+                            #     error = "convert2epub() failed!"
             else:
                 error = f"Language {args['language']} is not supported."
 
