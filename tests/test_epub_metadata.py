@@ -82,206 +82,159 @@ def session_context(tmp_path: str):
         }
     )
     session = context.get_session(session_id)
-
-
     return context, session_id, session
 
-def test_convert2epub(session_context, ebook_path, tmp_path):
-    """Test successful conversion of a .txt or .pdf file to .epub."""
+
+
+def test_process_epub_metadata_cn(session_context, ebook_path, tmp_path):
     context, session_id, session = session_context
-    # session = context.get_session(session_id)
+    # Setup arguments for EBookProcessor
+    args = {
+        "session": session_id,
+        'cancellation_requested': False,
+        "ebook": os.path.join(ebook_path, "god-c12.epub"),
+        "device": "cpu",
+        "language": "zho",
+        "language_iso1": 'zh',
+        "tts_engine": TTS_ENGINES['VOXCPM'],
+        "output_format": "m4b",
+    }
+    # update session with args
+    session.update(args)
     # Create necessary directories
     func_name = inspect.currentframe().f_code.co_name
     set_process_dir(session, func_name)
+    session['epub_path'] = session['ebook']
+    # Instantiate EBookProcessor
+    from lib.headless_processor import EBookProcessor
+    ebook_processor = EBookProcessor()
+    epubBook = epub.read_epub(session["epub_path"], {"ignore_ncx": True})
+    basename = os.path.basename(session["ebook"])
+    name_splits = os.path.splitext(basename)
+    session["filename_noext"] = name_splits[0]
+    # Process the EPUB
+    status, success = ebook_processor.prepare_epub_metadata(session, epubBook)
+    # Assertions
+    assert success is True
+    metadata = session['metadata']
+    # print dict metadata
+    for key, value in metadata.items():
+        print(f"{key}: {value}")
 
-    input_file = os.path.join(ebook_path, "Dune.epub")
+def test_process_epub_metadata_en(session_context, ebook_path, tmp_path):
+    context, session_id, session = session_context
+    # Setup arguments for EBookProcessor
+    args = {
+        "session": session_id,
+        'cancellation_requested': False,
+        "ebook": os.path.join(ebook_path, "Dune.epub"),
+        "device": "cpu",
+        "language_iso1": 'en',
+        "tts_engine": TTS_ENGINES['XTTSv2'],
+        "output_format": "m4b",
+    }
+    # update session with args
+    session.update(args)
+    # Create necessary directories
+    func_name = inspect.currentframe().f_code.co_name
+    set_process_dir(session, func_name)
+    session['epub_path'] = session['ebook']
+    # Instantiate EBookProcessor
+    from lib.headless_processor import EBookProcessor
+    ebook_processor = EBookProcessor()
+    epubBook = epub.read_epub(session["epub_path"], {"ignore_ncx": True})
+    basename = os.path.basename(session["ebook"])
+    name_splits = os.path.splitext(basename)
+    session["filename_noext"] = name_splits[0]
+    # Process the EPUB
+    status, success = ebook_processor.prepare_epub_metadata(session, epubBook)
+    # Assertions
+    assert success is True
+    metadata = session['metadata']
+    # print dict metadata
+    for key, value in metadata.items():
+        print(f"{key}: {value}")
 
-    session['ebook'] = str(input_file)
-    session['epub_path'] = tmp_path+  "/book_gen.epub"
+def test_show_chapters_and_sentences_en(session_context, ebook_path, tmp_path):
+    context, session_id, session = session_context
+    # Setup arguments for EBookProcessor
+    args = {
+        "ebook": os.path.join(ebook_path, "jane-eyre-c12.epub"),
+        "device": "cpu",
+        
+        "language_iso1": 'en',
+        "tts_engine": TTS_ENGINES['XTTSv2'],
+    }
+
+    # update session with args
+    session.update(args)
+
+    ebook_ = session["ebook"]
+    epubBook = epub.read_epub(ebook_, {"ignore_ncx": True})
 
     processor = EPubProcessor(session)
-    result = processor.convert2epub(session)
+    toc, chapters = processor.get_chapters_in_sentences(epubBook, session)
+    # Assertions
+    assert toc
+    print(toc)
+    assert chapters
+    for chapter in chapters:
+        for i, sentence in enumerate(chapter, 1):
+            print(f"{i}: {sentence}")
 
-def test_process_epub_cn(session_context, ebook_path, tmp_path):
-    """Test successful processing of an EPUB file."""
+def test_get_chapters_cn(session_context, ebook_path, tmp_path):
     context, session_id, session = session_context
-
     # Setup arguments for EBookProcessor
     args = {
         "ebook": os.path.join(ebook_path, "god-c12.epub"),
         "device": "cpu",
         "language": "zho",
-        "language_iso1": "zh",
+        "language_iso1": 'zh',
         "tts_engine": TTS_ENGINES['VOXCPM'],
-        "voice_dir": os.path.join(voices_dir, '__sessions', "test_voice"),
-        "speaker_wav": os.path.join(voices_dir, "zho", "adult", "male", "yunjian.wav"),
-        # "enable_text_splitting": True,
-        "output_format": "mb4",
     }
+
     # update session with args
     session.update(args)
-    # Create necessary directories
-    func_name = inspect.currentframe().f_code.co_name
-    set_process_dir(session, func_name)
-    session['epub_path'] = session['ebook']
-    
-    basename = os.path.basename(session["ebook"])
-    name_splits = os.path.splitext(basename)
-    session["filename_noext"] = name_splits[0]
 
-    # Instantiate EBookProcessor
-    from lib.headless_processor import EBookProcessor
-    ebook_processor = EBookProcessor()
-    # Process the EPUB
-    status, success = ebook_processor.process_epub(session)
+    ebook_ = session["ebook"]
+    epubBook = epub.read_epub(ebook_, {"ignore_ncx": True})
 
+    processor = EPubProcessor(session)
+    toc, chapters = processor.get_chapters_in_sentences(epubBook, session)
     # Assertions
-    print(status)
-    assert success
-    assert "Audiobook(s)" in status
-    assert os.path.exists(session['audiobook'])
-    
-def test_process_epub_en(session_context, ebook_path, tmp_path):
-    """Test successful processing of an EPUB file."""
-    context, session_id, session = session_context
+    assert toc
+    print(toc)
+    assert chapters
+    for chapter in chapters:
+        for i, sentence in enumerate(chapter, 1):
+            print(f"{i}: {sentence}")
 
+
+def test_get_cover(session_context, ebook_path, tmp_path):
+    context, session_id, session = session_context
     # Setup arguments for EBookProcessor
     args = {
-        "ebook": os.path.join(ebook_path, "jane-eyre-c12.epub"),
-        "device": "cpu",
-        
-        "language_iso1": "en",
-        "tts_engine": TTS_ENGINES['XTTSv2'],
-        "output_format": "m4b",
-        "offline_mode": True
-    }
-    # update session with args
-    session.update(args)
-    # Create necessary directories
-    func_name = inspect.currentframe().f_code.co_name
-    set_process_dir(session, func_name)
-    session['epub_path'] = session['ebook']
-
-    basename = os.path.basename(session["ebook"])
-    name_splits = os.path.splitext(basename)
-    session["filename_noext"] = name_splits[0]
-
-    # Instantiate EBookProcessor
-    from lib.headless_processor import EBookProcessor
-    ebook_processor = EBookProcessor()
-    # Process the EPUB
-    status, success = ebook_processor.process_epub(session)
-
-    # Assertions
-    assert success is True
-    assert "Audiobook(s)" in status
-    assert os.path.exists(session['audiobook'])
-
-def test_process_epub_en_mps(session_context, ebook_path, tmp_path):
-    """Test successful processing of an EPUB file."""
-    context, session_id, session = session_context
-
-    # Setup arguments for EBookProcessor
-    args = {
-        "ebook": os.path.join(ebook_path, "jane-eyre-c12.epub"),
-        "device": "mps",
-        
-        "language_iso1": "en",
-        "tts_engine": TTS_ENGINES['XTTSv2'],
-        "output_format": "m4b",
-        "offline_mode": True
-    }
-    # update session with args
-    session.update(args)
-    # Create necessary directories
-    func_name = inspect.currentframe().f_code.co_name
-    set_process_dir(session, func_name)
-    session['epub_path'] = session['ebook']
-
-    basename = os.path.basename(session["ebook"])
-    name_splits = os.path.splitext(basename)
-    session["filename_noext"] = name_splits[0]
-
-    # Instantiate EBookProcessor
-    from lib.headless_processor import EBookProcessor
-    ebook_processor = EBookProcessor()
-    # Process the EPUB
-    status, success = ebook_processor.process_epub(session)
-
-    # Assertions
-    assert success is True
-    assert "Audiobook(s)" in status
-    assert os.path.exists(session['audiobook'])
-
-def test_process_epub_chapters_cn(session_context, ebook_path, tmp_path):
-    """Test successful processing of an EPUB file."""
-    context, session_id, session = session_context
-
-    # Setup arguments for EBookProcessor
-    args = {
-        "ebook": os.path.join(ebook_path, "god-c12.epub"),
-        "ebook_list": None,
+        "session": session_id,
+        'cancellation_requested': False,
+        "ebook": os.path.join(ebook_path, "思考,快与慢.epub"),
+        "filename_noext": "思考-快与慢",
         "device": "cpu",
         "language": "zho",
-        "language_iso1": "zh",
-        "tts_engine": TTS_ENGINES['VOXCPM'],
-        "output_format": "m4b",
-    }
-    # update session with args
-    session.update(args)
-    # Create necessary directories
-    func_name = inspect.currentframe().f_code.co_name
-    set_process_dir(session, func_name)
-    session['epub_path'] = session['ebook']
-
-    # Instantiate EBookProcessor
-    from lib.headless_processor import EBookProcessor
-    ebook_processor = EBookProcessor()
-    epubBook = epub.read_epub(session["ebook"], {"ignore_ncx": True})
-    basename = os.path.basename(session["ebook"])
-    name_splits = os.path.splitext(basename)
-    session["filename_noext"] = name_splits[0]
-
-    # Process the EPUB
-    status, success = ebook_processor.process_epub_chapters(epubBook, session)
-
-    # Assertions
-    assert success is True
-    print(session['audiobook'])
-    assert os.path.exists(session['audiobook'])
-
-def test_process_epub_chapters_en(session_context, ebook_path, tmp_path):
-    """Test successful processing of an EPUB file."""
-    context, session_id, session = session_context
-    # Setup arguments for EBookProcessor
-    args = {
-        "ebook": os.path.join(ebook_path, "jane-eyre-c12.epub"),
-        "ebook_list": None,
-        "device": "cpu",
-        
-        "language_iso1": "en",
+        "language_iso1": 'zh',
         "tts_engine": TTS_ENGINES['XTTSv2'],
-        "output_format": "m4b",
     }
+
     # update session with args
     session.update(args)
     # Create necessary directories
     func_name = inspect.currentframe().f_code.co_name
     set_process_dir(session, func_name)
-    session['epub_path'] = session['ebook']
+    
+    ebook_ = session["ebook"]
+    epubBook = epub.read_epub(ebook_, {"ignore_ncx": True})
 
-    # Instantiate EBookProcessor
-    from lib.headless_processor import EBookProcessor
-    ebook_processor = EBookProcessor()
-    epubBook = epub.read_epub(session["ebook"], {"ignore_ncx": True})
-    basename = os.path.basename(session["ebook"])
-    name_splits = os.path.splitext(basename)
-    session["filename_noext"] = name_splits[0]
-
-    # Process the EPUB
-    status, success = ebook_processor.process_epub_chapters(epubBook, session)
-
+    processor = EPubProcessor(session)
+    result = processor.get_cover(epubBook, session)
     # Assertions
-    assert success is True
-    print(session['audiobook'])
-    assert os.path.exists(session['audiobook'])
+    assert result
+    print(result)
