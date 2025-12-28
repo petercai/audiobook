@@ -177,8 +177,9 @@ def main():
         "--output_dir",  # 23
         "--version",  # 24
         "--workflow",  # 25
-        "--help",  # 26
-        "--offline_mode",  # 27
+        "--help",  #26
+        "--offline_mode",  #27
+        "--add_toc_title", #28
     ]
     parser = init_arg_parser(options)
 
@@ -343,6 +344,7 @@ def init_arg_parser(options):
         "--workflow",  # 25
         "--help",  # 26
         "--offline_mode", #27
+         "--add_toc_title", #28
     :return:
     '''
     # Argument parser to handle optional parameters with descriptions
@@ -534,6 +536,11 @@ Tip: to add of silence (1.4 seconds) into your text just use "###" or "[pause]".
         options[27],
         action="store_true",
         help="""(Optional) Enable offline mode. The app will try to use cached models and data without internet access.""",
+    )
+    gui_group.add_argument(
+        options[28],
+        action="store_true",
+        help="""(Optional) Enable adding TOC title to chapter for TTS.""",
     )
     headless_optional_group.add_argument(options[25], action='store_true', help=argparse.SUPPRESS)
     return parser
