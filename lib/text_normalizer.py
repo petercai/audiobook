@@ -53,26 +53,26 @@ class TextNormalizer:
         except Exception:
             return False
 
-    def normalize_text_4_tts(self, paragraph, tts_engine, stanza_nlp):
+    def normalize_text_4_tts(self, text_block, tts_engine, stanza_nlp):
         # If a Stanza NLP pipeline is available, use it for advanced text processing like date recognition
         if stanza_nlp:
-            paragraph = self._num2dateWithNLP(
-                paragraph,
+            text_block = self._num2dateWithNLP(
+                text_block,
                 stanza_nlp,
                 tts_engine
             )
         # Convert Roman numerals, clock times, and mathematical expressions to words for better TTS
-        paragraph = self._roman2number(paragraph)  # Convert Roman numerals to Arabic numbers
-        paragraph = self._clock2words(paragraph, tts_engine)  # Convert clock times to words
-        paragraph = self._math2words(paragraph, tts_engine)  # Convert math expressions to words
+        text_block = self._roman2number(text_block)  # Convert Roman numerals to Arabic numbers
+        text_block = self._clock2words(text_block, tts_engine)  # Convert clock times to words
+        text_block = self._math2words(text_block, tts_engine)  # Convert math expressions to words
 
         # Remove special characters that are not needed for TTS by replacing them with spaces
         specialchars_remove_table = str.maketrans({ch: ' ' for ch in specialchars_remove})
-        paragraph = paragraph.translate(specialchars_remove_table)
+        text_block = text_block.translate(specialchars_remove_table)
         # Perform final text normalization (e.g., handling abbreviations, punctuation) for better TTS quality
-        paragraph = self.normalize_text(paragraph)
+        text_block = self.normalize_text(text_block)
         # Split the fully processed text into sentences for TTS based on language-specific rules
-        sentences = self._get_sentences(paragraph, tts_engine)
+        sentences = self.split_sentences(text_block, tts_engine)
         return sentences
 
     def _num_repl(self, m):
@@ -436,7 +436,7 @@ class TextNormalizer:
         val = self._roman_to_int(roman)
         return str(val)
 
-    def _get_sentences(self, text, tts_engine):
+    def split_sentences(self, text, tts_engine):
         """
         Splits a given text into a list of sentences based on language-specific rules
         and TTS engine character limits.

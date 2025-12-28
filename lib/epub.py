@@ -395,7 +395,7 @@ class EPubProcessor:
             else:
                 yield item
 
-    def _tuple_row_iterator(self, node, last_text_char=None, tokenizer_tts=True):
+    def _tagged_tuple_paragraphs_iterator(self, node, last_text_char=None, tokenizer_tts=True):
         """
         Recursively traverses a BeautifulSoup HTML node tree and yields structured content tuples.
 
@@ -438,6 +438,10 @@ class EPubProcessor:
                     # Handle heading tags (h1, h2, etc.).
                     if name in self.heading_tags:
                         title = child.get_text(separator=' ', strip=True)
+                        if not title:
+                            title_attr = child.get("title")
+                            if title_attr:
+                                title = title_attr.strip()
                         if title:
                             yield ("heading", title)
                             # Update the last character seen.
@@ -453,7 +457,7 @@ class EPubProcessor:
                         # Check if the tag is one we should process for content (e.g., p, div, span).
                         if name in self.proc_tags:
                             # Recursively call this function on the child tag's content.
-                            for inner in self._tuple_row_iterator(child, last_text_char, tokenizer_tts):
+                            for inner in self._tagged_tuple_paragraphs_iterator(child, last_text_char, tokenizer_tts):
                                 return_data = True
                                 yield inner
                                 # Track the last character from any yielded text or heading.
@@ -476,7 +480,7 @@ class EPubProcessor:
                         # If the tag is not in our processable set, just traverse into it
                         # without adding any special breaks or pauses for the tag itself.
                         else:
-                            yield from self._tuple_row_iterator(child, last_text_char, tokenizer_tts)
+                            yield from self._tagged_tuple_paragraphs_iterator(child, last_text_char, tokenizer_tts)
 
         except Exception as e:
             error = f'filter_chapter() tuple_row() error: {e}'
@@ -505,24 +509,23 @@ class EPubProcessor:
         """
         try:
             is_tokenizer_tts = tts_engine not in TOKENIZER_FREE_TTS
-            tuples_structured_paragraph_list = self.extract_chapter_structured_paragraphes(doc_chapter, is_tokenizer_tts)
-            if not tuples_structured_paragraph_list:
+            tagged_paragraph_list = self.extract_chapter_tagged_paragraphes(doc_chapter, is_tokenizer_tts)
+            if not tagged_paragraph_list:
                 return []
             # Get the maximum character limit for the current language to ensure proper sentence segmentation
-            max_chars = self.text_normalizer.get_max_chars()
-            clean_list = self._to_flat_sentence_list_with_break(
-                tuples_structured_paragraph_list,
+            paragraph_list = self._flat_paragraphes_with_break(
+                tagged_paragraph_list,
                 is_tokenizer_tts,
-                max_chars
+                self.text_normalizer.get_max_chars()
             )
             # Join the cleaned list into a single text string for further processing
-            paragraph = ' '.join(clean_list)
+            merged_chapter = ' '.join(paragraph_list)
             # If the text is empty or contains no valid characters, return None to indicate no content
-            if not re.search(r"[^\W_]", paragraph):
+            if not re.search(r"[^\W_]", merged_chapter):
                 error = 'No valid text found!'
                 print(error)
                 return None
-            sentences = self.text_normalizer.normalize_text_4_tts(paragraph, tts_engine, stanza_nlp)
+            sentences = self.text_normalizer.normalize_text_4_tts(merged_chapter, tts_engine, stanza_nlp)
             if len(sentences) == 0:
                 error = 'No sentences found!'
                 print(error)
@@ -534,7 +537,7 @@ class EPubProcessor:
             DependencyError(error)
             return None
 
-    def extract_chapter_structured_paragraphes(self, doc_chapter: ebooklib.epub.EpubItem, is_tokenizer_tts: bool) -> list[tuple[str, str]]:
+    def extract_chapter_tagged_paragraphes(self, doc_chapter, is_tokenizer_tts: bool) -> list[tuple[str, str]]:
         """
         Extracts structured paragraphs from an EPUB chapter document.
 
@@ -593,22 +596,57 @@ class EPubProcessor:
             tag.decompose()
         # Recursively traverse the HTML body to extract content into a structured list of tuples.
         # Each tuple contains a type identifier and the corresponding content.
-        return list(self._tuple_row_iterator(content_root, tokenizer_tts=is_tokenizer_tts))
+        return list(self._tagged_tuple_paragraphs_iterator(content_root, tokenizer_tts=is_tokenizer_tts))
 
-    def _to_flat_sentence_list_with_break(self, tuples_structured_paragraph_list, is_tokenizer_tts, max_chars):
+    def _flat_paragraphes_with_break(self, tuples_tagged_paragraph_list: list[tuple[str, any]], is_tokenizer_tts: bool, max_chars: int) -> list[str]:
+        """
+        Converts a structured list of paragraph tuples into a flat list of text elements,
+        handling special markers for breaks and pauses, and processing tables.
+
+        This method iterates through the `tuples_structured_paragraph_list` which contains
+        elements like text, headings, breaks, pauses, and tables. It flattens these into
+        a single list of strings, applying specific logic for each type:
+        - "heading": Adds the heading text.
+        - "break": Inserts a `TTS_SML['break']` token, avoiding consecutive breaks.
+        - "pause": Inserts a `TTS_SML['pause']` token, avoiding consecutive pauses.
+        - "table": Converts HTML table structures into a readable string format,
+                   including headers and row data, and appends them to the list.
+                   It also prevents duplicate processing of the same table.
+        - "text": Adds the plain text content.
+
+        If `is_tokenizer_tts` is True, it also calls `_clean_paragraph_text` to further
+        process the list, merging short sentences that might have been artificially
+        separated by break tokens, to improve speech flow.
+
+        Args:
+            tuples_structured_paragraph_list (list[tuple[str, Any]]): A list of tuples,
+                where each tuple is (type, content). 'type' can be "text", "heading",
+                "table", "break", or "pause". 'content' is the corresponding string
+                or BeautifulSoup Tag for tables.
+            is_tokenizer_tts (bool): A flag indicating whether the TTS engine requires
+                explicit SML tokens for pausing and sentence breaking. If True, SML
+                tokens are inserted and further cleaning is applied.
+            max_chars (int): The maximum number of characters allowed for a merged
+                sentence when `is_tokenizer_tts` is True. Used by `_clean_paragraph_text`.
+
+        Returns:
+            list[str]: A flat list of strings, where each string is a segment of text
+                       or an SML token, ready for further text normalization and TTS.
+        """
+
         # Process the structured list to build a flat list of text elements.
         paragraph_text_list = []
         handled_tables = set()  # Keep track of tables we've already processed
         prev_typ = None  # Track the previous element type to avoid duplicate breaks/pauses
-        for typ, paragraph in tuples_structured_paragraph_list:
+        for typ, paragraph in tuples_tagged_paragraph_list:
             if typ == "heading":
                 # Add heading text to the list after stripping whitespace
                 paragraph_text_list.append(paragraph.strip())
             elif typ == "break":
                 # Avoid adding multiple consecutive break tokens which could cause unwanted pauses
-                if prev_typ != 'break' and is_tokenizer_tts:
+                if is_tokenizer_tts and prev_typ != 'break':
                     paragraph_text_list.append(TTS_SML['break'])
-            elif typ == 'pause' and is_tokenizer_tts:
+            elif is_tokenizer_tts and typ == 'pause':
                 # Avoid adding multiple consecutive pause tokens which could cause unwanted pauses
                 if prev_typ != 'pause':
                     paragraph_text_list.append(TTS_SML['pause'])
@@ -647,6 +685,9 @@ class EPubProcessor:
                 if text:
                     paragraph_text_list.append(text)
             prev_typ = typ
+        return paragraph_text_list if not is_tokenizer_tts else self._clean_paragraph_text(paragraph_text_list, max_chars)
+
+    def _clean_paragraph_text(self, paragraph_text_list, max_chars):
         # Clean the list by merging short sentences that were separated by a break.
         # This helps create more natural speech flow by avoiding too many short utterances.
         clean_list = []

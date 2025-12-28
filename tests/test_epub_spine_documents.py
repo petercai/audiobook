@@ -102,6 +102,23 @@ def test_extract_chapter_思考快与慢(session_context, ebook_path: str, tmp_p
     set_process_dir(session, func_name)
     handle_epub_chapters_in_test(session) 
 
+def test_extract_chapter_剑来(session_context, ebook_path: str, tmp_path: str):
+    context, session_id, session = session_context
+    args = {
+        "session": session_id,
+        'cancellation_requested': False,
+        "ebook": os.path.join(ebook_path, "剑来 (烽火戏诸侯).epub"),
+        "device": "cpu",
+        "language_iso1": 'zh',
+        "tts_engine": TTS_ENGINES['XTTSv2'],
+
+    }
+    # update session with args
+    session.update(args)
+    func_name = inspect.currentframe().f_code.co_name
+    set_process_dir(session, func_name)
+    handle_epub_chapters_in_test(session) 
+
 
 
 
@@ -176,12 +193,12 @@ def handle_epub_chapters_in_test(session):
     print(f"epub_chapter_docs#: {len(epub_chapter_docs)}")
     cache_dir = os.path.join(session["process_dir"], "extracted")
     os.makedirs(cache_dir, exist_ok=True)
-    for i, c_doc in enumerate(epub_chapter_docs):
+    for c_doc in epub_chapter_docs:
         chapter_id = getattr(c_doc, "id", None)
         chapter_media_type = getattr(c_doc, "media_type", None)
-        paragraphes = processor.extract_chapter_structured_paragraphes(c_doc, False)
+        paragraphes = processor.extract_chapter_tagged_paragraphes(c_doc, False)
         if paragraphes:
             print(c_doc, chapter_id, chapter_media_type)
-            cache_text_in_dir(str(i), paragraphes, cache_dir)
+            cache_text_in_dir(chapter_id, paragraphes, cache_dir)
         else:
             print (f"{c_doc} - no content")

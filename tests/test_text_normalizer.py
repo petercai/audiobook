@@ -239,7 +239,7 @@ def test_get_sentences_non_ideogram(tn):
 
 
 def test_get_sentences_ideogram_real(tn):
-    out = TextNormalizer("zho")._get_sentences("你好世界", None)
+    out = TextNormalizer("zho").split_sentences("你好世界", None)
     assert isinstance(out, list)
     assert out
 
