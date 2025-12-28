@@ -233,7 +233,6 @@ def test_get_chapter_sentences_4_dune(session_context, ebook_path: str, tmp_path
     set_process_dir(session, func_name)
     ebook_ = session["ebook"]
     epubBook = epub.read_epub(ebook_, {"ignore_ncx": True})
-
     processor = EPubProcessor(session)
     toc, chapters_with_tn_sentences = processor.get_chapters_in_sentences(
         epubBook, session
@@ -243,6 +242,34 @@ def test_get_chapter_sentences_4_dune(session_context, ebook_path: str, tmp_path
     cache_transcript_by_chapter(chapters_with_tn_sentences, transcript_dir)
     created_files = sum(1 for entry in os.scandir(transcript_dir) if entry.is_file())
     assert created_files == 48
+    assert created_files == len(chapters_with_tn_sentences)
+
+def test_get_chapter_sentences__Grea_Power_Politics(session_context, ebook_path: str, tmp_path: str):
+    context, session_id, session = session_context
+    args = {
+        "session": session_id,
+        "cancellation_requested": False,
+        "ebook": os.path.join(ebook_path, "The Tragedy of Great Power Politics.epub"),
+        "device": "cpu",
+        "add_toc_title": False,
+        "language_iso1": "en",
+        "tts_engine": TTS_ENGINES["XTTSv2"],
+    }
+    # update session with args
+    session.update(args)
+    func_name = inspect.currentframe().f_code.co_name
+    set_process_dir(session, func_name)
+    ebook_ = session["ebook"]
+    epubBook = epub.read_epub(ebook_, {"ignore_ncx": True})
+    processor = EPubProcessor(session)
+    toc, chapters_with_tn_sentences = processor.get_chapters_in_sentences(
+        epubBook, session
+    )
+    transcript_dir = os.path.join(session["process_dir"], "transcript")
+    os.makedirs(transcript_dir, exist_ok=True)
+    cache_transcript_by_chapter(chapters_with_tn_sentences, transcript_dir)
+    created_files = sum(1 for entry in os.scandir(transcript_dir) if entry.is_file())
+    assert created_files == 11
     assert created_files == len(chapters_with_tn_sentences)
 
 
@@ -337,6 +364,25 @@ def test_filter_chapter_一句顶一万句(session_context, ebook_path: str, tmp
     assert created_files == 24
     assert created_files == len(chapters_with_tn_sentences)
 
+
+def test_filter_chapter_Grea_Power_Politics(session_context, ebook_path: str, tmp_path: str):
+    context, session_id, session = session_context
+    args = {
+        "session": session_id,
+        "cancellation_requested": False,
+        "ebook": os.path.join(ebook_path, "The Tragedy of Great Power Politics.epub"),
+        "device": "cpu",
+        "add_toc_title": False,
+        "language_iso1": "en",
+        "tts_engine": TTS_ENGINES["XTTSv2"],
+    }
+    # update session with args
+    session.update(args)
+    func_name = inspect.currentframe().f_code.co_name
+    set_process_dir(session, func_name)
+    chapters_with_tn_sentences, created_files = process_filter_chapter(session)
+    assert created_files == 11
+    assert created_files == len(chapters_with_tn_sentences)
 
 def test_filter_chapter_4_dune(session_context, ebook_path: str, tmp_path: str):
     context, session_id, session = session_context

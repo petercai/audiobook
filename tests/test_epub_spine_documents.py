@@ -122,7 +122,7 @@ def test_extract_chapter_剑来(session_context, ebook_path: str, tmp_path: str)
 
 
 
-def test_filter_chapter_一句顶一万句(session_context, ebook_path: str, tmp_path: str):
+def test_extract_chapter_一句顶一万句(session_context, ebook_path: str, tmp_path: str):
     context, session_id, session = session_context
     args = {
         "session": session_id,
@@ -139,7 +139,7 @@ def test_filter_chapter_一句顶一万句(session_context, ebook_path: str, tmp
     set_process_dir(session, func_name)
     handle_epub_chapters_in_test(session) 
     
-def test_filter_chapter_4_dune(session_context, ebook_path: str, tmp_path: str):
+def test_extract_chapter_4_dune(session_context, ebook_path: str, tmp_path: str):
     context, session_id, session = session_context
     args = {
         "session": session_id,
@@ -157,7 +157,25 @@ def test_filter_chapter_4_dune(session_context, ebook_path: str, tmp_path: str):
     set_process_dir(session, func_name)
     handle_epub_chapters_in_test(session) 
     
-def test_filter_chapter_4_hunger_game(session_context, ebook_path: str, tmp_path: str):
+def test_extract_chapter__Grea_Power_Politics(session_context, ebook_path: str, tmp_path: str):
+    context, session_id, session = session_context
+    args = {
+        "session": session_id,
+        'cancellation_requested': False,
+        "ebook": os.path.join(ebook_path, "The Tragedy of Great Power Politics.epub"),
+        "device": "cpu",
+        
+        "language_iso1": 'en',
+        "tts_engine": TTS_ENGINES['XTTSv2'],
+
+    }
+    # update session with args
+    session.update(args)
+    func_name = inspect.currentframe().f_code.co_name
+    set_process_dir(session, func_name)
+    handle_epub_chapters_in_test(session) 
+    
+def test_extract_chapter_4_hunger_game(session_context, ebook_path: str, tmp_path: str):
     context, session_id, session = session_context
     args = {
         "session": session_id,
