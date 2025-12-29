@@ -23,6 +23,7 @@ from lib.lang import (
     specialchars_remove,
 )
 from lib.models import TTS_SML
+from syntrive.adapters.text.sentence_splitter import SentenceSplitter
 
 
 class TextNormalizer:
@@ -30,6 +31,7 @@ class TextNormalizer:
         self.sml_tokens = set(TTS_SML.values())
         self.lang_iso1, self.lang_iso3 = resolve_lang_codes((lang_iso1 or default_language_code).strip())
         self.is_num2words_compat = self._get_num2words_compat(self.lang_iso1)
+        self._sentence_splitter = SentenceSplitter()
 
     @staticmethod
     @lru_cache(maxsize=128)
@@ -71,9 +73,7 @@ class TextNormalizer:
         text_block = text_block.translate(specialchars_remove_table)
         # Perform final text normalization (e.g., handling abbreviations, punctuation) for better TTS quality
         text_block = self.normalize_text(text_block)
-        # Split the fully processed text into sentences for TTS based on language-specific rules
-        sentences = self.split_sentences(text_block, tts_engine)
-        return sentences
+        return text_block
 
     def _num_repl(self, m):
         s = m.group(0)
@@ -151,113 +151,6 @@ class TextNormalizer:
                 )
         return text
 
-    def _split_inclusive(self, text, pattern):
-        result = []
-        last_end = 0
-        for match in pattern.finditer(text):
-            result.append(text[last_end:match.end()].strip())
-            last_end = match.end()
-        if last_end < len(text):
-            tail = text[last_end:].strip()
-            if tail:
-                result.append(tail)
-        return result
-
-    def _segment_ideogramms(self, text):
-        """
-        Tokenizes text for ideogram-based languages, preserving SML tokens.
-
-        This method splits the input text into a list of words or tokens, which is
-        a necessary preprocessing step for languages that do not use spaces to
-        delimit words (e.g., Chinese, Japanese, Thai). It uses different libraries
-        for tokenization based on the specified language.
-
-        Args:
-            text (str): The text to be tokenized.
-
-        Returns:
-            list: A list of string tokens. If an error occurs during tokenization,
-                  it returns a list containing the original text.
-        """
-        # Create a regex pattern to split the text by SML tokens, while keeping them.
-        sml_pattern = "|".join(re.escape(token) for token in self.sml_tokens)
-        segments = re.split(f"({sml_pattern})", text)
-        result = []
-        try:
-            for segment in segments:
-                if not segment:
-                    continue
-                # If the segment is an SML token, add it directly to the results.
-                if re.fullmatch(sml_pattern, segment):
-                    result.append(segment)
-                else:
-                    # Otherwise, apply the appropriate tokenizer based on the language.
-                    if self.lang_iso3 == 'zho':
-                        import jieba
-                        result.extend([t for t in jieba.cut(segment) if t.strip()])
-                    elif self.lang_iso3 == 'jpn':
-                        from sudachipy import dictionary, tokenizer
-                        sudachi = dictionary.Dictionary().create()
-                        mode = tokenizer.Tokenizer.SplitMode.C
-                        result.extend([m.surface() for m in sudachi.tokenize(segment, mode) if m.surface().strip()])
-                    # elif lang == 'kor':
-                    #     from korean_tokenizer import LTokenizer
-                    #     ltokenizer = LTokenizer()
-                    #     result.extend([t for t in ltokenizer.tokenize(segment) if t.strip()])
-                    elif self.lang_iso3 in ['tha', 'lao', 'mya', 'khm']:
-                        from pythainlp import word_tokenize
-                        result.extend([t for t in word_tokenize(segment, engine='newmm') if t.strip()])
-                    else:
-                        # If the language is not one of the specified ideogrammatic languages,
-                        # treat the segment as a single token.
-                        result.append(segment.strip())
-            return result
-        except Exception as e:
-            # If any error occurs (e.g., a tokenizer library is not installed),
-            # fall back to returning the original text as a single-item list.
-            DependencyError(e)
-            return [text]
-
-    def _join_ideogramms(self, idg_list, max_chars):
-        """
-        Joins a list of ideogrammatic tokens into sentences that respect a maximum
-        character length.
-
-        This generator function is designed for languages like Chinese, Japanese, and
-        Korean, where text is first tokenized into words. It reconstructs sentences
-        from these tokens, ensuring that no single yielded sentence exceeds the
-        `max_chars` limit. It also preserves SML tokens as separate items.
-
-        Args:
-            idg_list (list): A list of string tokens (words, punctuation, SML tokens).
-            max_chars (int): The maximum number of characters allowed per sentence.
-
-        Yields:
-            str: A sentence or SML token, formatted and constrained by length.
-        """
-        try:
-            buffer = ''
-            for token in idg_list:
-                # 1) On SML token: flush the current buffer, then yield the token separately.
-                if token.strip() in self.sml_tokens:
-                    if buffer:
-                        yield buffer
-                        buffer = ''
-                    yield token
-                    continue
-                # 2) If adding the next token would overflow the max character limit, flush the current buffer.
-                if buffer and len(buffer) + len(token) > max_chars:
-                    yield buffer
-                    buffer = ''
-                # 3) Append the token to the buffer.
-                buffer += token
-            # 4) After the loop, flush any remaining text in the buffer.
-            if buffer:
-                yield buffer
-        except Exception as e:
-            DependencyError(e)
-            if buffer:
-                yield buffer
 
     def _repl_abbreviations(self, match: re.Match, mapping) -> str:
         token = match.group(1)
@@ -436,161 +329,6 @@ class TextNormalizer:
         val = self._roman_to_int(roman)
         return str(val)
 
-    # todo move to SentenseSplitter
-    def split_sentences(self, text, tts_engine):
-        """
-        Splits a given text into a list of sentences based on language-specific rules
-        and TTS engine character limits.
-
-        This function is crucial for preparing text for TTS processing by breaking it
-        down into manageable chunks that respect punctuation, special markup (SML),
-        and character length constraints.
-
-        Args:
-            text (str): The input text to be segmented.
-            tts_engine: The TTS engine identifier (currently unused in this method but
-                        kept for API consistency).
-
-        Returns:
-            list: A list of strings, where each string is a sentence or a segment
-                  of text suitable for TTS processing. Returns None if an error occurs.
-        """
-        try:
-            # Set the maximum character limit for a sentence, leaving a small buffer.
-            max_chars = self.get_max_chars()
-            min_tokens = 5  # Minimum number of tokens for certain operations (currently unused).
-
-            # 1. Initial Split by SML tokens (e.g., for breaks and pauses)
-            # This ensures that special TTS markup tags are preserved as separate items.
-            sml_list = re.split(rf"({'|'.join(map(re.escape, self.sml_tokens))})", text)
-            sml_list = [s for s in sml_list if s.strip() or s in self.sml_tokens]
-
-            # 2. Hard Split: Break text at major sentence-ending punctuation.
-            # This uses a predefined set of "hard" punctuation marks (e.g., '.', '!', '?').
-            pattern_split = '|'.join(map(re.escape, punctuation_split_hard_set))
-            pattern = re.compile(rf"(.*?(?:{pattern_split}){''.join(punctuation_list_set)})(?=\s|$)", re.DOTALL)
-            hard_list = []
-            for s in sml_list:
-                # Preserve SML tokens and short segments that are already under the character limit.
-                if s in [TTS_SML['break'], TTS_SML['pause']] or len(s) <= max_chars:
-                    hard_list.append(s)
-                else:
-                    # Use a custom split function to keep the delimiters.
-                    parts = self._split_inclusive(s, pattern)
-                    if parts:
-                        for text_part in parts:
-                            text_part = text_part.strip()
-                            if text_part:
-                                hard_list.append(text_part)
-                    else:
-                        s = s.strip()
-                        if s:
-                            hard_list.append(s)
-
-            # 3. Soft Split: Further break down long sentences using "soft" punctuation.
-            # This handles cases where a sentence is too long for the TTS engine,
-            # using commas, semicolons, etc., as breaking points.
-            pattern_split = '|'.join(map(re.escape, punctuation_split_soft_set))
-            pattern = re.compile(rf"(.*?(?:{pattern_split}))(?=\s|$)", re.DOTALL)
-            soft_list = []
-            for s in hard_list:
-                # Keep SML tokens and segments that are already compliant with the length limit.
-                if s in [TTS_SML['break'], TTS_SML['pause']] or len(s) <= max_chars:
-                    soft_list.append(s)
-                # If a segment is still too long, apply the soft split.
-                elif len(s) > max_chars:
-                    parts = [p for p in self._split_inclusive(s, pattern) if p]
-                    if parts:
-                        buffer = ''
-                        for idx, part in enumerate(parts):
-                            # Predict the length if the next part is added to the buffer.
-                            predicted_length = len(buffer) + (1 if buffer else 0) + len(part)
-                            # If it fits, add it to the buffer.
-                            if predicted_length <= max_chars:
-                                buffer = (buffer + ' ' + part).strip() if buffer else part
-                            else:
-                                # If it doesn't fit, handle the buffer.
-                                # Check if the buffer ends with soft punctuation.
-                                if buffer and not any(buffer.rstrip().endswith(p) for p in punctuation_split_soft_set):
-                                    # If not, try to backtrack to the last punctuation inside the buffer.
-                                    last_punct_idx = max((buffer.rfind(p) for p in punctuation_split_soft_set if p in buffer), default=-1)
-                                    if last_punct_idx != -1:
-                                        # Split at the last found punctuation mark.
-                                        soft_list.append(buffer[:last_punct_idx+1].strip())
-                                        leftover = buffer[last_punct_idx+1:].strip()
-                                        buffer = leftover + ' ' + part if leftover else part
-                                    else:
-                                        # If no punctuation, split as is.
-                                        soft_list.append(buffer.strip())
-                                        buffer = part
-                                else:
-                                    soft_list.append(buffer.strip())
-                                    buffer = part
-                        # Add any remaining text in the buffer to the list.
-                        if buffer:
-                            cleaned = re.sub(r'[^\p{L}\p{N} ]+', '', buffer)
-                            if any(ch.isalnum() for ch in cleaned):
-                                soft_list.append(buffer.strip())
-                    else:
-                        # If no soft punctuation is found, add the long segment as is.
-                        cleaned = re.sub(r'[^\p{L}\p{N} ]+', '', s)
-                        if any(ch.isalnum() for ch in cleaned):
-                            soft_list.append(s.strip())
-                else:
-                    # Add segments that are within the length limit.
-                    cleaned = re.sub(r'[^\p{L}\p{N} ]+', '', s)
-                    if any(ch.isalnum() for ch in cleaned):
-                        soft_list.append(s.strip())
-
-            # 4. Language-specific processing for ideogram-based languages.
-            # These languages require word tokenization before joining into sentences.
-            if self.lang_iso3 in ['zho', 'jpn', 'kor', 'tha', 'lao', 'mya', 'khm']:
-                result = []
-                for s in soft_list:
-                    if s in [TTS_SML['break'], TTS_SML['pause']]:
-                        result.append(s)
-                    else:
-                        # Segment the text into words/tokens.
-                        tokens = self._segment_ideogramms(s)
-                        if isinstance(tokens, list):
-                            result.extend([t for t in tokens if t.strip()])
-                        else:
-                            tokens = tokens.strip()
-                            if tokens:
-                                result.append(tokens)
-                # Join the tokens back into sentences that respect the max character limit.
-                return list(self._join_ideogramms(result, max_chars))
-            else:
-                # 5. Final segmentation for space-delimited languages.
-                # This step ensures that no sentence exceeds the max character limit by splitting
-                # at the word level if necessary.
-                sentences = []
-                for s in soft_list:
-                    if s in [TTS_SML['break'], TTS_SML['pause']] or len(s) <= max_chars:
-                        sentences.append(s)
-                    else:
-                        # Split by space and reconstruct sentences within the character limit.
-                        words = s.split(' ')
-                        text_part = words[0]
-                        for w in words[1:]:
-                            if len(text_part) + 1 + len(w) <= max_chars:
-                                text_part += ' ' + w
-                            else:
-                                text_part = text_part.strip()
-                                if text_part:
-                                    sentences.append(text_part)
-                                text_part = w
-                        # Add the last remaining part of the sentence.
-                        if text_part:
-                            cleaned = re.sub(r'[^\p{L}\p{N} ]+', '', text_part).strip()
-                            if not any(ch.isalnum() for ch in cleaned):
-                                continue
-                            sentences.append(text_part)
-                return sentences
-        except Exception as e:
-            error = f'get_sentences() error: {e}'
-            print(error)
-            return None
 
     def _get_date_entities(self, text, stanza_nlp):
         try:

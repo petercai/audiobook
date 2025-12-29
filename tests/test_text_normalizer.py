@@ -6,6 +6,7 @@ import stanza
 from lib.lang import default_language_code, resolve_lang_codes
 from lib.models import TTS_SML
 from lib.text_normalizer import TextNormalizer
+from syntrive.adapters.text.sentence_splitter import SentenceSplitter
 from wetext import Normalizer as ZhNormalizer
 from wetext import Normalizer as EnNormalizer
 
@@ -65,7 +66,7 @@ def test_get_num2words_compat_returns_bool():
 def test_normalize_text_4_tts_english(tn):
     text = "Chapter IV. Meet at 01:15. 2+3=5."
     out = tn.normalize_text_4_tts(text, tts_engine=None, stanza_nlp=None)
-    assert isinstance(out, list)
+    assert isinstance(out, str)
     assert out
 
 
@@ -73,8 +74,8 @@ def test_normalize_text_4_tts_chinese():
     text = "第IV章 12:30"
     tn = TextNormalizer("zho")
     out = tn.normalize_text_4_tts(text, tts_engine=None, stanza_nlp=None)
-    assert isinstance(out, list)
-    print(','.join(out))
+    assert isinstance(out, str)
+    print(out)
     assert out
 
 
@@ -108,13 +109,13 @@ def test_num2date_with_nlp_no_numbers(tn):
 
 def test_split_inclusive(tn):
     pattern = re.compile(r"(.*?\.)")
-    out = tn._split_inclusive("A. B. C", pattern)
+    out = SentenceSplitter()._split_inclusive("A. B. C", pattern)
     assert out == ["A.", "B.", "C"]
 
 
 def test_segment_ideogramms_zho_real(tn):
     import jieba
-    out = TextNormalizer("zho")._segment_ideogramms(f"你好{TTS_SML['break']}世界")
+    out = SentenceSplitter()._segment_ideogramms(f"你好{TTS_SML['break']}世界", "zho")
     assert TTS_SML["break"] in out
     print(out)
     assert any(token.strip() for token in out)
@@ -122,26 +123,26 @@ def test_segment_ideogramms_zho_real(tn):
 
 def test_segment_ideogramms_jpn_real(tn):
     import sudachipy
-    out = TextNormalizer("jpn")._segment_ideogramms("日本語")
-    assert isinstance(out, list)
+    out = SentenceSplitter()._segment_ideogramms("日本語", "jpn")
+    assert isinstance(out, str)
     assert out
 
 
 def test_segment_ideogramms_thai_real(tn):
     import pythainlp
-    out = TextNormalizer("tha")._segment_ideogramms("สวัสดี")
-    assert isinstance(out, list)
+    out = SentenceSplitter()._segment_ideogramms("สวัสดี", "tha")
+    assert isinstance(out, str)
     assert out
 
 
 def test_segment_ideogramms_default_language(tn):
-    out = tn._segment_ideogramms("abc")
+    out = SentenceSplitter()._segment_ideogramms("abc", "eng")
     assert out == ["abc"]
 
 
 def test_join_ideogramms(tn):
     tokens = ["ab", "cd", TTS_SML["break"], "ef"]
-    out = list(tn._join_ideogramms(tokens, max_chars=3))
+    out = list(SentenceSplitter()._join_ideogramms(tokens, max_chars=3))
     assert out == ["ab", "cd", TTS_SML["break"], "ef"]
 
 
@@ -233,24 +234,24 @@ def test_roman_helpers(tn):
 
 def test_get_sentences_non_ideogram(tn):
     text = f"Hello, world! {TTS_SML['break']} One, two, three, four, five."
-    out = tn._get_sentences(text, None)
-    assert isinstance(out, list)
+    out = SentenceSplitter().split(text, "en")
+    assert isinstance(out, str)
     assert TTS_SML["break"] in out
 
 
 def test_get_sentences_ideogram_real(tn):
-    out = TextNormalizer("zho").split_sentences("你好世界", None)
-    assert isinstance(out, list)
+    out = SentenceSplitter().split("你好世界", "zho")
+    assert isinstance(out, str)
     assert out
 
 
 def test_get_sentences_error(tn):
-    assert tn._get_sentences(None, None) is None
+    assert SentenceSplitter().split(None, "en") is None
 
 
 def test_get_date_entities_real(tn, stanza_nlp):
     out = tn._get_date_entities("Today is 2024-01-01", stanza_nlp)
-    assert isinstance(out, list)
+    assert isinstance(out, str)
 
 
 def test_get_date_entities_error(tn):
@@ -328,3 +329,4 @@ def test_normalize_wetext_chinese(tn):
     assert isinstance(out_cn, str)
     print(f"{input} --> {out_cn}")
     assert "百分之" in out_cn
+

@@ -162,3 +162,13 @@ Next steps (optional):
 
 Run your normal EPUB processing flow on an English book with drop caps to validate output.
 Add a small regression test around _tagged_tuple_paragraphs_iterator for span drop caps.
+
+
+Please implement the code as described by the comment on lib/text_normalizer.py:76
+
+The comment is:
+decouple tn and sentence splitting by move 2 line below to epub.py line 588, under this method call. don't change any existing logic! update all impact classes!
+
+Replace the comment with your implementation.
+Optimize for speed. Don't over-explore or over-check your work other than what is absolutely necessary to implement the comment.
+Once you are done, remove the comment.

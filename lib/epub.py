@@ -585,7 +585,8 @@ class EPubProcessor:
                 error = 'No valid text found!'
                 print(error)
                 return None
-            sentences = self.text_normalizer.normalize_text_4_tts(merged_chapter, tts_engine, stanza_nlp)
+            normalized_text = self.text_normalizer.normalize_text_4_tts(merged_chapter, tts_engine, stanza_nlp)
+            sentences = self.text_normalizer._sentence_splitter.split(normalized_text, self.text_normalizer.lang_iso1)
             if len(sentences) == 0:
                 error = 'No sentences found!'
                 print(error)
