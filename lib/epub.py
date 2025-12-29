@@ -29,6 +29,7 @@ class EPubProcessor:
         self.heading_tags = {"h1", "h2", "h3", "h4", "h5", "h6"}
         self.break_tags = {"p", "div", "li", "br", "hr"}
         self.pause_tags = {"ol", "ul"}
+        self.skip_tags = {"sup"}
         self.proc_tags = {
             "p", "div", "span", "a", "li", "ol", "ul", "i", "b", "em",
             "strong", "blockquote", "q", "cite", "code", "pre", "br", "hr"
@@ -421,6 +422,7 @@ class EPubProcessor:
                    the corresponding data (string, bs4.Tag, or SML token).
         """
         try:
+            heading_tracker = False
             pending_span_letter = None
             node_has_text = False
             # Iterate over each child of the current HTML node.
@@ -459,6 +461,8 @@ class EPubProcessor:
                 # If the child is an HTML tag.
                 elif isinstance(child, Tag):
                     name = child.name.lower()
+                    if name in self.skip_tags:
+                        continue
                     # Handle heading tags (h1, h2, etc.).
                     if name in self.heading_tags:
                         title = child.get_text(separator=' ', strip=True)
@@ -467,6 +471,7 @@ class EPubProcessor:
                             if title_attr:
                                 title = title_attr.strip()
                         if title:
+                            heading_tracker = True # found heading tag
                             yield ("heading", title)
                             # Update the last character seen.
                             last_text_char = title[-1] if title else last_text_char
@@ -540,6 +545,8 @@ class EPubProcessor:
 
             if pending_span_letter:
                 yield ("text", pending_span_letter)
+            if tokenizer_tts and heading_tracker:
+                yield ("break", TTS_SML['break'])
 
         except Exception as e:
             error = f'filter_chapter() tuple_row() error: {e}'
@@ -750,7 +757,8 @@ class EPubProcessor:
                 if text:
                     paragraph_text_list.append(text)
             prev_typ = typ
-        return paragraph_text_list if not is_tokenizer_tts else self._clean_paragraph_text(paragraph_text_list, max_chars)
+        return paragraph_text_list 
+        # if not is_tokenizer_tts else self._clean_paragraph_text(paragraph_text_list, max_chars) # IMPORT! DON'T CLEAN
 
     def _clean_paragraph_text(self, paragraph_text_list, max_chars):
         # Clean the list by merging short sentences that were separated by a break.
