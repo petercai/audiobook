@@ -12,7 +12,7 @@ from lib.mock_session import SessionContextMock, set_process_dir
 
 import sys
 
-from lib.text_normalizer import TextNormalizer
+from syntrive.adapters.text.normalizer import TextNormalizer
 
 sys.stdout.reconfigure(encoding="utf-8")
 
@@ -449,31 +449,13 @@ def process_chapters(processor, toc_docs, transcript_dir, session):
 
     # language_ = session["language"]
     language_iso_ = session["language_iso1"]
-    stanza_nlp = None
-    if language_iso_ in year_to_decades_languages:
-        try:
-            # Download the required language model if not already present
-            stanza.download(
-                language_iso_,
-                model_dir=os.path.join(models_dir, "stanza"),
-                logging_level="WARN",
-                verbose=False if session["offline_mode"] else None,
-            )
-        except Exception as e:
-            if session["offline_mode"]:
-                print(
-                    f"Offline mode: Failed to find stanza model for '{language_iso_}'. Expected in '{os.path.join(models_dir, 'stanza')}'"
-                )
-            raise e
-        # Create a processing pipeline for tokenization and named entity recognition
-        stanza_nlp = stanza.Pipeline(language_iso_, processors="tokenize,ner")
 
-    processor.text_normalizer = TextNormalizer(language_iso_)
+
+    processor.text_normalizer = TextNormalizer(language_iso_, session["offline_mode"])
     for chapter_doc, title in toc_docs.items():
         chapter_sentences = processor.filter_chapter(
             chapter_doc,
             tts_engine=session["tts_engine"],
-            stanza_nlp=stanza_nlp,
         )
         if not chapter_sentences:
             continue

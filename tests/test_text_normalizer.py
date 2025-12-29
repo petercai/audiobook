@@ -5,7 +5,7 @@ import stanza
 
 from lib.lang import default_language_code, resolve_lang_codes
 from lib.models import TTS_SML
-from lib.text_normalizer import TextNormalizer
+from syntrive.adapters.text.normalizer import TextNormalizer
 from syntrive.adapters.text.sentence_splitter import SentenceSplitter
 from wetext import Normalizer as ZhNormalizer
 from wetext import Normalizer as EnNormalizer

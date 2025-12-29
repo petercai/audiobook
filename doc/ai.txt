@@ -172,3 +172,6 @@ decouple tn and sentence splitting by move 2 line below to epub.py line 588, und
 Replace the comment with your implementation.
 Optimize for speed. Don't over-explore or over-check your work other than what is absolutely necessary to implement the comment.
 Once you are done, remove the comment.
+
+
+Moved stanza NLP setup into TextNormalizer with an offline_mode toggle and updated EPubProcessor to pass that flag and call the new method; removed the old EPubProcessor.init_stanza_nlp implementation and related imports. This keeps offline behavior explicit and avoids session coupling while preserving existing defaults in other call sites.

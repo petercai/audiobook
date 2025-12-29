@@ -2,7 +2,6 @@ import io
 import os
 import shutil
 import subprocess
-import stanza
 import ebooklib
 import gradio as gr
 import pymupdf4llm
@@ -15,9 +14,8 @@ from lib.classes.tts_manager import TTSManager
 from lib.conf import default_audio_proc_format, ebook_formats, models_dir
 from lib.ebook_audio import EbookAudio
 from lib.functions import DependencyError
-from lib.lang import year_to_decades_languages
 from lib.models import TOKENIZER_FREE_TTS, TTS_SML
-from lib.text_normalizer import TextNormalizer
+from syntrive.adapters.text.normalizer import TextNormalizer
 
 is_gui_process = False
 
@@ -25,7 +23,10 @@ class EPubProcessor:
 
     def __init__(self, session):
         self.ebook_audio = EbookAudio()
-        self.text_normalizer = TextNormalizer(session['language_iso1'])
+        self.text_normalizer = TextNormalizer(
+            session['language_iso1'],
+            offline_model=session.get('offline_mode', False)
+        )
         self.heading_tags = {"h1", "h2", "h3", "h4", "h5", "h6"}
         self.break_tags = {"p", "div", "li", "br", "hr"}
         self.pause_tags = {"ol", "ul"}
@@ -259,8 +260,6 @@ class EPubProcessor:
 
             # Attempt to extract the book title for metadata
             # ebook_title = self.get_ebook_title(epubBook, all_docs)
-
-            stanza_nlp = self.init_stanza_nlp(language_iso_, session)
             is_add_toc_title_to_chapters = session.get('add_toc_title', False)
 
             # Inform user that numerical and mathematical content analysis is beginning
@@ -278,8 +277,7 @@ class EPubProcessor:
                 # This includes number conversion, punctuation handling, and sentence segmentation
                 chapter_sentences = self.filter_chapter(
                     chapter_doc,
-                    tts_engine_, 
-                    stanza_nlp
+                    tts_engine_
                 )
                 # Handle the result of chapter processing
                 if chapter_sentences is None:
@@ -316,25 +314,6 @@ class EPubProcessor:
             error = f'Error extracting main content pages: {e}'
             DependencyError(error)
             return None, None
-
-    def init_stanza_nlp(self, language_iso_, session):
-        # Initialize Stanza NLP pipeline for languages that require advanced processing
-        # This is used for date recognition and other NLP tasks
-        stanza_nlp = None
-        if language_iso_ in year_to_decades_languages:
-            try:
-                # Download the required language model if not already present
-                stanza.download(language_iso_, model_dir=os.path.join(models_dir, 'stanza'), logging_level='WARN',
-                                verbose=False if session['offline_mode'] else None)
-            except Exception as e:
-                if session['offline_mode']:
-                    print(
-                        f"Offline mode: Failed to find stanza model for '{language_iso_}'. Expected in '{os.path.join(models_dir, 'stanza')}'")
-                raise e
-            # Create a processing pipeline for tokenization and named entity recognition
-            stanza_nlp = stanza.Pipeline(language_iso_, processors='tokenize,ner')
-        return stanza_nlp
-
     def get_epub_chapters(self, epubBook):
         try:
             toc = epubBook.toc  # Extract TOC
@@ -553,7 +532,7 @@ class EPubProcessor:
             DependencyError(error)
             return None
 
-    def filter_chapter(self, doc_chapter, tts_engine, stanza_nlp):
+    def filter_chapter(self, doc_chapter, tts_engine):
         """
         Process an EPUB chapter document and convert it into a list of properly formatted sentences
         ready for text-to-speech conversion.
@@ -569,7 +548,6 @@ class EPubProcessor:
             doc: ebooklib document object representing a chapter
             lang_iso1: ISO 639-1 language code (e.g., 'en', 'fr')
             tts_engine: Text-to-speech engine identifier
-            stanza_nlp: Stanza NLP pipeline for advanced text processing
         Returns:
             list: List of processed sentences ready for TTS conversion, or None if errors occur
         """
@@ -592,7 +570,7 @@ class EPubProcessor:
                 error = 'No valid text found!'
                 print(error)
                 return None
-            normalized_text = self.text_normalizer.normalize_text_4_tts(merged_chapter, tts_engine, stanza_nlp)
+            normalized_text = self.text_normalizer.normalize_text_4_tts(merged_chapter, tts_engine)
             sentences = self.text_normalizer._sentence_splitter.split(normalized_text, self.text_normalizer.lang_iso1)
             if len(sentences) == 0:
                 error = 'No sentences found!'

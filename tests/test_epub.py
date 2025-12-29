@@ -12,7 +12,7 @@ from lib.mock_session import SessionContextMock, set_process_dir
 
 import sys
 
-from lib.text_normalizer import TextNormalizer
+from syntrive.adapters.text.normalizer import TextNormalizer
 sys.stdout.reconfigure(encoding="utf-8")
 
 @pytest.fixture

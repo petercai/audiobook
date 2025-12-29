@@ -412,7 +412,7 @@ def get_vram():
     return 0
 
 def _get_text_normalizer(lang_iso1=None):
-    from lib.text_normalizer import TextNormalizer
+    from syntrive.adapters.text.normalizer import TextNormalizer
     if not hasattr(_get_text_normalizer, "_instances"):
         _get_text_normalizer._instances = {}
     lang_key = (lang_iso1 or default_language_code).strip().lower()
