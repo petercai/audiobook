@@ -1,7 +1,5 @@
 import math
 import unicodedata
-from functools import lru_cache
-
 import regex as re
 from num2words import num2words
 
@@ -30,12 +28,15 @@ class TextNormalizer:
     def __init__(self, lang_iso1=None):
         self.sml_tokens = set(TTS_SML.values())
         self.lang_iso1, self.lang_iso3 = resolve_lang_codes((lang_iso1 or default_language_code).strip())
+        self.lang_iso1 = self._lang_alignment(self.lang_iso1)
+        if self.lang_iso1 == 'zh_CN':
+            from wetext import Normalizer as ZhNormalizer
+            self.zh_tn = ZhNormalizer(remove_erhua=False)
         self.is_num2words_compat = self._get_num2words_compat(self.lang_iso1)
         self._sentence_splitter = SentenceSplitter()
 
     @staticmethod
-    @lru_cache(maxsize=128)
-    def _num2words_lang(lang_iso1):
+    def _lang_alignment(lang_iso1):
         if not lang_iso1:
             return "en"
         lang_iso1 = lang_iso1.lower()
@@ -82,7 +83,7 @@ class TextNormalizer:
             return s
         n = float(s) if "." in s else int(s)
         if self.is_num2words_compat:
-            return num2words(n, lang=self._num2words_lang(self.lang_iso1))
+            return num2words(n, lang=self._lang_alignment(self.lang_iso1))
         else:
             return self._math2words(m, None)
 
@@ -116,7 +117,7 @@ class TextNormalizer:
                     # 2) Convert ordinal days to words based on num2words compatibility
                     if self.is_num2words_compat:
                         processed = re_ordinal.sub(
-                            lambda m: num2words(int(m.group(1)), to="ordinal", lang=self._num2words_lang(self.lang_iso1)),
+                            lambda m: num2words(int(m.group(1)), to="ordinal", lang=self._lang_alignment(self.lang_iso1)),
                             processed
                         )
                     else:
@@ -135,7 +136,7 @@ class TextNormalizer:
                 # If no date entities are found, process ordinals and years separately
                 if self.is_num2words_compat:
                     text = re_ordinal.sub(
-                        lambda m: num2words(int(m.group(1)), to="ordinal", lang=self._num2words_lang(self.lang_iso1)),
+                        lambda m: num2words(int(m.group(1)), to="ordinal", lang=self._lang_alignment(self.lang_iso1)),
                         text
                     )
                 else:
@@ -165,7 +166,7 @@ class TextNormalizer:
         if key in _n2w_cache:
             return _n2w_cache[key]
         if self.is_num2words_compat:
-            word = num2words(n, lang=self._num2words_lang(self.lang_iso1))
+            word = num2words(n, lang=self._lang_alignment(self.lang_iso1))
         else:
             word = self._math2words(n, tts_engine)
         _n2w_cache[key] = word
@@ -251,7 +252,7 @@ class TextNormalizer:
         tok = self._normalize_commas(tok)
 
         if self.is_num2words_compat:
-            return num2words(num, lang=self._num2words_lang(self.lang_iso1))
+            return num2words(num, lang=self._lang_alignment(self.lang_iso1))
         else:
             phoneme_map = language_math_phonemes.get(
                 self.lang_iso3,
@@ -282,7 +283,7 @@ class TextNormalizer:
         if self.is_num2words_compat:
             try:
                 from num2words import num2words
-                return num2words(n, to="ordinal", lang=self._num2words_lang(self.lang_iso1))
+                return num2words(n, to="ordinal", lang=self._lang_alignment(self.lang_iso1))
             except Exception:
                 pass
         # If num2words isn't available/compatible, keep original token as-is.
@@ -365,11 +366,11 @@ class TextNormalizer:
             lang_iso3 = self.lang_iso3 if self.lang_iso3 in language_math_phonemes.keys() else default_language_code
             if not year_str.isdigit() or len(year_str) != 4 or last_two < 10:
                 if self.is_num2words_compat:
-                    return num2words(year, lang=self._num2words_lang(self.lang_iso1))
+                    return num2words(year, lang=self._lang_alignment(self.lang_iso1))
                 else:
                     return ' '.join(language_math_phonemes[lang_iso3].get(ch, ch) for ch in year_str)
             if self.is_num2words_compat:
-                return f"{num2words(first_two, lang=self._num2words_lang(self.lang_iso1))} {num2words(last_two, lang=self._num2words_lang(self.lang_iso1))}"
+                return f"{num2words(first_two, lang=self._lang_alignment(self.lang_iso1))} {num2words(last_two, lang=self._lang_alignment(self.lang_iso1))}"
             else:
                 return ' '.join(language_math_phonemes[lang_iso3].get(ch, ch) for ch in first_two) + ' ' + ' '.join(language_math_phonemes[lang_iso3].get(ch, ch) for ch in last_two)
         except Exception as e:

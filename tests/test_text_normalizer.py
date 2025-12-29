@@ -50,9 +50,9 @@ def test_resolve_lang_codes_variants():
 
 
 def test_num2words_lang():
-    assert TextNormalizer._num2words_lang(None) == "en"
-    assert TextNormalizer._num2words_lang("zh") == "zh_CN"
-    assert TextNormalizer._num2words_lang("en") == "en"
+    assert TextNormalizer._lang_alignment(None) == "en"
+    assert TextNormalizer._lang_alignment("zh") == "zh_CN"
+    assert TextNormalizer._lang_alignment("en") == "en"
 
 
 def test_get_max_chars():
