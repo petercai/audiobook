@@ -126,22 +126,18 @@ class EBookProcessor:
                 session, id = self.init_session(args, context)
 
                 # 3. Process custom models and voices if running in headless mode.
-                if not args.get("is_gui_process", False):
-                    error = self._process_custom_model(session)
-                    if error is None:
-                        error = self._process_voice(session)
+                # if not args.get("is_gui_process", False):
+                #     error = self._process_custom_model(session)
+                #     if error is None:
+                #         error = self._process_voice(session)
 
                 # 4. Proceed if no errors have occurred yet.
                 if error is None:
-                    # 5. Check for required external dependencies (Calibre, FFmpeg) in native mode.
+                    # 5. Check for required external dependencies (FFmpeg) in native mode.
                     if session["script_mode"] == NATIVE:
-                        bool, e = check_programs("Calibre", "ebook-convert", "--version")
+                        bool, e = check_programs("FFmpeg", "ffmpeg", "-version")
                         if not bool:
-                            error = f"check_programs() Calibre failed: {e}"
-                        if error is None:
-                            bool, e = check_programs("FFmpeg", "ffmpeg", "-version")
-                            if not bool:
-                                error = f"check_programs() FFMPEG failed: {e}"
+                            error = f"check_programs() FFMPEG failed: {e}"
 
                     # 6. Proceed if all dependencies are met.
                     if error is None:
@@ -373,6 +369,7 @@ class EBookProcessor:
             else default_output_split_minutes
         )
         session["offline_mode"] = args.get("offline_mode", False)
+        session["add_toc_title"] = args.get("add_toc_title", False)
         return dict(session), id
 
     def process_epub_chapters(self, epubBook, session):

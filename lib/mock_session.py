@@ -23,6 +23,10 @@ class SessionContextMock:
 
     def get_session(self, id):
         return self.sessions[id]
+    
+    def set_session(self, session):
+        self.sessions[session["session"]] = session
+
 
 class Session(SimpleNamespace):
     """Recursively converts dicts/lists to objects with dot access."""
@@ -59,14 +63,6 @@ class Session(SimpleNamespace):
                 result[key] = value
         return result
 
-    # def to_json(self, **kwargs):
-    #     """Convert back to JSON string."""
-    #     return json.dumps(self.to_dict(), **kwargs)
-
-    # @classmethod
-    # def from_json(cls, json_str):
-    #     """Create object directly from JSON string."""
-    #     return cls(json.loads(json_str))
 
 
 def set_process_dir(session, process_dir):
@@ -76,3 +72,4 @@ def set_process_dir(session, process_dir):
     os.makedirs(session['process_dir'], exist_ok=True)
     os.makedirs(session['chapters_dir'], exist_ok=True)
     os.makedirs(session['chapters_dir_sentences'], exist_ok=True)
+    os.makedirs(session['audiobooks_dir'], exist_ok=True)
