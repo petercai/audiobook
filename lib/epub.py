@@ -16,6 +16,7 @@ from lib.ebook_audio import EbookAudio
 from lib.functions import DependencyError
 from lib.models import TOKENIZER_FREE_TTS, TTS_SML
 from syntrive.adapters.text.normalizer import TextNormalizer
+from syntrive.adapters.text.sentence_splitter import SentenceSplitter
 
 is_gui_process = False
 
@@ -23,10 +24,8 @@ class EPubProcessor:
 
     def __init__(self, session):
         self.ebook_audio = EbookAudio()
-        self.text_normalizer = TextNormalizer(
-            session['language_iso1'],
-            offline_model=session.get('offline_mode', False)
-        )
+        self.lang = session.get('language_iso1', 'en')
+        self.offline_mode =  session.get('offline_mode', False)
         self.heading_tags = {"h1", "h2", "h3", "h4", "h5", "h6"}
         self.break_tags = {"p", "div", "li", "br", "hr"}
         self.pause_tags = {"ol", "ul"}
@@ -248,8 +247,6 @@ class EPubProcessor:
             # language_code = language_iso_ or session['language']  # fallback to ISO-639-3 if needed
             tts_engine_ = session['tts_engine']
             
-            # self.text_normalizer = TextNormalizer(language_iso_ or language_code)
-
             # Step 1: Extract TOC (Table of Contents) and document list
             # Get all documents in reading order and the table of contents
             all_docs, toc = self.get_epub_chapters(epubBook)
@@ -269,6 +266,10 @@ class EPubProcessor:
             # Initialize the chapters list to store processed content
             processed_chapters = []
             pending_sentences = []
+            self.text_normalizer = TextNormalizer(
+                    self.lang,
+                    offline_model=self.offline_mode
+                )
 
             # Process each document (chapter) in the EPUB
             # The loop will iterate through all documents or a limited number if chapters_to_process is set
@@ -317,12 +318,6 @@ class EPubProcessor:
     def get_epub_chapters(self, epubBook):
         try:
             toc = epubBook.toc  # Extract TOC
-            # toc_list = []
-            # for item in toc:
-            #     if hasattr(item, 'title'):
-            #         normalized_title = self.text_normalizer.normalize_text(str(item.title))
-            #         if normalized_title is not None:
-            #             toc_list.append(normalized_title)
         except Exception as toc_error:
             error = f"Error extracting TOC: {toc_error}"
             print(error)
@@ -556,22 +551,30 @@ class EPubProcessor:
             tagged_paragraph_list = self.extract_chapter_tagged_paragraphes(doc_chapter, is_tokenizer_tts)
             if not tagged_paragraph_list:
                 return []
+            
             # Get the maximum character limit for the current language to ensure proper sentence segmentation
             paragraph_list = self._flat_paragraphes_with_break(
                 tagged_paragraph_list,
                 is_tokenizer_tts,
-                self.text_normalizer.get_max_chars()
             )
-            # todo: only XTTS kind tts for English requires to join paragraphs/sentences -> mormalize -> split
-            # Join the cleaned list into a single text string for further processing
-            merged_chapter = ' '.join(paragraph_list)
-            # If the text is empty or contains no valid characters, return None to indicate no content
-            if not re.search(r"[^\W_]", merged_chapter):
-                error = 'No valid text found!'
-                print(error)
-                return None
-            normalized_text = self.text_normalizer.normalize_text_4_tts(merged_chapter, tts_engine)
-            sentences = self.text_normalizer._sentence_splitter.split(normalized_text, self.text_normalizer.lang_iso1)
+            sentences = []
+            sentence_splitter = SentenceSplitter()
+            if self.lang == "zh":
+                for paragraph in paragraph_list:
+                    normalized_text = self.text_normalizer.normalize_text_4_tts(paragraph, tts_engine)
+                    sentences += sentence_splitter.split(normalized_text, self.lang)
+            else:
+                # Join the paragraph_list into a single text string for further processing
+                merged_chapter = ' '.join(paragraph_list)
+                # If the text is empty or contains no valid characters, return None to indicate no content
+                if not re.search(r"[^\W_]", merged_chapter):
+                    error = 'No valid text found!'
+                    print(error)
+                    return None            
+                normalized_text = self.text_normalizer.normalize_text_4_tts(merged_chapter, tts_engine)
+                sentences = sentence_splitter.split(normalized_text, self.lang)
+
+            
             if len(sentences) == 0:
                 error = 'No sentences found!'
                 print(error)
@@ -645,10 +648,10 @@ class EPubProcessor:
         return list(self._tagged_tuple_paragraphs_iterator(
             content_root,
             tokenizer_tts=is_tokenizer_tts,
-            lan_code=self.text_normalizer.lang_iso1
+            lan_code=self.lang
         ))
 
-    def _flat_paragraphes_with_break(self, tuples_tagged_paragraph_list: list[tuple[str, any]], is_tokenizer_tts: bool, max_chars: int) -> list[str]:
+    def _flat_paragraphes_with_break(self, tuples_tagged_paragraph_list: list[tuple[str, any]], is_tokenizer_tts: bool) -> list[str]:
         """
         Converts a structured list of paragraph tuples into a flat list of text elements,
         handling special markers for breaks and pauses, and processing tables.
@@ -676,8 +679,6 @@ class EPubProcessor:
             is_tokenizer_tts (bool): A flag indicating whether the TTS engine requires
                 explicit SML tokens for pausing and sentence breaking. If True, SML
                 tokens are inserted and further cleaning is applied.
-            max_chars (int): The maximum number of characters allowed for a merged
-                sentence when `is_tokenizer_tts` is True. Used by `_clean_paragraph_text`.
 
         Returns:
             list[str]: A flat list of strings, where each string is a segment of text
@@ -736,46 +737,7 @@ class EPubProcessor:
                     paragraph_text_list.append(text)
             prev_typ = typ
         return paragraph_text_list 
-        # if not is_tokenizer_tts else self._clean_paragraph_text(paragraph_text_list, max_chars) # IMPORT! DON'T CLEAN
 
-    def _clean_paragraph_text(self, paragraph_text_list, max_chars):
-        # Clean the list by merging short sentences that were separated by a break.
-        # This helps create more natural speech flow by avoiding too many short utterances.
-        clean_list = []
-        i = 0
-        while i < len(paragraph_text_list):
-            current = paragraph_text_list[i]
-            # Check if the current item is a break token
-            if current == "‡break‡":
-                if clean_list:
-                    prev = clean_list[-1]
-                    # Skip consecutive break or pause tokens
-                    if prev in ("‡break‡", "‡pause‡"):
-                        i += 1
-                        continue
-                    # If the previous text ends with alphanumeric or space, try to merge with next sentence
-                    if prev and (prev[-1].isalnum() or prev[-1] == ' '):
-                        if i + 1 < len(paragraph_text_list):
-                            next_sentence = paragraph_text_list[i + 1]
-                            # Calculate the length if we merge the previous text with the next sentence
-                            merged_length = len(prev.rstrip()) + 1 + len(next_sentence.lstrip())
-                            # Merge if the combined length is within the character limit.
-                            if merged_length <= max_chars:
-                                # Handle spacing between merged parts to ensure proper spacing
-                                if not prev.endswith(" ") and not next_sentence.startswith(" "):
-                                    clean_list[-1] = prev + " " + next_sentence
-                                else:
-                                    clean_list[-1] = prev + next_sentence
-                                i += 2
-                                continue
-                            else:
-                                # If merging would exceed limit, just add the break token
-                                clean_list.append(current)
-                                i += 1
-                                continue
-            clean_list.append(current)
-            i += 1
-        return clean_list
 
     def convert_chapters2audio(self, session):
         """

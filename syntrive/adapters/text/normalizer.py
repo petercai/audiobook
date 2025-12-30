@@ -38,7 +38,7 @@ class TextNormalizer:
             from wetext import Normalizer as ZhNormalizer
             self.zh_tn = ZhNormalizer(remove_erhua=False)
         self.is_num2words_compat = self._get_num2words_compat(self.lang_iso1)
-        self._sentence_splitter = SentenceSplitter()
+        self.stanza_nlp = self.init_stanza_nlp()
 
     @staticmethod
     def _lang_alignment(lang_iso1):
@@ -48,9 +48,6 @@ class TextNormalizer:
         if lang_iso1 in ("zh", "zh-cn", "zh_cn", "zh-hans", "zh-hans-cn"):
             return "zh_CN"
         return lang_iso1
-
-    def get_max_chars(self):
-        return language_mapping[self.lang_iso3]['max_chars'] - 4
 
     def _get_num2words_compat(self, lang_iso1):
         try:
@@ -96,7 +93,7 @@ class TextNormalizer:
             return self.normalize_cn(text_block)
 
         # If a Stanza NLP pipeline is available, use it for advanced text processing like date recognition
-        self.stanza_nlp = self.init_stanza_nlp()
+        
         text_block = self._num2dateWithNLP(
                 text_block,
                 self.stanza_nlp,

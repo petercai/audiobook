@@ -34,20 +34,20 @@ class SentenceSplitter:
         self.rules = rules
         self.sml_tokens = _SML_TOKENS
 
-    def split(self, text, language):
+    def split(self, paragraph, language):
         """
         Split text into TTS-friendly sentences while preserving SML tokens.
         """
         try:
-            if text is None:
+            if paragraph is None:
                 return None
-            if not text:
+            if not paragraph:
                 return []
 
             _, lang_iso3 = resolve_lang_codes((language or default_language_code).strip())
             max_chars = self._get_max_chars(lang_iso3)
 
-            sml_list = _SML_PATTERN.split(text)
+            sml_list = _SML_PATTERN.split(paragraph)
             sml_list = [s for s in sml_list if s.strip() or s in self.sml_tokens]
 
             hard_list = []
@@ -165,6 +165,38 @@ class SentenceSplitter:
             if tail:
                 result.append(tail)
         return result
+
+    @staticmethod
+    def _clean_paragraph_text(paragraph_text_list, max_chars):
+        break_token = TTS_SML['break']
+        pause_token = TTS_SML['pause']
+        clean_list = []
+        i = 0
+        n = len(paragraph_text_list)
+        while i < n:
+            current = paragraph_text_list[i]
+            if current == break_token and clean_list:
+                prev = clean_list[-1]
+                if prev == break_token or prev == pause_token:
+                    i += 1
+                    continue
+                if prev and (prev[-1].isalnum() or prev[-1] == ' '):
+                    if i + 1 < n:
+                        next_sentence = paragraph_text_list[i + 1]
+                        merged_length = len(prev.rstrip()) + 1 + len(next_sentence.lstrip())
+                        if merged_length <= max_chars:
+                            if not prev.endswith(" ") and not next_sentence.startswith(" "):
+                                clean_list[-1] = prev + " " + next_sentence
+                            else:
+                                clean_list[-1] = prev + next_sentence
+                            i += 2
+                            continue
+                        clean_list.append(current)
+                        i += 1
+                        continue
+            clean_list.append(current)
+            i += 1
+        return clean_list
 
     def _segment_ideogramms(self, text, lang_iso3):
         sml_pattern = "|".join(re.escape(token) for token in self.sml_tokens)
