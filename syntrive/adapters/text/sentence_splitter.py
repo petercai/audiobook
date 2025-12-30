@@ -33,8 +33,26 @@ class SentenceSplitter:
     def __init__(self, rules=None):
         self.rules = rules
         self.sml_tokens = _SML_TOKENS
+        
+    def split_with_pysbd(self, paragraph, language):
+        if paragraph is None:
+            return None
+        if not paragraph:
+            return []
+        try:
+            import pysbd
+            if isinstance(self.rules, dict):
+                segmenter = pysbd.Segmenter(**self.rules)
+            else:
+                segmenter = pysbd.Segmenter(language=language, clean=False)
+            return [s for s in segmenter.segment(paragraph) if s]
+        except Exception as e:
+            DependencyError(e)
+            return [paragraph]
 
     def split(self, paragraph, language):
+        if language == "en":
+            return self.split_with_pysbd(paragraph, language)
         """
         Split text into TTS-friendly sentences while preserving SML tokens.
         """

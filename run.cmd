@@ -48,10 +48,11 @@ uv pip install "torch==2.8.*" "torchaudio==2.8.*"
 uv pip install stanza==1.11.0
 uv pip install "wetext>=0.1.2"
 
-pip install textsplit
-pip install spacy
-pip install snownlp
-uv pip install pyhanlp
+uv pip install  --no-deps  textsplit
+uv pip install  --no-deps  spacy
+uv pip install  --no-deps  snownlp
+uv pip install  --no-deps  pyhanlp
+uv pip install  --no-deps pysbd
 
 uv pip install --no-deps matcha-tts
 
