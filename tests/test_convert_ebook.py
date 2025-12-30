@@ -171,10 +171,14 @@ def test_convert_cn_ebook(args, context, ebook_path):
     book_name = book_filename.split(".")[0]  
     args = {
         "session": book_name,
+        "id": book_name,
         "ebook": os.path.join(ebook_path, book_filename),
         "device": "cpu",
         "add_toc_title": True,
         "language_iso1": "zh",
+        "output_format": default_output_format,
+        "output_split": default_output_split,
+        "output_split_minutes": default_output_split_minutes,
         "tts_engine": TTS_ENGINES["COSYVOICE"],
         'final_name':  book_name  # Ensure final_name is set to a valid string
     }    
