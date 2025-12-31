@@ -253,29 +253,14 @@ class EBookProcessor:
             The updated session dictionary with the cache prepared.
         """
         old_session_dir = os.path.join(tmp_dir, f"ebook-{session['id']}")
-        session["session_dir"] = os.path.join(
-            tmp_dir, f"proc-{session['id']}"
-        )
+        session["session_dir"] = os.path.join( tmp_dir, f"proc-{session['id']}" )
         if os.path.isdir(old_session_dir):
             os.rename(old_session_dir, session["session_dir"])
-        session["process_dir"] = os.path.join(
-            session["session_dir"],
-            f"{hashlib.md5(session['ebook'].encode()).hexdigest()}",
-        )
-        session["chapters_dir"] = os.path.join(
-            session["process_dir"], "chapters"
-        )
-        session["chapters_dir_sentences"] = os.path.join(
-            session["chapters_dir"], "sentences"
-        )
-        session["filename_noext"] = os.path.splitext(
-            os.path.basename(session["ebook"])
-        )[0]
-        
-        session["epub_path"] = os.path.join(
-            session["process_dir"],
-            "__" + session["filename_noext"] + ".epub",
-            )
+        session["process_dir"] = os.path.join( session["session_dir"], f"{hashlib.md5(session['ebook'].encode()).hexdigest()}", )
+        session["chapters_dir"] = os.path.join( session["process_dir"], "chapters" )
+        session["chapters_dir_sentences"] = os.path.join( session["chapters_dir"], "sentences" )
+        session["filename_noext"] = os.path.splitext( os.path.basename(session["ebook"]) )[0]
+        session["epub_path"] = os.path.join( session["process_dir"], "__" + session["filename_noext"] + ".epub", )
         return prepare_dirs(args["ebook"], session)
 
     def init_session(self, args, ctx):
@@ -329,26 +314,13 @@ class EBookProcessor:
         session["device"] = args["device"]
         session["language"] = args["language"]
         session["language_iso1"] = args["language_iso1"]
-        session["tts_engine"] = (
-            args["tts_engine"]
-            if args["tts_engine"] is not None
-            else get_compatible_tts_engines(args["language"])[0]
-        )
-        session["custom_model"] = (
-            args["custom_model"]
-            if not self.is_gui_process or args["custom_model"] is None
-            else os.path.join(session["custom_model_dir"], args["custom_model"])
-        )
+        session["tts_engine"] = ( args["tts_engine"] if args["tts_engine"] is not None else get_compatible_tts_engines(args["language"])[0] ) session["custom_model"] = ( args["custom_model"] if not self.is_gui_process or args["custom_model"] is None else os.path.join(session["custom_model_dir"], args["custom_model"]) )
         session["fine_tuned"] = args["fine_tuned"]
         if session["fine_tuned"] not in models.get(session["tts_engine"], {}):
             available = list(models.get(session["tts_engine"], {}).keys())
             session["fine_tuned"] = available[0] if available else session["fine_tuned"]
         session["voice"] = args["voice"]
-        if (
-            session["tts_engine"] == TTS_ENGINES["COSYVOICE"]
-            and session["fine_tuned"] == "CosyVoice-300M-SFT"
-            and session["voice"] is None
-        ):
+        if ( session["tts_engine"] == TTS_ENGINES["COSYVOICE"] and session["fine_tuned"] == "CosyVoice-300M-SFT" and session["voice"] is None ):
             session["voice"] = models[session["tts_engine"]][session["fine_tuned"]]["voice"]
         session["temperature"] = args["temperature"]
         session["length_penalty"] = args["length_penalty"]
@@ -363,11 +335,7 @@ class EBookProcessor:
         session["audiobooks_dir"] = args["audiobooks_dir"]
         session["output_format"] = args["output_format"]
         session["output_split"] = args["output_split"]
-        session["output_split_minutes"] = (
-            args["output_split_minutes"]
-            if args["output_split_minutes"] is not None
-            else default_output_split_minutes
-        )
+        session["output_split_minutes"] = ( args["output_split_minutes"] if args["output_split_minutes"] is not None else default_output_split_minutes )
         session["offline_mode"] = args.get("offline_mode", False)
         session["add_toc_title"] = args.get("add_toc_title", False)
         return dict(session), id
