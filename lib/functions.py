@@ -201,8 +201,8 @@ def prepare_dirs(src, session):
         os.makedirs(os.path.join(models_dir,'tts'), exist_ok=True)
         os.makedirs(session['session_dir'], exist_ok=True)
         os.makedirs(session['process_dir'], exist_ok=True)
-        os.makedirs(session['custom_model_dir'], exist_ok=True)
-        os.makedirs(session['voice_dir'], exist_ok=True)
+        # os.makedirs(session['custom_model_dir'], exist_ok=True)
+        # os.makedirs(session['voice_dir'], exist_ok=True)
         os.makedirs(session['audiobooks_dir'], exist_ok=True)
         session['ebook'] = os.path.join(session['process_dir'], os.path.basename(src))
         if os.path.exists(session['ebook']):
