@@ -14,62 +14,7 @@ def ebook_path():
 
 @pytest.fixture
 def context():
-    # Initialize a session context for testing
-    session_id = "test-session"
-    context = SessionContextMock(
-        {
-        "script_mode": "native",
-        "session": session_id,
-        "process_id": None,
-        "device": 'cpu',
-        "system": None,
-        "client": None,
-        "language": 'eng',
-        "language_iso1": "en",
-        "audiobook": None,
-        "audiobooks_dir": audiobooks_cli_dir,
-        "ebook": None,
-        "ebook_list": None,
-        "ebook_mode": "single",
-        "epub_path": None,
-        "filename_noext": None,
-        "tts_engine": 'xtts',
-        "fine_tuned": 'internal',
-        "voice": None,
-        "voice_dir": os.path.join(voices_dir, '__sessions', "test_voice"),
-        "custom_model": None,
-        "custom_model_dir": os.path.join(models_dir, '__sessions', "test_model"),
-        "toc": None,
-        "chapters": None,
-        "cover": None,
-        "status": None,
-        "progress": 0,
-        "time": None,
-        "cancellation_requested": False,
-        "event": None,
-        "final_name": None,
-        "output_format": 'wav',
-        "offline_mode": False,
-        "metadata": {
-            "title": "Test Audiobook", 
-            "creator": "Test Author",
-            "contributor": None,
-            "language": 'eng',
-            "identifier": None,
-            "publisher": None,
-            "date": None,
-            "description": None,
-            "subject": None,
-            "rights": None,
-            "format": None,
-            "type": None,
-            "coverage": None,
-            "relation": None,
-            "Source": None,
-            "Modified": None,
-        },
-    })
-
+    context = SessionContextMock({})
     return context
 
 @pytest.fixture

@@ -92,3 +92,20 @@ pytest tests/test_epub.py::test_process_epub_chapters_zh
 pytest tests/test_text_normalizer.py::test_normalize_text_4_tts_chinese
 pytest tests/test_convert_ebook.py::test_convert_en_ebook
 pytest tests/test_convert_ebook.py::test_convert_zh_ebook
+
+
+@REM Best workarounds:
+
+@REM Always run from repo root
+cd /home/opc/workspace/audiobook
+@REM test_convert_ebook.py::test_convert_en_ebook
+python -m pytest tests/test_convert_ebook.py::test_convert_en_ebook
+
+@REM Or explicitly pass the rootdir
+@REM test_convert_ebook.py::test_convert_en_ebook
+pytest --rootdir=/home/opc/workspace/audiobook tests/test_convert_ebook.py::test_convert_en_ebook
+
+@REM Or set PYTHONPATH once for the session
+export PYTHONPATH=/home/opc/workspace/audiobook
+@REM test_convert_ebook.py::test_convert_/en_ebook
+pytest tests/test_convert_ebook.py::test_convert_en_ebook

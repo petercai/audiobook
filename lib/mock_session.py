@@ -18,7 +18,7 @@ def to_object(data):
 class SessionContextMock:
     def __init__(self, args):
         self.sessions = {}
-        id = args["session"] if args["session"] is not None else str(uuid.uuid4())
+        id = args["session"] if args.get("session",False) else str(uuid.uuid4())
         self.sessions[id] = args
 
     def get_session(self, id):
