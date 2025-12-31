@@ -239,7 +239,7 @@ def start_headless(args, ctx):
     args['tts_engine'] = TTS_ENGINES[args['tts_engine']] if args['tts_engine'] in TTS_ENGINES.keys() else args[
         'tts_engine'] if args['tts_engine'] in TTS_ENGINES.values() else None
     args['output_split'] = default_output_split
-    args['output_split_hours'] = default_output_split_minutes
+    args['output_split_minutes'] = default_output_split_minutes
     args['offline_mode'] = args['offline_mode']
     # Condition to stop if both --ebook and --ebooks_dir are provided
     if args['ebook'] and args['ebooks_dir']:
