@@ -5,6 +5,7 @@ book_name="${ebook_path##*/}"
 book_name="${book_name%.*}"
 
 python app.py --headless \
+  --script_mode \
   --session "$book_name" \
   --ebook "$ebook_path" \
   --device cpu \
