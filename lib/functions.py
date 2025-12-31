@@ -180,44 +180,6 @@ def recursive_proxy(data, manager=None):
         error = f"Unsupported data type: {type(data)}"
         print(error)
         return None
-
-def prepare_dirs(src, session):
-    """
-    Prepare directories for an ebook conversion session.
-
-    This function creates all necessary directories for a conversion session, including the
-    session directory, process directory, custom model directory, voice directory, audiobooks
-    directory, chapters directory, and chapters sentences directory. It also checks if the
-    ebook file already exists in the process directory and if so, it sets the resume flag to
-    True. If the ebook file does not exist, it removes the chapters directory and recreates
-    it. Finally, it copies the ebook file to the process directory.
-
-    :param src: The path to the ebook file.
-    :param session: The session dictionary containing all necessary fields for the conversion session.
-    :return: True if the directories were prepared successfully, False otherwise.
-    """
-    try:
-        resume = False
-        os.makedirs(os.path.join(models_dir,'tts'), exist_ok=True)
-        os.makedirs(session['session_dir'], exist_ok=True)
-        os.makedirs(session['process_dir'], exist_ok=True)
-        # os.makedirs(session['custom_model_dir'], exist_ok=True)
-        # os.makedirs(session['voice_dir'], exist_ok=True)
-        os.makedirs(session['audiobooks_dir'], exist_ok=True)
-        session['ebook'] = os.path.join(session['process_dir'], os.path.basename(src))
-        if os.path.exists(session['ebook']):
-            if compare_files_by_hash(session['ebook'], src):
-                resume = True
-        if not resume:
-            shutil.rmtree(session['chapters_dir'], ignore_errors=True)
-        os.makedirs(session['chapters_dir'], exist_ok=True)
-        os.makedirs(session['chapters_dir_sentences'], exist_ok=True)
-        shutil.copy(src, session['ebook']) 
-        return True
-    except Exception as e:
-        DependencyError(e)
-        return False
-
 def check_programs(prog_name, command, options):
     try:
         subprocess.run(
@@ -273,16 +235,6 @@ def analyze_uploaded_file(zip_path, required_files):
 
 def hash_proxy_dict(proxy_dict):
     return hashlib.md5(str(proxy_dict).encode('utf-8')).hexdigest()
-
-def calculate_hash(filepath, hash_algorithm='sha256'):
-    hash_func = hashlib.new(hash_algorithm)
-    with open(filepath, 'rb') as f:
-        while chunk := f.read(8192):  # Read in chunks to handle large files
-            hash_func.update(chunk)
-    return hash_func.hexdigest()
-
-def compare_files_by_hash(file1, file2, hash_algorithm='sha256'):
-    return calculate_hash(file1, hash_algorithm) == calculate_hash(file2, hash_algorithm)
 
 def compare_dict_keys(d1, d2):
     if not isinstance(d1, Mapping) or not isinstance(d2, Mapping):

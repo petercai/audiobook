@@ -6,9 +6,10 @@ import uuid
 
 from lib.conf import NATIVE
 from lib.conf import default_output_split_minutes
+from lib.conf import models_dir
 from lib.conf import tmp_dir
 from lib.functions import get_compatible_tts_engines
-from lib.functions import prepare_dirs
+from lib.functions import DependencyError
 from lib.models import models
 from lib.models import TTS_ENGINES
 
@@ -19,6 +20,19 @@ class SessionManagement:
 
     def set_is_gui_process(self, is_gui_process):
         self.is_gui_process = is_gui_process
+
+    @staticmethod
+    def calculate_hash(filepath, hash_algorithm="sha256"):
+        hash_func = hashlib.new(hash_algorithm)
+        with open(filepath, "rb") as f:
+            while chunk := f.read(8192):
+                hash_func.update(chunk)
+        return hash_func.hexdigest()
+
+    def compare_files_by_hash(self, file1, file2, hash_algorithm="sha256"):
+        return self.calculate_hash(file1, hash_algorithm) == self.calculate_hash(
+            file2, hash_algorithm
+        )
 
     def prepare_session_cache(self, args, session):
         """
@@ -58,7 +72,45 @@ class SessionManagement:
         session["epub_path"] = os.path.join(
             session["process_dir"], "__" + session["filename_noext"] + ".epub"
         )
-        return prepare_dirs(args["ebook"], session)
+        return self.prepare_dirs(args["ebook"], session)
+
+    
+    def prepare_dirs(self, src, session):
+        """
+        Prepare directories for an ebook conversion session.
+
+        This function creates all necessary directories for a conversion session, including the
+        session directory, process directory, custom model directory, voice directory, audiobooks
+        directory, chapters directory, and chapters sentences directory. It also checks if the
+        ebook file already exists in the process directory and if so, it sets the resume flag to
+        True. If the ebook file does not exist, it removes the chapters directory and recreates
+        it. Finally, it copies the ebook file to the process directory.
+
+        :param src: The path to the ebook file.
+        :param session: The session dictionary containing all necessary fields for the conversion session.
+        :return: True if the directories were prepared successfully, False otherwise.
+        """
+        try:
+            resume = False
+            os.makedirs(os.path.join(models_dir, "tts"), exist_ok=True)
+            os.makedirs(session["session_dir"], exist_ok=True)
+            os.makedirs(session["process_dir"], exist_ok=True)
+            # os.makedirs(session['custom_model_dir'], exist_ok=True)
+            # os.makedirs(session['voice_dir'], exist_ok=True)
+            os.makedirs(session["audiobooks_dir"], exist_ok=True)
+            session["ebook"] = os.path.join(session["process_dir"], os.path.basename(src))
+            if os.path.exists(session["ebook"]):
+                if self.compare_files_by_hash(session["ebook"], src):
+                    resume = True
+            if not resume:
+                shutil.rmtree(session["chapters_dir"], ignore_errors=True)
+            os.makedirs(session["chapters_dir"], exist_ok=True)
+            os.makedirs(session["chapters_dir_sentences"], exist_ok=True)
+            shutil.copy(src, session["ebook"])
+            return True
+        except Exception as e:
+            DependencyError(e)
+            return False
 
     def init_session(self, args, ctx):
         """
