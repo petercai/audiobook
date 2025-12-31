@@ -51,8 +51,8 @@ class SentenceSplitter:
             return [paragraph]
 
     def split(self, paragraph, language):
-        if language == "en":
-            return self.split_with_pysbd(paragraph, language)
+        # if language == "en":
+        #     return self.split_with_pysbd(paragraph, language)
         """
         Split text into TTS-friendly sentences while preserving SML tokens.
         """
