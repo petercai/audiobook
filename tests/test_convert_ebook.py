@@ -86,6 +86,7 @@ def args():
     return args
 
 def test_convert_en_ebook(args, context, ebook_path):
+    speaker = "DermotCrowley"
     book_filename = "UnravelMe-c12.epub"
     book_name = book_filename.split(".")[0]  
     args = { **args,
@@ -96,11 +97,13 @@ def test_convert_en_ebook(args, context, ebook_path):
         "add_toc_title": True,
         "language_iso1": "en",
         "tts_engine": TTS_ENGINES["XTTSv2"],
+        "fine_tuned": speaker,
         "output_format": default_output_format,
         "output_split": default_output_split,
         "output_split_minutes": default_output_split_minutes,
         'final_name':  book_name  # Ensure final_name is set to a valid string
     }    
+    
     context.set_session(args)
     func_name = inspect.currentframe().f_code.co_name
     set_process_dir(args, func_name)
