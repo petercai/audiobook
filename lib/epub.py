@@ -15,6 +15,7 @@ from lib.conf import default_audio_proc_format, ebook_formats, models_dir
 from lib.ebook_audio import EbookAudio
 from lib.functions import DependencyError
 from lib.models import TOKENIZER_FREE_TTS, TTS_SML
+from lib.util import util
 from syntrive.adapters.text.normalizer import TextNormalizer
 from syntrive.adapters.text.sentence_splitter import SentenceSplitter
 
@@ -583,7 +584,7 @@ class EPubProcessor:
             return sentences
         except Exception as e:
             error = f'filter_chapter() error: {e}'
-            DependencyError(error)
+            util.print_error(e)
             return None
 
     def extract_chapter_tagged_paragraphes(self, doc_chapter, is_tokenizer_tts: bool) -> list[tuple[str, str]]:
