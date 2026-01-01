@@ -227,7 +227,7 @@ class SessionManagement:
             "event": None,
             "metadata": {
                 "title": None, 
-                "creator": None,
+                "creator": "Unknown",
                 "contributor": None,
                 "language": None,
                 "identifier": None,

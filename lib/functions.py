@@ -100,7 +100,7 @@ class SessionContext:
                 "output_split_minutes": default_output_split_minutes,
                 "metadata": {
                     "title": None, 
-                    "creator": None,
+                    "creator": "Unknown",
                     "contributor": None,
                     "language": None,
                     "identifier": None,

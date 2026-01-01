@@ -327,16 +327,8 @@ class EBookProcessor:
             # Create an instance of the EPubProcessor
             epub_processor = EPubProcessor(session)
             # Update the session's metadata
-            session["metadata"] = self.retrieve_metadata(epubBook, session)
-            try:
-                # If the language in the metadata is 2 characters long, convert it to 3 characters
-                meta_lan = session["metadata"]["language"]
-                if len(meta_lan) == 2:
-                    lang_array = languages.get(part1=meta_lan)
-                    if lang_array:
-                        session["metadata"]["language"] = lang_array.part3
-            except Exception:
-                traceback.print_exc()
+            session["metadata"] = self.retrieve_metadata(epubBook, self._populate_metadata_defaults(session))
+            self._align_meta_lang(session)
 
             # If the language in the metadata is different from the session's language, print a warning
             if session["metadata"].get("language") != session["language"]:
@@ -365,30 +357,52 @@ class EBookProcessor:
             traceback.print_exc()
             return str(e), False
 
-    def retrieve_metadata(self, epubBook, session):
-        # Get the metadata from the session, or create an empty dictionary if it doesn't exist
-        metadata = dict(session["metadata"]) if "metadata" in session else {}
+    def _align_meta_lang(self, session):
+        try:
+            # If the language in the metadata is 2 characters long, convert it to 3 characters
+            meta_lan = session["metadata"]["language"]
+            if len(meta_lan) == 2:
+                lang_array = languages.get(part1=meta_lan)
+                if lang_array:
+                    session["metadata"]["language"] = lang_array.part3
+        except Exception as e:
+            util.print_error(e)
+
+    def _populate_metadata_defaults(self, session):
+        defaults = session.get("metadata", {})
+        defaults['language'] = session["language_iso1"] or session["language"]
+        defaults["title"] = Path(session["ebook"]).stem.replace("_", " ")
+        return defaults
+
+    def retrieve_metadata(self, epubBook, defaults):
+        """
+        Retrieves metadata from the EPUB book and populates a dictionary with it,
+        using provided defaults for missing values.
+
+        This method iterates through a set of default metadata keys. For each key,
+        it attempts to extract the corresponding metadata from the `epubBook`.
+        If metadata is found for a key, it overrides the default value.
+
+        Args:
+            epubBook (ebooklib.epub.EpubBook): The EpubBook object from which to extract metadata.
+            defaults (dict): A dictionary containing default metadata values.
+                             Keys should correspond to standard Dublin Core metadata fields
+                             (e.g., "title", "creator", "language").
+
+        Returns:
+            dict: A dictionary containing the retrieved metadata. Values from `epubBook`
+                  will take precedence over `defaults` if available.
+        """
+
+        metadata = {}
         # Iterate over the metadata items
-        for key, value in list(metadata.items()):
+        for key, value in list(defaults.items()):
             # Get the metadata from the EPUB book
             data = epubBook.get_metadata("DC", key)
             # If the metadata exists, update the metadata dictionary
             if data:
                 for val, attributes in data:
                     metadata[key] = val
-        # Set the language in metadata to the session's language if not already present
-        if "language" not in metadata:
-            metadata["language"] = session["language"]
-        # Set the title in metadata to the title from the EPUB book, or the filename if it doesn't exist
-        metadata["title"] = (
-                metadata.get("title") or Path(session["ebook"]).stem.replace("_", " ")
-        )
-        # Get the creator from the metadata
-        creator = metadata.get("creator")
-        # Set the creator in metadata to False if it doesn't exist or is "Unknown"
-        metadata["creator"] = (
-            False if not creator or creator == "Unknown" else creator
-        )
         return metadata
 
     def process_epub(self, session):
