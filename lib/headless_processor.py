@@ -19,7 +19,6 @@ from lib.models import default_engine_settings
 from lib.functions import get_vram
 from lib.models import models
 from lib.conf import models_dir
-from lib.functions import reset_ebook_session
 from lib.functions import show_alert
 from lib.conf import voices_dir
 from lib.epub import EPubProcessor
@@ -44,7 +43,7 @@ class EBookProcessor:
                         print(f"Conversion failed: {progress_status}")
                         sys.exit(1)
                     args["ebook_list"].remove(file)
-            reset_ebook_session(ctx, args["session"])
+            self.session_management.reset_ebook_session(ctx, args["session"])
             return progress_status, passed
         else:
             print(f"the ebooks source is not a list!")

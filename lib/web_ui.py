@@ -52,8 +52,6 @@ from lib.functions import (
     proxy2dict,
     delete_unused_tmp_dirs,
     get_compatible_tts_engines,
-    reset_ebook_session,
-    restore_session_from_data,
     show_alert,
     analyze_uploaded_file,
 )
@@ -62,6 +60,7 @@ from lib.lang import (language_mapping,
     default_language_code,
                       language_tts
                       )
+from lib.session_managment import SessionManagement
 
 active_sessions = set()
 
@@ -110,6 +109,7 @@ class WebUI:
         self.src_label_file = 'Select a File'
         self.src_label_dir = 'Select a Directory'
         self.ebook_audio = EbookAudio()
+        self.session_management = SessionManagement(is_gui_process=True)
         
     def cleanup_session(self, context, req: gr.Request):
         socket_hash = req.session_hash if hasattr(req, "session_hash") else None
@@ -2087,7 +2087,7 @@ class WebUI:
                             else:
                                 show_alert({"type": "success", "msg": progress_status})
                                 args['ebook_list'].remove(file)
-                                reset_ebook_session(args['session'])
+                                self.session_management.reset_ebook_session(self.context, args['session'])
                                 count_file = len(args['ebook_list'])
                                 if count_file > 0:
                                     msg = f"{len(args['ebook_list'])} remaining..."
@@ -2107,7 +2107,7 @@ class WebUI:
                         session['status'] = 'ready'
                     else:
                         show_alert({"type": "success", "msg": progress_status})
-                        reset_ebook_session(self.context, args['session'])
+                        self.session_management.reset_ebook_session(self.context, args['session'])
                         msg = 'Conversion successful!'
                         return gr.update(value=msg)
             if error is not None:
@@ -2159,7 +2159,7 @@ class WebUI:
                 session = self.context.get_session(str(uuid.uuid4()))
                 if data is not None:
                     # If there's some data but no ID, try to restore from it.
-                    restore_session_from_data(data, session)
+                    self.session_management.restore_session_from_data(data, session)
                 data = session
             else:
                 # If a session ID is found, retrieve the existing session from the context.
@@ -2167,7 +2167,7 @@ class WebUI:
 
             # Restore session data from the provided data object.
             if data.get('tab_id') == session.get('tab_id') or len(active_sessions) == 0:
-                restore_session_from_data(data, session)
+                self.session_management.restore_session_from_data(data, session)
                 session['status'] = None
 
             # Step 2: Start tracking the session to manage its lifecycle.

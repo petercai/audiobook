@@ -58,20 +58,11 @@ class SessionManagement:
         session["session_dir"] = os.path.join(tmp_dir, f"proc-{session['id']}")
         if os.path.isdir(old_session_dir):
             os.rename(old_session_dir, session["session_dir"])
-        session["process_dir"] = os.path.join(
-            session["session_dir"],
-            f"{hashlib.md5(session['ebook'].encode()).hexdigest()}",
-        )
+        session["process_dir"] = os.path.join( session["session_dir"], f"{hashlib.md5(session['ebook'].encode()).hexdigest()}", )
         session["chapters_dir"] = os.path.join(session["process_dir"], "chapters")
-        session["chapters_dir_sentences"] = os.path.join(
-            session["chapters_dir"], "sentences"
-        )
-        session["filename_noext"] = os.path.splitext(
-            os.path.basename(session["ebook"])
-        )[0]
-        session["epub_path"] = os.path.join(
-            session["process_dir"], "__" + session["filename_noext"] + ".epub"
-        )
+        session["chapters_dir_sentences"] = os.path.join( session["chapters_dir"], "sentences" )
+        session["filename_noext"] = os.path.splitext( os.path.basename(session["ebook"]) )[0]
+        session["epub_path"] = os.path.join( session["process_dir"], "__" + session["filename_noext"] + ".epub" )
         return self.prepare_dirs(args["ebook"], session)
 
     
@@ -206,6 +197,54 @@ class SessionManagement:
         session["offline_mode"] = args.get("offline_mode", False)
         session["add_toc_title"] = args.get("add_toc_title", False)
         return dict(session), session_id
+
+    def restore_session_from_data(self, data, session):
+        try:
+            for key, value in data.items():
+                if key in session:  # Check if the key exists in session
+                    if isinstance(value, dict) and isinstance(session[key], dict):
+                        self.restore_session_from_data(value, session[key])
+                    else:
+                        session[key] = value
+        except Exception as e:
+            DependencyError(e)
+
+    def reset_ebook_session(self, context, id):
+        session = context.get_session(id)
+        data = {
+            "ebook": None,
+            "chapters_dir": None,
+            "chapters_dir_sentences": None,
+            "epub_path": None,
+            "filename_noext": None,
+            "chapters": None,
+            "cover": None,
+            "status": None,
+            "progress": 0,
+            "duration": 0,
+            "playback_time": 0,
+            "cancellation_requested": False,
+            "event": None,
+            "metadata": {
+                "title": None, 
+                "creator": None,
+                "contributor": None,
+                "language": None,
+                "identifier": None,
+                "publisher": None,
+                "date": None,
+                "description": None,
+                "subject": None,
+                "rights": None,
+                "format": None,
+                "type": None,
+                "coverage": None,
+                "relation": None,
+                "Source": None,
+                "Modified": None
+            }
+        }
+        self.restore_session_from_data(data, session)
 
     def session_cache_cleanup(self, session):
         chapters_dirs = [
