@@ -13,4 +13,5 @@ python app.py --headless \
   --language en \
   --tts_engine xtts \
   --fine_tuned DermotCrowley \
-  --output_format mp4
+  --output_format mp4 \
+  --output_dir pipeline
