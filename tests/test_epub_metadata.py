@@ -112,7 +112,7 @@ def test_process_epub_metadata_cn(session_context, ebook_path, tmp_path):
     name_splits = os.path.splitext(basename)
     session["filename_noext"] = name_splits[0]
     # Process the EPUB
-    status, success = ebook_processor.prepare_epub_metadata(session, epubBook)
+    status, success = ebook_processor.split_epub_by_chapter(session, epubBook)
     # Assertions
     assert success is True
     metadata = session['metadata']
@@ -146,7 +146,7 @@ def test_process_epub_metadata_en(session_context, ebook_path, tmp_path):
     name_splits = os.path.splitext(basename)
     session["filename_noext"] = name_splits[0]
     # Process the EPUB
-    status, success = ebook_processor.prepare_epub_metadata(session, epubBook)
+    status, success = ebook_processor.split_epub_by_chapter(session, epubBook)
     # Assertions
     assert success is True
     metadata = session['metadata']
@@ -240,7 +240,7 @@ def test_get_cover(session_context, ebook_path, tmp_path):
     print(result)
 
 
-def test_process_metadata(session_context, ebook_path):
+def test_split_epub_by_chapter(session_context, ebook_path):
     context, session_id, session = session_context
     book_filename = "jane-eyre-c12.epub"
     book_name = book_filename.split(".")[0]  
@@ -263,5 +263,5 @@ def test_process_metadata(session_context, ebook_path):
     epubBook = epub.read_epub(ebook_, {"ignore_ncx": True})
     from lib.ebook_processor import EBookProcessor
     processor = EBookProcessor()
-    status, success = processor.prepare_epub_metadata(session, epubBook)
+    status, success = processor.split_epub_by_chapter(session, epubBook)
     assert success

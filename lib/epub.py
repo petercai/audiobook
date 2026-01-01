@@ -621,7 +621,7 @@ class EPubProcessor:
         return paragraph_text_list 
 
 
-    def convert_chapters2audio(self, session):
+    def convert_chapters2audio(self, session, ebook_audio):
         """
         Converts text chapters into audio files using a TTS engine.
 
@@ -641,7 +641,6 @@ class EPubProcessor:
         Returns:
             bool: True if the conversion is successful, False otherwise.
         """
-        ebook_audio = EbookAudio()
         try:
             # Immediately exit if a cancellation request has been detected.
             if session['cancellation_requested']:

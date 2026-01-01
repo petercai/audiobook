@@ -81,7 +81,9 @@ class EBookProcessor:
                 print(error)
                 return error, False
 
-            args["language_iso1"],args["language"] = resolve_lang_codes(args["language"])
+            args["language_iso1"], args["language"] = resolve_lang_codes(
+                args["language"]
+            )
             if args["language"] not in language_mapping.keys():
                 error = "The language you provided is not (yet) supported"
                 print(error)
@@ -154,7 +156,7 @@ class EBookProcessor:
                             session["epub_path"] = session["ebook"]
                             # if epub_processor.convert2epub(session):
                             # 9. Process the EPUB: extract text, generate TTS, and create the audiobook.
-                            progress_status, passed = self.process_epub(session)
+                            progress_status, passed = self.process_ebook(session)
                             if passed:
                                 return progress_status, True
                             else:
@@ -174,9 +176,8 @@ class EBookProcessor:
             print(error)
             return error, False
         except Exception as e:
-            print(f"convert_ebook() Exception: {e}")
-            # print traceback
-            traceback.print_exc()
+            # print(f"convert_ebook() Exception: {e}")
+            util.print_error
             return e, False
 
     def gpu_check(self, is_gui_process, session):
@@ -203,28 +204,22 @@ class EBookProcessor:
                 msg += f"GPU not recognized by torch! Read {default_gpu_wiki} - Switching to CPU - "
         elif session["device"] == "mps":
             session["device"] = (
-                session["device"]
-                if torch.backends.mps.is_available()
-                else "cpu"
+                session["device"] if torch.backends.mps.is_available() else "cpu"
             )
             if session["device"] == "cpu":
                 msg += f"MPS not recognized by torch! Read {default_gpu_wiki} - Switching to CPU - "
         if session["device"] == "cpu":
             if session["tts_engine"] == TTS_ENGINES["BARK"]:
                 os.environ["SUNO_OFFLOAD_CPU"] = "True"
-        if (
-                default_engine_settings[TTS_ENGINES["XTTSv2"]][
-                    "use_deepspeed"
-                ]
-                == True
-        ):
+
+        if default_engine_settings[TTS_ENGINES["XTTSv2"]]["use_deepspeed"] == True:
             try:
                 import deepspeed
             except:
-                default_engine_settings[TTS_ENGINES["XTTSv2"]][
-                    "use_deepspeed"
-                ] = False
-                msg_extra += "deepseed not installed or package is broken. set to False - "
+                default_engine_settings[TTS_ENGINES["XTTSv2"]]["use_deepspeed"] = False
+                msg_extra += (
+                    "deepseed not installed or package is broken. set to False - "
+                )
             else:
                 msg_extra += "deepspeed detected and ready!"
         if msg == "":
@@ -234,24 +229,24 @@ class EBookProcessor:
             show_alert({"type": "warning", "msg": msg})
         print(msg)
 
-    def process_epub_chapters(self, epubBook, session):
+    def process_epub_by_chapters(self, epubBook, session):
         """
         Process the EPUB chapters and convert them to audio.
-        
+
         This method orchestrates the conversion of an EPUB book's chapters into an audiobook.
         It handles metadata preparation, chapter-to-audio conversion, audio combination,
         and cleanup of temporary files.
-        
+
         Args:
             epubBook (epub.EpubBook): The EPUB book object containing the content to be processed
             id (str): Unique session identifier for this conversion process
             context (Context): Context object containing session management functionality
-            
+
         Returns:
             tuple: A tuple containing (progress_status, success_flag)
                 - progress_status (str): Status message describing the result or error
                 - success_flag (bool): True if conversion was successful, False otherwise
-                
+
         Process:
             1. Retrieves the session data using the provided id
             2. Prepares EPUB metadata (title, author, cover, etc.)
@@ -261,53 +256,63 @@ class EBookProcessor:
             6. Returns status message with information about created files
         """
         try:
-            # Retrieve the session data associated with this conversion process
-            # session = context.get_session(id)
-            
             # Prepare and validate EPUB metadata (title, author, cover image, etc.)
-            err, ok = self.prepare_epub_metadata(session, epubBook)
+            # split epub chapters, save to transcript files and update the session for further processing
+            err, ok = self.split_epub_by_chapter(session, epubBook)
             if not ok:
                 return err, False
 
             # Convert all chapters in the EPUB to audio files
             epub_processor = EPubProcessor(session)
-            if not epub_processor.convert_chapters2audio(session):
+            ebook_audio = EbookAudio()
+            if not epub_processor.convert_chapters2audio(session, ebook_audio):
                 return "convert_chapters2audio() failed!", False
-                
+
             # Notify user that conversion is complete and combining process is starting
             msg = "Conversion successful. Combining sentences and chapters..."
             show_alert({"type": "info", "msg": msg})
-            
+
             # Combine individual chapter audio files into final audiobook file(s)
             exported_files = self.ebook_audio.combine_audio_chapters(session)
             if exported_files is None:
-                return "combine_audio_chapters() error: exported_files not created!", False
+                return (
+                    "combine_audio_chapters() error: exported_files not created!",
+                    False,
+                )
 
             # Clean up temporary directories and files used during processing
             # self.session_management.session_cache_cleanup(session)
-            
+
             # Generate success message with names of created audiobook files
-            progress_status = f'Audiobook(s) {", ".join(os.path.basename(f) for f in exported_files)} created!'
-            
+            progress_status = f"Audiobook(s) {', '.join(os.path.basename(f) for f in exported_files)} created!"
+
             # Store the path to the last created audiobook file in the session
             session["audiobook"] = exported_files[-1]
-            
+
             # Display session information for potential reuse/resume
-            print(f"\n*********** Session: {id} **************\nStore it in case of interruption, crash, reuse of custom model or custom voice,\nyou can resume the conversion with --session option")
-            
+            print(
+                f"\n*********** Session: {id} **************\nStore it in case of interruption, crash, reuse of custom model or custom voice,\nyou can resume the conversion with --session option"
+            )
+
             return progress_status, True
         except Exception as e:
             # Handle any unexpected errors during the process
             print(f"processEPubChapters() Exception: {e}")
             return str(e), False
 
-    def prepare_epub_metadata(self, session, epubBook):
+    def split_epub_by_chapter(self, session, epubBook):
         """
-        Prepares the metadata for the EPUB file.
-        
+        Split the EPUB book into chapters,  save the chapters into transcript files,
+        and update session for further processing.
+
         This method extracts and processes metadata from the EPUB book and stores it in the session.
         It also extracts the cover image, table of contents, and chapters from the EPUB book.
-        
+
+        Args:
+            session (dict): The session dictionary containing processing information and state.
+            epubBook (EpubBook): The EPUB book object to extract metadata from.
+
+        Returns:
         The following items are stored in the session:
         - metadata: Dictionary containing book metadata like title, creator, language, etc.
         - cover: Path to the extracted cover image
@@ -315,11 +320,6 @@ class EBookProcessor:
         - chapters: List of book chapters
         - final_name: Sanitized filename for the output audiobook file
 
-        Args:
-            session (dict): The session dictionary containing processing information and state.
-            epubBook (EpubBook): The EPUB book object to extract metadata from.
-
-        Returns:
             tuple: A tuple containing an error message (if any) and a boolean indicating success.
                   Returns (None, True) on success, (error_message, False) on failure.
         """
@@ -327,7 +327,9 @@ class EBookProcessor:
             # Create an instance of the EPubProcessor
             epub_processor = EPubProcessor(session)
             # Update the session's metadata
-            session["metadata"] = self.retrieve_metadata(epubBook, self._populate_metadata_defaults(session))
+            session["metadata"] = self.retrieve_metadata(
+                epubBook, self._populate_metadata_defaults(session)
+            )
             self._align_meta_lang(session)
 
             # If the language in the metadata is different from the session's language, print a warning
@@ -335,15 +337,21 @@ class EBookProcessor:
                 err = f"WARNING!!! language selected {session['language']} differs from the EPUB file language {session['metadata']['language']}"
                 print(err)
             # Get the cover from the EPUB book
-            path = session['process_dir']
-            cover_name = session['filename_noext']
-            session["cover"] = epub_processor.extract_book_cover(epubBook, path, cover_name)
+            path = session["process_dir"]
+            cover_name = session["filename_noext"]
+            session["cover"] = epub_processor.extract_book_cover(
+                epubBook, path, cover_name
+            )
             # If the cover doesn't exist, return an error
             if not session["cover"]:
                 return "get_cover() failed!", False
             # Get the table of contents and chapters from the EPUB book
-            session["toc"], session["chapters"] = epub_processor.get_chapters_in_sentences(epubBook, session)
-            util.save_transcript_by_chapter(session["chapters"], session["chapters_dir"])
+            session["toc"], session["chapters"] = (
+                epub_processor.get_chapters_in_sentences(epubBook, session)
+            )
+            util.save_transcript_by_chapter(
+                session["chapters"], session["chapters_dir"]
+            )
             # Set the final name of the output file
             session["final_name"] = self.ebook_audio.get_sanitized(
                 session["metadata"]["title"] + "." + session["output_format"]
@@ -354,7 +362,7 @@ class EBookProcessor:
             # Return None for the error message and True for success
             return None, True
         except Exception as e:
-            traceback.print_exc()
+            util.print_error(e)
             return str(e), False
 
     def _align_meta_lang(self, session):
@@ -370,7 +378,7 @@ class EBookProcessor:
 
     def _populate_metadata_defaults(self, session):
         defaults = session.get("metadata", {})
-        defaults['language'] = session["language_iso1"] or session["language"]
+        defaults["language"] = session["language_iso1"] or session["language"]
         defaults["title"] = Path(session["ebook"]).stem.replace("_", " ")
         return defaults
 
@@ -405,10 +413,10 @@ class EBookProcessor:
                     metadata[key] = val
         return metadata
 
-    def process_epub(self, session):
+    def process_ebook(self, session):
         try:
             epubBook = epub.read_epub(session["epub_path"], {"ignore_ncx": True})
-            return self.process_epub_chapters(epubBook, session)
+            return self.process_epub_by_chapters(epubBook, session)
         except Exception as e:
             print(f"processEPub() Exception: {e}")
             return str(e), False
@@ -420,22 +428,16 @@ class EBookProcessor:
         )
         os.makedirs(session["voice_dir"], exist_ok=True)
         [
-            shutil.move(
-                src, os.path.join(session["voice_dir"], os.path.basename(src))
-            )
+            shutil.move(src, os.path.join(session["voice_dir"], os.path.basename(src)))
             for src in glob(
                 os.path.join(os.path.dirname(session["voice_dir"]), "*.wav")
             )
             + (
-                [
-                    os.path.join(os.path.dirname(session["voice_dir"]), "bark")
-                ]
+                [os.path.join(os.path.dirname(session["voice_dir"]), "bark")]
                 if os.path.isdir(
                     os.path.join(os.path.dirname(session["voice_dir"]), "bark")
                 )
-                and not os.path.exists(
-                    os.path.join(session["voice_dir"], "bark")
-                )
+                and not os.path.exists(os.path.join(session["voice_dir"], "bark"))
                 else []
             )
         ]
@@ -443,9 +445,7 @@ class EBookProcessor:
             voice_name = self.ebook_audio.get_sanitized(
                 os.path.splitext(os.path.basename(session["voice"]))[0]
             )
-            final_voice_file = os.path.join(
-                session["voice_dir"], f"{voice_name}.wav"
-            )
+            final_voice_file = os.path.join(session["voice_dir"], f"{voice_name}.wav")
             if not os.path.exists(final_voice_file):
                 extractor = VoiceExtractor(session, session["voice"], voice_name)
                 status, msg = extractor.extract_voice()
