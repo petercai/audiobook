@@ -35,7 +35,7 @@ def session_context(tmp_path: str):
             # "chapters_dir_sentences": os.path.join(process_dir, "chapters", "sentences"),
             "ebook_list": None,
             "device": "cpu",
-            
+            "language": "eng",
             "language_iso1": "en",
             "tts_engine": TTS_ENGINES['XTTSv2'],
             "output_format": "m4b",
@@ -237,3 +237,30 @@ def test_get_cover(session_context, ebook_path, tmp_path):
     # Assertions
     assert result
     print(result)
+
+
+def test_process_metadata(session_context, ebook_path):
+    context, session_id, session = session_context
+    book_filename = "jane-eyre-c12.epub"
+    book_name = book_filename.split(".")[0]  
+    args = {
+        "session": session_id,
+        "cancellation_requested": False,
+        "ebook": os.path.join(ebook_path, book_filename),
+        "device": "cpu",
+        "add_toc_title": True,
+        "language_iso1": "en",
+        "tts_engine": TTS_ENGINES["XTTSv2"],
+        "filename_noext": book_name
+    }
+    # update session with args
+    session.update(args)
+    func_name = inspect.currentframe().f_code.co_name
+    set_process_dir(session, func_name)
+    
+    ebook_ = session["ebook"]
+    epubBook = epub.read_epub(ebook_, {"ignore_ncx": True})
+    from lib.ebook_processor import EBookProcessor
+    processor = EBookProcessor()
+    status, success = processor.prepare_epub_metadata(session, epubBook)
+    assert success
