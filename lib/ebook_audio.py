@@ -4,10 +4,11 @@ import platform
 import re
 import shutil
 import subprocess
-import sys
 import tempfile
-import traceback
 import io
+
+import gradio as gr
+from tqdm import tqdm
 from datetime import datetime
 from multiprocessing import cpu_count, Pool
 from pathlib import Path
@@ -15,9 +16,11 @@ from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
 from pydub import AudioSegment
 
+from lib.classes.tts_manager import TTSManager
 from lib.models import TTS_SML
 from lib.conf import default_audio_proc_format
 from lib.functions import DependencyError
+from lib.util import util
 
 class EbookAudio:
 
@@ -28,6 +31,158 @@ class EbookAudio:
         sanitized = re.sub(forbidden_chars, replacement, sanitized)
         sanitized = sanitized.strip("_")
         return sanitized
+
+    def convert_chapters2audio(self, session):
+        """
+        Converts text chapters into audio files using a TTS engine.
+
+        This method orchestrates the text-to-speech conversion process. It manages
+        the TTS engine, handles resuming from a previously interrupted session,
+        iterates through chapters and sentences, generates audio for each sentence,
+        and then combines the sentence audio files into a single file for each chapter.
+
+        Args:
+            session (dict): A dictionary containing all session-related data, including:
+                - 'cancellation_requested' (bool): Flag to stop the process.
+                - 'tts_engine' (str): The identifier for the TTS engine to use.
+                - 'chapters_dir' (str): Path to the directory for storing chapter audio.
+                - 'chapters_dir_sentences' (str): Path to the directory for storing sentence audio.
+                - 'chapters' (list): A list of chapters, where each chapter is a list of sentences.
+
+        Returns:
+            bool: True if the conversion is successful, False otherwise.
+        """
+        try:
+            # Immediately exit if a cancellation request has been detected.
+            if session['cancellation_requested']:
+                print('Cancel requested')
+                return False
+
+            # Initialize the TTS manager with the current session configuration.
+            tts_manager = TTSManager(session)
+            if not tts_manager:
+                error = f"TTS engine {session['tts_engine']} could not be loaded!\nPossible reason can be not enough VRAM/RAM memory.\nTry to lower max_tts_in_memory in ./lib/models.py"
+                print(error)
+                return False
+
+            # --- Resume Logic ---
+            # Determine the starting point if resuming a previous session.
+            resume_chapter = 0
+            missing_chapters = []
+            resume_sentence = 0
+            missing_sentences = []
+
+            # Check for already processed chapter audio files to find the resume point.
+            existing_chapters = sorted(
+                [f for f in os.listdir(session['chapters_dir']) if f.endswith(f'.{default_audio_proc_format}')],
+                key=lambda x: int(re.search(r'\d+', x).group())
+            )
+            if existing_chapters:
+                # Find the last successfully created chapter.
+                resume_chapter = max(int(re.search(r'\d+', f).group()) for f in existing_chapters)
+                print(f'Resuming from chapter {resume_chapter}')
+                # Identify any chapters that are missing before the resume point.
+                existing_chapter_numbers = {int(re.search(r'\d+', f).group()) for f in existing_chapters}
+                missing_chapters = [i for i in range(1, resume_chapter) if i not in existing_chapter_numbers]
+                if resume_chapter not in missing_chapters:
+                    missing_chapters.append(resume_chapter)
+
+            # Check for already processed sentence audio files.
+            existing_sentences = sorted(
+                [f for f in os.listdir(session['chapters_dir_sentences']) if f.endswith(f'.{default_audio_proc_format}')],
+                key=lambda x: int(re.search(r'\d+', x).group())
+            )
+            if existing_sentences:
+                # Find the last successfully created sentence.
+                resume_sentence = max(int(re.search(r'\d+', f).group()) for f in existing_sentences)
+                print(f"Resuming from sentence {resume_sentence}")
+                # Identify any sentences that are missing before the resume point.
+                existing_sentence_numbers = {int(re.search(r'\d+', f).group()) for f in existing_sentences}
+                missing_sentences = [i for i in range(1, resume_sentence) if i not in existing_sentence_numbers]
+                if resume_sentence not in missing_sentences:
+                    missing_sentences.append(resume_sentence)
+
+            # --- Process Initialization ---
+            total_chapters = len(session['chapters'])
+            if total_chapters == 0:
+                print('No chapters found!')
+                return False
+
+            # Calculate total number of items (sentences + SML tokens) for the progress bar.
+            total_iterations = sum(len(session['chapters'][x]) for x in range(total_chapters))
+            # Calculate the total number of actual sentences to be converted.
+            total_sentences = sum(sum(1 for row in chapter if row.strip() not in TTS_SML.values()) for chapter in session['chapters'])
+            if total_sentences == 0:
+                print('No sentences found!')
+                return False
+
+            sentence_number = 0
+            print(f"--------------------------------------------------\nA total of {total_chapters} {'chapter' if total_chapters <= 1 else 'chapters'} and {total_sentences} {'sentence' if total_sentences <= 1 else 'sentences'}.\n--------------------------------------------------")
+
+            # --- Main Processing Loop ---
+            progress_bar = gr.Progress(track_tqdm=False)
+            with tqdm(total=total_iterations, desc='0.00%', bar_format='{desc}: {n_fmt}/{total_fmt} ', unit='step', initial=0) as t:
+                for x in range(total_chapters):
+                    chapter_num = x + 1
+                    chapter_audio_file = f'chapter_{chapter_num}.{default_audio_proc_format}'
+                    sentences = session['chapters'][x]
+                    sentences_count = sum(1 for row in sentences if row.strip() not in TTS_SML.values())
+                    start = sentence_number  # Mark the starting sentence number for this chapter.
+                    print(f'Chapter {chapter_num} containing {sentences_count} sentences...')
+
+                    # Iterate through each sentence/SML token in the chapter.
+                    for i, sentence in enumerate(sentences):
+                        if session['cancellation_requested']:
+                            print('Cancel requested')
+                            return False
+
+                        # Determine if the sentence needs to be processed.
+                        # This is true if it's a missing sentence, or if it's beyond the last processed sentence.
+                        if sentence_number in missing_sentences or sentence_number > resume_sentence or (sentence_number == 0 and resume_sentence == 0):
+                            if sentence_number <= resume_sentence and sentence_number > 0:
+                                print(f'**Recovering missing file sentence {sentence_number}')
+                            
+                            sentence = sentence.strip()
+                            # Convert sentence to audio. SML tokens are skipped but still marked as success.
+                            success = tts_manager.convert_sentence2audio(sentence_number, sentence) if sentence else True
+                            if success:
+                                # Update progress bar and console output.
+                                total_progress = (t.n + 1) / total_iterations
+                                progress_bar(total_progress)
+                                is_sentence = sentence.strip() not in TTS_SML.values()
+                                percentage = total_progress * 100
+                                t.set_description(f'{percentage:.2f}%')
+                                print(f" | {sentence}")
+                            else:
+                                # If TTS fails for any sentence, abort the entire process.
+                                return False
+
+                        # Increment sentence number only for actual sentences, not SML tokens.
+                        if sentence.strip() not in TTS_SML.values():
+                            sentence_number += 1
+                        
+                        t.update(1)  # Advance progress bar for every item (sentence or SML).
+
+                    # --- Chapter Finalization ---
+                    # Mark the ending sentence number for this chapter.
+                    end = sentence_number - 1 if sentence_number > 1 else sentence_number
+                    print(f"End of chapter {chapter_num}")
+
+                    # Combine the generated sentence audio files into a single chapter file.
+                    # This is done if the chapter was missing or is new.
+                    if chapter_num in missing_chapters or sentence_number > resume_sentence:
+                        if chapter_num <= resume_chapter:
+                            print(f'**Recovering missing file chapter {chapter_num}')
+                        
+                        if self.combine_audio_sentences(chapter_audio_file, start, end, session):
+                            print(f'Combining chapter {chapter_num} to audio, sentence {start} to {end}')
+                        else:
+                            print('combine_audio_sentences() failed!')
+                            return False
+            return True
+        except Exception as e:
+            util.print_error(e)
+            return False
 
     def _get_audio_duration(self, filepath):
         try:
@@ -44,11 +199,11 @@ class EbookAudio:
             except Exception:
                 return 0
         except subprocess.CalledProcessError as e:
-            DependencyError(e)
+            util.print_error(e)
             return 0
         except Exception as e:
             error = f"get_audio_duration() Error: Failed to process {filepath}: {e}"
-            print(error)
+            util.print_error(error)
             return 0
 
     def _generate_ffmpeg_metadata(self, part_chapters, session, output_metadata_path, default_audio_proc_format):
@@ -148,7 +303,7 @@ class EbookAudio:
             return output_metadata_path
         except Exception as e:
             error = f"generate_ffmpeg_metadata() Error: Failed to generate metadata to {output_metadata_path}: {e}"
-            print(error)
+            util.print_error(error)
             return False
 
     def _export_audio(self, ffmpeg_combined_audio, ffmpeg_metadata_file, ffmpeg_final_file, session):
@@ -291,7 +446,7 @@ class EbookAudio:
                 return False
         except Exception as e:
             # Handle any other exceptions, possibly dependency-related
-            DependencyError(e)
+            util.print_error(e)
             return False
 
 
@@ -371,7 +526,8 @@ class EbookAudio:
             img.save(output_file, format='JPEG')
             return output_file
         except Exception as e:
-            print(f"Could not stamp part number on cover: {e}")
+            error = f"Could not stamp part number on cover: {e}"
+            util.print_error(error)
             return None
 
     def combine_audio_chapters(self, session):
@@ -576,7 +732,7 @@ class EbookAudio:
             # Return list of exported files or None if no files were exported
             return exported_files if exported_files else None
         except Exception as e:
-            DependencyError(e)
+            util.print_error(e)
             return False
 
     def assemble_chunks(self, txt_file, out_file):
@@ -634,12 +790,12 @@ class EbookAudio:
                 return False
         except subprocess.CalledProcessError as e:
             # Handle errors specific to subprocess execution.
-            DependencyError(e)
+            util.print_error(e)
             return False
         except Exception as e:
             # Handle any other exceptions that may occur.
             error = f"assemble_chunks() Error: Failed to process {txt_file} → {out_file}: {e}"
-            print(error)
+            util.print_error(error)
             return False
 
     def combine_audio_sentences(self, chapter_audio_file, start, end, session):
@@ -677,7 +833,7 @@ class EbookAudio:
                         results = pool.starmap(self.assemble_chunks, chunk_list)
                 except Exception as e:
                     error = f"combine_audio_sentences() multiprocessing error: {e}"
-                    print(error)
+                    util.print_error(error)
                     return False
                 if not all(results):
                     error = "combine_audio_sentences() One or more chunks failed."
@@ -697,6 +853,6 @@ class EbookAudio:
                     print(error)
                     return False
         except Exception as e:
-            DependencyError(e)
+            util.print_error(e)
             return False                    
 

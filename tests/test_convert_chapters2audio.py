@@ -2,7 +2,7 @@ import inspect
 import os
 import pytest
 
-from lib.epub import EPubProcessor
+from lib.ebook_audio import EbookAudio
 from lib.functions import models_dir, voices_dir, tmp_dir
 from lib.mock_session import SessionContextMock, set_process_dir
 
@@ -105,8 +105,8 @@ def test_convert_chapters2audio(test_session):
     set_process_dir(session, func_name)
     
     # Call the function to test
-    epub_processor = EPubProcessor()
-    result = epub_processor.convert_chapters2audio("test_session", context)
+    ebook_audio = EbookAudio()
+    result = ebook_audio.convert_chapters2audio(session)
     
     # Assert the result
     assert result == True, "Conversion of chapters to audio failed"
@@ -132,8 +132,8 @@ def  test_convert_onesentense(test_session):
     session['final_name'] = "test_audiobook_output"  # Ensure final_name is set to a valid string
 
     # Call the function to test
-    epub_processor = EPubProcessor()
-    result = epub_processor.convert_chapters2audio(session)
+    ebook_audio = EbookAudio()
+    result = ebook_audio.convert_chapters2audio(session)
     # result = convert_chapters2audio(session_id, context=context)
 
     # Assert the result

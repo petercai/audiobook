@@ -1,7 +1,6 @@
 import os
 import shutil
 import sys
-import traceback
 from glob import glob
 from pathlib import Path
 
@@ -263,9 +262,9 @@ class EBookProcessor:
                 return err, False
 
             # Convert all chapters in the EPUB to audio files
-            epub_processor = EPubProcessor(session)
+            # epub_processor = EPubProcessor(session)
             ebook_audio = EbookAudio()
-            if not epub_processor.convert_chapters2audio(session, ebook_audio):
+            if not ebook_audio.convert_chapters2audio(session):
                 return "convert_chapters2audio() failed!", False
 
             # Notify user that conversion is complete and combining process is starting
