@@ -165,14 +165,14 @@ class EPubProcessor:
             DependencyError(e)
             return False
 
-    def get_ebook_title(self, epubBook, all_docs):
+    def get_ebook_title(self, epubBook, first_doc):
         # 1. Try metadata (official EPUB title)
         meta_title = epubBook.get_metadata("DC", "title")
         if meta_title and meta_title[0][0].strip():
             return meta_title[0][0].strip()
         # 2. Try <title> in the head of the first XHTML document
-        if all_docs:
-            html = all_docs[0].get_content().decode("utf-8")
+        if first_doc:
+            html = first_doc.get_content().decode("utf-8")
             soup = BeautifulSoup(html, "html.parser")
             title_tag = soup.select_one("head > title")
             if title_tag and title_tag.text.strip():
@@ -185,14 +185,29 @@ class EPubProcessor:
                     return alt
         return None
 
-    def get_cover(self, epubBook, session):
+    def extract_book_cover(self, epubBook, path, cover_name):        
+        """
+        Extracts the cover image from an EPUB book and saves it as a JPEG file.
+
+        This method attempts to find the cover image within the EPUB book. It first
+        looks for items explicitly marked as 'cover' by ebooklib. If no such item
+        is found, it then searches for any image item whose filename or ID contains
+        the word 'cover' (case-insensitive). If a cover image is found, it is converted
+        to JPEG format (if necessary) and saved to the specified path.
+
+        Args:
+            epubBook (ebooklib.epub.EpubBook): The EpubBook object from which to extract the cover.
+            path (str): The directory where the cover image should be saved.
+            cover_name (str): The base filename (without extension) for the cover image.
+
+        Returns:
+            str or None: The absolute path to the saved cover image file if successful,
+                         otherwise None (e.g., if no cover is found or cancellation is requested).
+        """
+
         try:
-            if session['cancellation_requested']:
-                msg = 'Cancel requested'
-                print(msg)
-                return None
             cover_image = None
-            cover_path = os.path.join(session['process_dir'], session['filename_noext'] + '.jpg')
+            cover_path = os.path.join(path, cover_name + '.jpg')
             cover_items = epubBook.get_items_of_type(ebooklib.ITEM_COVER)
             for item in cover_items:
                 cover_image = item.get_content()
@@ -212,7 +227,7 @@ class EPubProcessor:
                 return cover_path
             return None
         except Exception as e:
-            DependencyError(e)
+            util.print_error(e)
             return None
 
     def get_chapters_in_sentences(self, epubBook, session):
@@ -244,8 +259,6 @@ class EPubProcessor:
                 return False
                 
             # Extract language information from session for processing
-            language_iso_ = session['language_iso1']  # e.g., 'en'
-            # language_code = language_iso_ or session['language']  # fallback to ISO-639-3 if needed
             tts_engine_ = session['tts_engine']
             
             # Step 1: Extract TOC (Table of Contents) and document list
@@ -257,7 +270,7 @@ class EPubProcessor:
             toc_epub_docs = self.filter_chapters_with_toc(all_docs, toc)
 
             # Attempt to extract the book title for metadata
-            # ebook_title = self.get_ebook_title(epubBook, all_docs)
+            # ebook_title = self.get_ebook_title(epubBook, all_docs[0])
             is_add_toc_title_to_chapters = session.get('add_toc_title', False)
 
             # Inform user that numerical and mathematical content analysis is beginning

@@ -231,9 +231,10 @@ def test_get_cover(session_context, ebook_path, tmp_path):
     
     ebook_ = session["ebook"]
     epubBook = epub.read_epub(ebook_, {"ignore_ncx": True})
-
+    path = session['process_dir']
+    cover_name = session['filename_noext']
     processor = EPubProcessor(session)
-    result = processor.get_cover(epubBook, session)
+    result = processor.extract_book_cover(epubBook, path, cover_name)
     # Assertions
     assert result
     print(result)

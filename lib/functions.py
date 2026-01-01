@@ -245,26 +245,6 @@ def proxy2dict(proxy_obj):
             return str(source)  # Convert non-serializable types to strings
     return recursive_copy(proxy_obj, set())
 
-def get_ebook_title(epubBook, all_docs):
-    # 1. Try metadata (official EPUB title)
-    meta_title = epubBook.get_metadata("DC", "title")
-    if meta_title and meta_title[0][0].strip():
-        return meta_title[0][0].strip()
-    # 2. Try <title> in the head of the first XHTML document
-    if all_docs:
-        html = all_docs[0].get_content().decode("utf-8")
-        soup = BeautifulSoup(html, "html.parser")
-        title_tag = soup.select_one("head > title")
-        if title_tag and title_tag.text.strip():
-            return title_tag.text.strip()
-        # 3. Try <img alt="..."> if no visible <title>
-        img = soup.find("img", alt=True)
-        if img:
-            alt = img['alt'].strip()
-            if alt and "cover" not in alt.lower():
-                return alt
-    return None
-
 def get_ram():
     vm = psutil.virtual_memory()
     return vm.total // (1024 ** 3)

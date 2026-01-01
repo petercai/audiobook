@@ -366,7 +366,9 @@ class EBookProcessor:
                 err = f"WARNING!!! language selected {session['language']} differs from the EPUB file language {session['metadata']['language']}"
                 print(err)
             # Get the cover from the EPUB book
-            session["cover"] = epub_processor.get_cover(epubBook, session)
+            path = session['process_dir']
+            cover_name = session['filename_noext']
+            session["cover"] = epub_processor.extract_book_cover(epubBook, path, cover_name)
             # If the cover doesn't exist, return an error
             if not session["cover"]:
                 return "get_cover() failed!", False
