@@ -1,4 +1,5 @@
 import os
+import shutil
 import sys
 import traceback
 from glob import glob
@@ -9,6 +10,7 @@ from ebooklib import epub
 from iso639 import languages
 
 from lib.ebook_audio import EbookAudio
+from lib.util import util
 from .classes.voice_extractor import VoiceExtractor
 from lib.conf import default_gpu_wiki, ebook_formats
 from lib.conf import NATIVE
@@ -21,7 +23,7 @@ from lib.functions import show_alert
 from lib.conf import voices_dir
 from lib.epub import EPubProcessor
 from lib.session_managment import SessionManagement
-from .lang import language_mapping
+from .lang import language_mapping, resolve_lang_codes
 
 
 class EBookProcessor:
@@ -48,7 +50,7 @@ class EBookProcessor:
             print(f"the ebooks source is not a list!")
             sys.exit(1)
 
-    def validate_language(self, args):
+    def validate_book_language(self, args):
         """
         Validates the language and ebook file path provided in the arguments.
 
@@ -73,32 +75,19 @@ class EBookProcessor:
                 error = f"{args['ebook']} needs a format extension."
                 print(error)
                 return error, False
+
             if not os.path.exists(args["ebook"]):
                 error = "File does not exist or Directory empty."
                 print(error)
                 return error, False
-            try:
-                if len(args["language"]) == 2:
-                    lang_array = languages.get(part1=args["language"])
-                    if lang_array:
-                        args["language"] = lang_array.part3
-                        args["language_iso1"] = lang_array.part1
-                elif len(args["language"]) == 3:
-                    lang_array = languages.get(part3=args["language"])
-                    if lang_array:
-                        args["language"] = lang_array.part3
-                        args["language_iso1"] = lang_array.part1
-                else:
-                    args["language_iso1"] = None
-            except Exception:
-                pass
 
+            args["language_iso1"],args["language"] = resolve_lang_codes(args["language"])
             if args["language"] not in language_mapping.keys():
                 error = "The language you provided is not (yet) supported"
                 print(error)
                 return error, False
-
             return None, True
+
         except Exception as e:
             print(f"validate_language() Exception: {e}")
             return str(e), False
@@ -128,8 +117,8 @@ class EBookProcessor:
             # 1. Validate that a language is provided.
             if args["language"] is not None:
                 # Validate the language and ebook file path.
-                err, ok = self.validate_language(args)
-                if ok is False:
+                err, ok = self.validate_book_language(args)
+                if not ok:
                     return err, False
 
                 # 2. Initialize the session for this conversion.
@@ -383,6 +372,7 @@ class EBookProcessor:
                 return "get_cover() failed!", False
             # Get the table of contents and chapters from the EPUB book
             session["toc"], session["chapters"] = epub_processor.get_chapters_in_sentences(epubBook, session)
+            util.save_transcript_by_chapter(session["chapters"], session["chapters_dir"])
             # Set the final name of the output file
             session["final_name"] = self.ebook_audio.get_sanitized(
                 session["metadata"]["title"] + "." + session["output_format"]

@@ -33,7 +33,7 @@ default_language_code = 'eng' # ISO-639-3
 
 
 @lru_cache(maxsize=128)
-def resolve_lang_codes(lang_iso1):
+def resolve_lang_codes(lang):
     """
     Resolve an input language code into ISO 639-1 and ISO 639-3 forms.
 
@@ -61,40 +61,28 @@ def resolve_lang_codes(lang_iso1):
     The function tolerates missing iso639 data: it returns whichever code
     it can infer and still guarantees a non-empty ISO-3 via the fallback.
     """
-    lang_iso1 = (lang_iso1 or "").strip().lower()
+    lang = (lang or "").strip().lower()
     iso1 = None
     iso3 = None
-    languages = None
-    if lang_iso1:
-        try:
-            from iso639 import languages as iso_languages
-            languages = iso_languages
-        except Exception:
-            languages = None
-        if len(lang_iso1) == 2:
-            iso1 = lang_iso1
-            if languages:
+    from iso639 import languages
+    if lang:
+        if len(lang) == 2:
+            iso1 = lang
+            lang_obj = languages.get(part1=iso1)
+            if lang_obj and lang_obj.part3:
+                iso3 = lang_obj.part3
+        elif len(lang) == 3:
+            iso3 = lang
+            lang_obj = languages.get(part3=iso3)
+            if lang_obj and lang_obj.part1:
+                iso1 = lang_obj.part1
+        else:
+            base = lang.split("-", 1)[0]
+            if len(base) == 2:
+                iso1 = base
                 lang_obj = languages.get(part1=iso1)
                 if lang_obj and lang_obj.part3:
                     iso3 = lang_obj.part3
-        elif len(lang_iso1) == 3:
-            iso3 = lang_iso1
-            if languages:
-                lang_obj = languages.get(part3=iso3)
-                if lang_obj and lang_obj.part1:
-                    iso1 = lang_obj.part1
-        else:
-            base = lang_iso1.split("-", 1)[0]
-            if len(base) == 2:
-                iso1 = base
-                if languages:
-                    lang_obj = languages.get(part1=iso1)
-                    if lang_obj and lang_obj.part3:
-                        iso3 = lang_obj.part3
-    if not iso3 and lang_iso1 in language_mapping:
-        iso3 = lang_iso1
-    if not iso3:
-        iso3 = default_language_code
     return iso1, iso3
 
 language_tts = {
