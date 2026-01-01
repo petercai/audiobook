@@ -24,6 +24,7 @@ from lib.lang import (
     year_to_decades_languages,
 )
 from lib.models import TOKENIZER_FREE_TTS, TTS_SML
+from lib.util import util
 from syntrive.adapters.text.sentence_splitter import SentenceSplitter
 from syntrive.adapters.text.utils import remove_bracket, replace_blank, replace_corner_mark
 
@@ -38,7 +39,6 @@ class TextNormalizer:
             from wetext import Normalizer as ZhNormalizer
             self.zh_tn = ZhNormalizer(remove_erhua=False)
         self.is_num2words_compat = self._get_num2words_compat(self.lang_iso1)
-        self.stanza_nlp = self.init_stanza_nlp()
 
     @staticmethod
     def _lang_alignment(lang_iso1):
@@ -59,6 +59,25 @@ class TextNormalizer:
             return False
 
     def init_stanza_nlp(self):
+        """
+        Initializes and returns a Stanza NLP pipeline if the current language
+        is configured for year-to-decades conversion and Stanza models are available.
+
+        The Stanza pipeline is used for advanced text processing, specifically
+        Named Entity Recognition (NER) to identify date entities, which helps
+        in correctly converting years and dates to words.
+
+        If `offline_model` is True, it attempts to load models from a local directory
+        (`models_dir/stanza`). If the model is not found locally, it will print
+        a warning and return None.
+
+        Returns:
+            stanza.Pipeline or None: An initialized Stanza NLP pipeline if successful
+                                     and the language is supported, otherwise None.
+                                     Returns None if an error occurs during download/initialization
+                                     or if the language is not in `year_to_decades_languages`.
+        """
+        
         stanza_nlp = None
         if self.lang_iso1 in year_to_decades_languages:
             import stanza
@@ -69,12 +88,13 @@ class TextNormalizer:
                     logging_level='WARN',
                     verbose=False if self.offline_model else None
                 )
+                stanza_nlp = stanza.Pipeline(self.lang_iso1, processors='tokenize,ner')
             except Exception as e:
                 if self.offline_model:
                     print(
                         f"Offline mode: Failed to find stanza model for '{self.lang_iso1}'. Expected in '{os.path.join(models_dir, 'stanza')}'")
-                raise e
-            stanza_nlp = stanza.Pipeline(self.lang_iso1, processors='tokenize,ner')
+                else:
+                    util.print_error(e)
         return stanza_nlp
 
     def normalize_cn(self, text):
@@ -93,10 +113,9 @@ class TextNormalizer:
             return self.normalize_cn(text_block)
 
         # If a Stanza NLP pipeline is available, use it for advanced text processing like date recognition
-        
         text_block = self._num2dateWithNLP(
                 text_block,
-                self.stanza_nlp,
+                self.init_stanza_nlp(),
                 tts_engine
             )
         # Convert Roman numerals, clock times, and mathematical expressions to words for better TTS
@@ -368,6 +387,8 @@ class TextNormalizer:
 
     def _get_date_entities(self, text, stanza_nlp):
         try:
+            if not stanza_nlp:
+                return False
             doc = stanza_nlp(text)
             date_spans = []
             for ent in doc.ents:
