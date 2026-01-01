@@ -2,7 +2,6 @@
 
 import regex as re
 
-from lib.functions import DependencyError
 from lib.lang import (
     default_language_code,
     language_mapping,
@@ -12,6 +11,7 @@ from lib.lang import (
     resolve_lang_codes,
 )
 from lib.models import TTS_SML
+from lib.util import util
 
 _SML_TOKENS = set(TTS_SML.values())
 _SML_PATTERN = re.compile(rf"({'|'.join(map(re.escape, _SML_TOKENS))})")
@@ -47,7 +47,7 @@ class SentenceSplitter:
                 segmenter = pysbd.Segmenter(language=language, clean=False)
             return [s for s in segmenter.segment(paragraph) if s]
         except Exception as e:
-            DependencyError(e)
+            util.print_error(e)
             return [paragraph]
 
     def split(self, paragraph, language):
@@ -242,7 +242,7 @@ class SentenceSplitter:
                         result.append(segment.strip())
             return result
         except Exception as e:
-            DependencyError(e)
+            util.print_error(e)
             return [text]
 
     def _join_ideogramms(self, idg_list, max_chars):
@@ -262,6 +262,6 @@ class SentenceSplitter:
             if buffer:
                 yield buffer
         except Exception as e:
-            DependencyError(e)
+            util.print_error(e)
             if buffer:
                 yield buffer

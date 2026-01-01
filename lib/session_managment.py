@@ -9,9 +9,9 @@ from lib.conf import default_output_split_minutes
 from lib.conf import models_dir
 from lib.conf import tmp_dir
 from lib.functions import get_compatible_tts_engines
-from lib.functions import DependencyError
 from lib.models import models
 from lib.models import TTS_ENGINES
+from lib.util import util
 
 
 class SessionManagement:
@@ -100,7 +100,7 @@ class SessionManagement:
             shutil.copy(src, session["ebook"])
             return True
         except Exception as e:
-            DependencyError(e)
+            util.print_error(e)
             return False
 
     def init_session(self, args, ctx):
@@ -207,7 +207,7 @@ class SessionManagement:
                     else:
                         session[key] = value
         except Exception as e:
-            DependencyError(e)
+            util.print_error(e)
 
     def reset_ebook_session(self, context, id):
         session = context.get_session(id)

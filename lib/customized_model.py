@@ -7,9 +7,9 @@ from pathlib import Path
 from tqdm import tqdm
 
 from lib.conf import models_dir
-from lib.functions import DependencyError
 from lib.models import default_fine_tuned
 from lib.models import models
+from lib.util import util
 
 
 class CustomizedModel:
@@ -145,7 +145,7 @@ class CustomizedModel:
             print(f"Extracted files to {model_path}")
             return model_path
         except Exception as e:
-            DependencyError(e)
+            util.print_error(e)
             if is_gui_process and file_src and os.path.exists(file_src):
                 os.remove(file_src)
             return None

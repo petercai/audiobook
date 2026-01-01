@@ -48,13 +48,13 @@ from lib.models import (
 from lib.ebook_audio import EbookAudio
 from lib.customized_model import CustomizedModel
 from lib.functions import (
-    DependencyError,
     hash_proxy_dict,
     proxy2dict,
     delete_unused_tmp_dirs,
     get_compatible_tts_engines,
     show_alert,
 )
+from lib.util import util
 from lib.ebook_processor import EBookProcessor
 from lib.lang import (language_mapping,
     default_language_code,
@@ -1395,7 +1395,7 @@ class WebUI:
 
     def alert_exception(self, error):
         gr.Error(error)
-        DependencyError(error)
+        util.print_error(error)
 
     def restore_interface(self, id, req: gr.Request):
         try:

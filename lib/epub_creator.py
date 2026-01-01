@@ -6,7 +6,6 @@ import pymupdf4llm
 import regex as re
 
 from lib.conf import ebook_formats
-from lib.functions import DependencyError
 from lib.util import util
 
 
@@ -108,10 +107,10 @@ class EPubCreator:
             print(result.stdout)
             return True
         except subprocess.CalledProcessError as e:
-            print(f"Subprocess error: {e.stderr}")
-            DependencyError(e)
+            error = f"Subprocess error: {e.stderr}"
+            util.print_error(error)
             return False
         except FileNotFoundError as e:
-            print(f"Utility not found: {e}")
-            DependencyError(e)
+            error = f"Utility not found: {e}"
+            util.print_error(error)
             return False

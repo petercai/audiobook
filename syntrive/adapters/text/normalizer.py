@@ -4,7 +4,6 @@ import unicodedata
 import regex as re
 from num2words import num2words
 
-from lib.functions import DependencyError
 from lib.conf import models_dir
 from lib.lang import (
     abbreviations_mapping,
@@ -484,7 +483,7 @@ class TextNormalizer:
             text = self._set_formatted_number(text)
         except Exception as e:
             error = f'_math2words() error: {e} for input: {text}'
-            DependencyError(error)
+            util.print_error(error)
             return text
         return text
 

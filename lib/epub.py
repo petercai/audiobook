@@ -5,7 +5,6 @@ import regex as re
 from PIL import Image
 from bs4 import BeautifulSoup, NavigableString, Tag
 from lib.ebook_audio import EbookAudio
-from lib.functions import DependencyError
 from lib.models import TOKENIZER_FREE_TTS, TTS_SML
 from lib.util import util
 from syntrive.adapters.text.normalizer import TextNormalizer
@@ -190,7 +189,7 @@ class EPubProcessor:
         except Exception as e:
             # Handle any unexpected errors during processing
             error = f'Error extracting main content pages: {e}'
-            DependencyError(error)
+            util.print_error(Exception(error))
             return None, None
     def get_epub_chapters(self, epubBook):
         try:
@@ -401,7 +400,7 @@ class EPubProcessor:
 
         except Exception as e:
             error = f'filter_chapter() tuple_row() error: {e}'
-            DependencyError(error)
+            util.print_error(error)
             return None
 
     def filter_chapter(self, doc_chapter, tts_engine):

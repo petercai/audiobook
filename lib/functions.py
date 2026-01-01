@@ -18,6 +18,7 @@ from lib.conf import models_dir
 from lib.conf import  default_output_format, default_output_split, default_output_split_minutes
 from lib.lang import default_language_code, language_tts
 from lib.models import default_tts_engine, default_fine_tuned, default_engine_settings, TTS_ENGINES, models
+from lib.util import util
 
 
 class DependencyError(Exception):
@@ -193,11 +194,11 @@ def check_programs(prog_name, command, options):
     except FileNotFoundError:
         e = f'''********** Error: {prog_name} is not installed! if your OS calibre package version 
         is not compatible you still can run ebook2audiobook.sh (linux/mac) or ebook2audiobook.cmd (windows) **********'''
-        DependencyError(e)
+        util.print_error(e)
         return False, None
     except subprocess.CalledProcessError:
         e = f'Error: There was an issue running {prog_name}.'
-        DependencyError(e)
+        util.print_error(e)
         return False, None
 
 def hash_proxy_dict(proxy_dict):

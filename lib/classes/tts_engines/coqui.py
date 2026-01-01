@@ -15,10 +15,11 @@ from huggingface_hub import hf_hub_download
 from pathlib import Path
 
 from lib.conf import tts_dir, default_audio_proc_samplerate, default_audio_proc_format
-from lib.functions import DependencyError, default_engine_settings, language_tts, voices_dir
+from lib.functions import default_engine_settings, language_tts, voices_dir
 from lib.models import TTS_ENGINES, TTS_SML, TTS_VOICE_CONVERSION, tts_lock, default_vc_model, loaded_tts, models
 from lib.classes.tts_engines.common.utils import unload_tts, append_sentence2vtt
 from lib.classes.tts_engines.common.audio_filters import detect_gender, trim_audio, normalize_audio, is_audio_data_valid
+from lib.util import util
 
 class Coqui:
     """
@@ -930,7 +931,7 @@ class Coqui:
                     cmd = [shutil.which('sox'), tmp_in_wav, "-r", str(settings['samplerate']), tmp_out_wav, "pitch", str(semitones * 100)]
                     subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
                 except (subprocess.CalledProcessError, FileNotFoundError) as e:
-                    DependencyError(e)
+                    util.print_error(e)
                     return None, trim_audio_buffer
             else:
                 tmp_out_wav = tmp_in_wav
