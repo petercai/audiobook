@@ -13,12 +13,10 @@ from .classes.voice_extractor import VoiceExtractor
 from lib.conf import default_gpu_wiki, ebook_formats
 from lib.conf import NATIVE
 from lib.models import TTS_ENGINES
-from lib.functions import analyze_uploaded_file
+from lib.customized_model import CustomizedModel
 from lib.functions import check_programs
 from lib.models import default_engine_settings
 from lib.functions import get_vram
-from lib.models import models
-from lib.conf import models_dir
 from lib.functions import show_alert
 from lib.conf import voices_dir
 from lib.epub import EPubProcessor
@@ -29,6 +27,7 @@ from .lang import language_mapping
 class EBookProcessor:
     def __init__(self):
         self.ebook_audio = EbookAudio()
+        self.customized_model = CustomizedModel()
         self.session_management = SessionManagement()
 
     def convert_ebook_batch(self, args, ctx):
@@ -141,7 +140,7 @@ class EBookProcessor:
 
                 # 3. Process custom models and voices if running in headless mode.
                 # if not args.get("is_gui_process", False):
-                #     error = self._process_custom_model(session)
+                #     error = self.customized_model.process_custom_model(session)
                 #     if error is None:
                 #         error = self._process_voice(session)
 
@@ -404,34 +403,6 @@ class EBookProcessor:
         except Exception as e:
             print(f"processEPub() Exception: {e}")
             return str(e), False
-
-    def _process_custom_model(self, session):
-        error = None
-        session["custom_model_dir"] = os.path.join(
-                        models_dir, "__sessions", f"model-{session['id']}"
-                    )
-        if session["custom_model"] is not None:
-            if not os.path.exists(session["custom_model_dir"]):
-                os.makedirs(session["custom_model_dir"], exist_ok=True)
-            src_path = Path(session["custom_model"])
-            src_name = src_path.stem
-            if not os.path.exists(
-                os.path.join(session["custom_model_dir"], src_name)
-            ):
-                required_files = models[session["tts_engine"]]["internal"][
-                    "files"
-                ]
-                if analyze_uploaded_file(
-                    session["custom_model"], required_files
-                ):
-                    model = self.ebook_audio.extract_custom_model(session["custom_model"], session)
-                    if model is not None:
-                        session["custom_model"] = model
-                    else:
-                        error = f"{model} could not be extracted or mandatory files are missing"
-                else:
-                    error = f'{os.path.basename(session["custom_model"])} is not a valid model or some required files are missing'
-        return error
 
     def _process_voice(self, session):
         error = None

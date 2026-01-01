@@ -8,7 +8,6 @@ import traceback
 from collections.abc import Mapping
 from multiprocessing import Manager
 from multiprocessing.managers import DictProxy
-import zipfile
 
 import gradio as gr
 import psutil
@@ -200,38 +199,6 @@ def check_programs(prog_name, command, options):
         e = f'Error: There was an issue running {prog_name}.'
         DependencyError(e)
         return False, None
-
-def analyze_uploaded_file(zip_path, required_files):
-    try:
-        if not os.path.exists(zip_path):
-            error = f"The file does not exist: {os.path.basename(zip_path)}"
-            print(error)
-            return False
-        files_in_zip = {}
-        empty_files = set()
-        with zipfile.ZipFile(zip_path, 'r') as zf:
-            for file_info in zf.infolist():
-                file_name = file_info.filename
-                if file_info.is_dir():
-                    continue
-                base_name = os.path.basename(file_name)
-                files_in_zip[base_name.lower()] = file_info.file_size
-                if file_info.file_size == 0:
-                    empty_files.add(base_name.lower())
-        required_files = [file.lower() for file in required_files]
-        missing_files = [f for f in required_files if f not in files_in_zip]
-        required_empty_files = [f for f in required_files if f in empty_files]
-        if missing_files:
-            print(f"Missing required files: {missing_files}")
-        if required_empty_files:
-            print(f"Required files with 0 KB: {required_empty_files}")
-        return not missing_files and not required_empty_files
-    except zipfile.BadZipFile:
-        error = "The file is not a valid ZIP archive."
-        raise ValueError(error)
-    except Exception as e:
-        error = f"An error occurred: {e}"
-        raise RuntimeError(error)
 
 def hash_proxy_dict(proxy_dict):
     return hashlib.md5(str(proxy_dict).encode('utf-8')).hexdigest()

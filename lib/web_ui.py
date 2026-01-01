@@ -46,6 +46,7 @@ from lib.models import (
     max_custom_model,
     max_upload_size)
 from lib.ebook_audio import EbookAudio
+from lib.customized_model import CustomizedModel
 from lib.functions import (
     DependencyError,
     hash_proxy_dict,
@@ -53,7 +54,6 @@ from lib.functions import (
     delete_unused_tmp_dirs,
     get_compatible_tts_engines,
     show_alert,
-    analyze_uploaded_file,
 )
 from lib.ebook_processor import EBookProcessor
 from lib.lang import (language_mapping,
@@ -109,6 +109,7 @@ class WebUI:
         self.src_label_file = 'Select a File'
         self.src_label_dir = 'Select a Directory'
         self.ebook_audio = EbookAudio()
+        self.customized_model = CustomizedModel()
         self.session_management = SessionManagement(is_gui_process=True)
         
     def cleanup_session(self, context, req: gr.Request):
@@ -1885,8 +1886,12 @@ class WebUI:
                     session = self.context.get_session(id)
                     session['tts_engine'] = t
                     required_files = models[session['tts_engine']]['internal']['files']
-                    if analyze_uploaded_file(f, required_files):
-                        model = self.ebook_audio.extract_custom_model(f, session)
+                    if self.customized_model.analyze_uploaded_file(
+                        f, required_files
+                    ):
+                        model = self.customized_model.extract_custom_model(
+                            f, session
+                        )
                         if model is None:
                             error = f'Cannot extract custom model zip file {os.path.basename(f)}'
                             state['type'] = 'warning'

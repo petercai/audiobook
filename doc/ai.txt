@@ -175,3 +175,10 @@ Once you are done, remove the comment.
 
 
 Moved stanza NLP setup into TextNormalizer with an offline_mode toggle and updated EPubProcessor to pass that flag and call the new method; removed the old EPubProcessor.init_stanza_nlp implementation and related imports. This keeps offline behavior explicit and avoids session coupling while preserving existing defaults in other call sites.
+
+
+
+    # todo: move _process_custom_model() to new class CustomizedModel in customized_model.py. 
+    # - move analyze_uploaded_file() from functions.py into class CustomizedModel too
+    # - move extract_custom_model() from class EbookAudio into class CustomizedModel too
+    # - don't change any existing logic and update all impacted code
