@@ -3,7 +3,7 @@ import os
 import pytest
 
 from lib.functions import models_dir, voices_dir
-from lib.headless_processor import EBookProcessor
+from lib.ebook_processor import EBookProcessor
 from lib.mock_session import SessionContextMock, set_process_dir
 from lib.conf import audiobooks_cli_dir, default_output_format, default_output_split, default_output_split_minutes
 from lib.models import TTS_ENGINES, default_engine_settings

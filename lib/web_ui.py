@@ -55,7 +55,7 @@ from lib.functions import (
     show_alert,
     analyze_uploaded_file,
 )
-from lib.headless_processor import EBookProcessor
+from lib.ebook_processor import EBookProcessor
 from lib.lang import (language_mapping,
     default_language_code,
                       language_tts

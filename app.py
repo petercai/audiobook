@@ -13,7 +13,7 @@ from lib.conf import FULL_DOCKER, min_python_version, max_python_version, interf
 from lib.functions import (
     SessionContext,
 )
-from lib.headless_processor import EBookProcessor
+from lib.ebook_processor import EBookProcessor
 from lib.lang import install_info, default_language_code
 from lib.models import TTS_ENGINES, default_fine_tuned, default_engine_settings
 from lib.web_ui import WebUI
