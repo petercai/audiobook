@@ -14,6 +14,8 @@ import sys
 
 from syntrive.adapters.text.normalizer import TextNormalizer
 
+from lib.util import util
+
 sys.stdout.reconfigure(encoding="utf-8")
 
 
@@ -116,7 +118,7 @@ def test_get_chapter_sentences_思考快与慢(
     )
     transcript_dir = os.path.join(session["process_dir"], "transcript")
     os.makedirs(transcript_dir, exist_ok=True)
-    cache_transcript_by_chapter(chapters_with_tn_sentences, transcript_dir)
+    util.save_transcript_by_chapter(chapters_with_tn_sentences, transcript_dir)
     created_files = sum(1 for entry in os.scandir(transcript_dir) if entry.is_file())
     assert created_files >= 38
     assert created_files == len(chapters_with_tn_sentences)
@@ -146,7 +148,7 @@ def test_get_chapter_sentences_剑来(session_context, ebook_path: str, tmp_path
     )
     transcript_dir = os.path.join(session["process_dir"], "transcript")
     os.makedirs(transcript_dir, exist_ok=True)
-    cache_transcript_by_chapter(chapters_with_tn_sentences, transcript_dir)
+    util.save_transcript_by_chapter(chapters_with_tn_sentences, transcript_dir)
     created_files = sum(1 for entry in os.scandir(transcript_dir) if entry.is_file())
     assert created_files >= 38
     assert created_files == len(chapters_with_tn_sentences)
@@ -178,7 +180,7 @@ def test_get_chapter_sentences_一句顶一万句(
     )
     transcript_dir = os.path.join(session["process_dir"], "transcript")
     os.makedirs(transcript_dir, exist_ok=True)
-    cache_transcript_by_chapter(chapters_with_tn_sentences, transcript_dir)
+    util.save_transcript_by_chapter(chapters_with_tn_sentences, transcript_dir)
     created_files = sum(1 for entry in os.scandir(transcript_dir) if entry.is_file())
     assert created_files == 24
     assert created_files == len(chapters_with_tn_sentences)
@@ -210,7 +212,7 @@ def test_get_chapter_sentences_纯真年代(
     )
     transcript_dir = os.path.join(session["process_dir"], "transcript")
     os.makedirs(transcript_dir, exist_ok=True)
-    cache_transcript_by_chapter(chapters_with_tn_sentences, transcript_dir)
+    util.save_transcript_by_chapter(chapters_with_tn_sentences, transcript_dir)
     created_files = sum(1 for entry in os.scandir(transcript_dir) if entry.is_file())
     assert created_files == 24
     assert created_files == len(chapters_with_tn_sentences)
@@ -229,7 +231,7 @@ def process_filter_chapter(session):
     chapters_with_tn_sentences = process_chapters(
         processor, toc_epub_docs, transcript_dir, session
     )
-    cache_transcript_by_chapter(chapters_with_tn_sentences, transcript_dir)
+    util.save_transcript_by_chapter(chapters_with_tn_sentences, transcript_dir)
     created_files = sum(1 for entry in os.scandir(transcript_dir) if entry.is_file())
     return chapters_with_tn_sentences, created_files
 
@@ -269,13 +271,3 @@ def process_chapters(processor, toc_docs, transcript_dir, session):
     return processed_chapters
     # return cache_transcript_by_chapter(processed_chapters, transcript_dir)
 
-
-def cache_transcript_by_chapter(chapters, transcript_dir):
-    chapter_count = len(chapters)
-    number_width = max(1, len(str(chapter_count)))
-    for chapter_index, chapter_sentences in enumerate(chapters, 1):
-        chapter_filename = f"c{chapter_index:0{number_width}d}.txt"
-        chapter_path = os.path.join(transcript_dir, chapter_filename)
-        with open(chapter_path, "w", encoding="utf-8") as chapter_file:
-            chapter_file.write("\n".join(chapter_sentences))
-    return chapter_count
