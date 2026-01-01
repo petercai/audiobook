@@ -1,17 +1,14 @@
 import io
 import os
-import shutil
-import subprocess
 import ebooklib
 import gradio as gr
-import pymupdf4llm
 import regex as re
 from PIL import Image
 from bs4 import BeautifulSoup, NavigableString, Tag
 from tqdm import tqdm
 
 from lib.classes.tts_manager import TTSManager
-from lib.conf import default_audio_proc_format, ebook_formats, models_dir
+from lib.conf import default_audio_proc_format, models_dir
 from lib.ebook_audio import EbookAudio
 from lib.functions import DependencyError
 from lib.models import TOKENIZER_FREE_TTS, TTS_SML
@@ -35,135 +32,6 @@ class EPubProcessor:
             "p", "div", "span", "a", "li", "ol", "ul", "i", "b", "em",
             "strong", "blockquote", "q", "cite", "code", "pre", "br", "hr"
         } | self.heading_tags | self.break_tags | self.pause_tags
-
-    def convert2epub(self, session):
-        """
-        Converts a given ebook file to EPUB format using Calibre's ebook-convert tool.
-        
-        If the input file is already in EPUB format, it will be directly used without conversion.
-        This method handles various input formats and prepares them for conversion.
-        If the input is a PDF, it first converts it to Markdown to improve text extraction,
-        then proceeds with the EPUB conversion. It relies on the external `ebook-convert`
-        command-line utility.
-
-        Args:
-            id (str): The session ID for the current conversion process.
-            context (SessionContext): The context object containing session data.
-
-        Returns:
-            bool: True if the conversion to EPUB was successful, False otherwise.
-
-        Session Fields:
-            - cancellation_requested (bool): Flag to check if the conversion process should be cancelled.
-            - ebook (str): The absolute path to the source ebook file.
-            - process_dir (str): The directory path for storing intermediate files during conversion.
-            - epub_path (str): The target absolute path for the converted EPUB file.
-        """
-        # Retrieve the session data using the provided ID.
-        # session = context.get_session(id)
-        # Check for a cancellation request before starting the process.
-        if session['cancellation_requested']:
-            print('Cancel requested')
-            return False
-        # Get the input file path, process directory, and target EPUB path from the session.
-        file_input = session['ebook']
-        process_dir = session['process_dir']
-        epub_output_file = session['epub_path']
-        # Get the file extension to determine the input format.
-        file_ext = os.path.splitext(file_input)[1].lower()
-        # If the input file is already an EPUB, just copy it and return.
-        if file_ext == '.epub':
-            print("Input file is already in EPUB format. Skipping conversion.")
-            if not os.path.exists(epub_output_file) or not os.path.samefile(file_input, epub_output_file):
-                shutil.copy(file_input, epub_output_file)
-            return True
-        try:
-            # Initialize title and author as False. They will be set if the input is a PDF.
-            title = False
-            author = False
-            # Locate the 'ebook-convert' utility from Calibre in the system's PATH.
-            util_app = shutil.which('ebook-convert')
-            # If the utility is not found, the conversion cannot proceed.
-            if not util_app:
-                error = "The 'ebook-convert' utility is not installed or not found."
-                print(error)
-                return False
-            # Check if the input file is empty.
-            if os.path.getsize(file_input) == 0:
-                error = f"Input file is empty: {file_input}"
-                print(error)
-                return False
-            # Validate if the file format is supported.
-            if file_ext not in ebook_formats:
-                error = f'Unsupported file format: {file_ext}'
-                print(error)
-                return False
-            # Special handling for PDF files to improve text extraction.
-            if file_ext == '.pdf':
-                import fitz
-                msg = 'File input is a PDF. flatten it in MarkDown...'
-                print(msg)
-                # Open the PDF and extract metadata.
-                doc = fitz.open(file_input)
-                pdf_metadata = doc.metadata
-                filename_no_ext = os.path.splitext(os.path.basename(file_input))[0]
-                # Use PDF metadata for title and author, with fallbacks.
-                title = pdf_metadata.get('title') or filename_no_ext
-                author = pdf_metadata.get('author') or False
-                # Convert the PDF content to Markdown format.
-                markdown_text = pymupdf4llm.to_markdown(file_input)
-                # Clean up the Markdown: remove single asterisks and underscores used for italics.
-                markdown_text = re.sub(r'(?<!\*)\*(?!\*)(.*?)\*(?!\*)', r'\1', markdown_text)
-                markdown_text = re.sub(r'(?<!_)_(?!_)(.*?)_(?!_)', r'\1', markdown_text)
-                # Save the Markdown content to a new file, which will be used as input for conversion.
-                file_input = os.path.join(process_dir, f'{filename_no_ext}.md')
-                with open(file_input, "w", encoding="utf-8") as html_file:
-                    html_file.write(markdown_text)
-            # Log the command that will be executed.
-            msg = f"Running command: {util_app} {file_input} {epub_output_file}"
-            print(msg)
-            # Construct the command for the ebook-convert utility with various options for a clean EPUB3.
-            cmd = [
-                    util_app, file_input, epub_output_file,
-                    '--input-encoding=utf-8',  # Specify input encoding.
-                    '--output-profile=generic_eink',  # Profile for e-ink devices.
-                    '--epub-version=3',  # Ensure EPUB3 output.
-                    '--flow-size=0',  # Disable splitting of files by size.
-                    '--chapter-mark=pagebreak',  # Use page breaks to mark chapters.
-                    '--page-breaks-before', "//*[name()='h1' or name()='h2' or name()='h3' or name()='h4' or name()='h5']",  # Insert page breaks before headings.
-                    '--disable-font-rescaling',  # Prevent font size changes.
-                    '--pretty-print',  # Format the output HTML/XML nicely.
-                    '--smarten-punctuation',  # Convert plain quotes, dashes, etc., to typographic equivalents.
-                    '--verbose'  # Get detailed output from the tool.
-                ]
-            # If a title was extracted from PDF metadata, add it to the command.
-            if title:
-                cmd += ['--title', title]
-            # If an author was extracted, add it to the command.
-            if author:
-                cmd += ['--authors', author]
-            # Execute the conversion command.
-            result = subprocess.run(
-                cmd,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-                encoding='utf-8'
-            )
-            # Print the output from the conversion process.
-            print(result.stdout)
-            # Return True on successful conversion.
-            return True
-        except subprocess.CalledProcessError as e:
-            # Handle errors from the subprocess.
-            print(f"Subprocess error: {e.stderr}")
-            DependencyError(e)
-            return False
-        except FileNotFoundError as e:
-            # Handle the case where the ebook-convert utility is not found.
-            print(f"Utility not found: {e}")
-            DependencyError(e)
-            return False
 
     def get_ebook_title(self, epubBook, first_doc):
         # 1. Try metadata (official EPUB title)

@@ -8,6 +8,7 @@ from lib.lang import year_to_decades_languages
 from lib.models import TTS_ENGINES
 from lib.conf import voices_dir, models_dir
 from lib.epub import EPubProcessor
+from lib.epub_creator import EPubCreator
 from lib.mock_session import SessionContextMock, set_process_dir
 
 import sys
@@ -99,8 +100,8 @@ def test_convert2epub(session_context, ebook_path, tmp_path):
     session['ebook'] = str(input_file)
     session['epub_path'] = tmp_path+  "/book_gen.epub"
 
-    processor = EPubProcessor(session)
-    result = processor.convert2epub(session)
+    creator = EPubCreator()
+    result = creator.convert2epub(session)
 
 def test_process_epub_cn(session_context, ebook_path, tmp_path):
     """Test successful processing of an EPUB file."""
