@@ -326,31 +326,8 @@ class EBookProcessor:
         try:
             # Create an instance of the EPubProcessor
             epub_processor = EPubProcessor(session)
-            # Get the metadata from the session, or create an empty dictionary if it doesn't exist
-            metadata = dict(session["metadata"]) if "metadata" in session else {}
-            # Iterate over the metadata items
-            for key, value in list(metadata.items()):
-                # Get the metadata from the EPUB book
-                data = epubBook.get_metadata("DC", key)
-                # If the metadata exists, update the metadata dictionary
-                if data:
-                    for val, attributes in data:
-                        metadata[key] = val
-            # Set the language in metadata to the session's language if not already present
-            if "language" not in metadata:
-                metadata["language"] = session["language"]
-            # Set the title in metadata to the title from the EPUB book, or the filename if it doesn't exist
-            metadata["title"] = (
-                metadata.get("title") or Path(session["ebook"]).stem.replace("_", " ")
-            )
-            # Get the creator from the metadata
-            creator = metadata.get("creator")
-            # Set the creator in metadata to False if it doesn't exist or is "Unknown"
-            metadata["creator"] = (
-                False if not creator or creator == "Unknown" else creator
-            )
             # Update the session's metadata
-            session["metadata"] = metadata
+            session["metadata"] = self.retrieve_metadata(epubBook, session)
             try:
                 # If the language in the metadata is 2 characters long, convert it to 3 characters
                 meta_lan = session["metadata"]["language"]
@@ -387,6 +364,32 @@ class EBookProcessor:
         except Exception as e:
             traceback.print_exc()
             return str(e), False
+
+    def retrieve_metadata(self, epubBook, session):
+        # Get the metadata from the session, or create an empty dictionary if it doesn't exist
+        metadata = dict(session["metadata"]) if "metadata" in session else {}
+        # Iterate over the metadata items
+        for key, value in list(metadata.items()):
+            # Get the metadata from the EPUB book
+            data = epubBook.get_metadata("DC", key)
+            # If the metadata exists, update the metadata dictionary
+            if data:
+                for val, attributes in data:
+                    metadata[key] = val
+        # Set the language in metadata to the session's language if not already present
+        if "language" not in metadata:
+            metadata["language"] = session["language"]
+        # Set the title in metadata to the title from the EPUB book, or the filename if it doesn't exist
+        metadata["title"] = (
+                metadata.get("title") or Path(session["ebook"]).stem.replace("_", " ")
+        )
+        # Get the creator from the metadata
+        creator = metadata.get("creator")
+        # Set the creator in metadata to False if it doesn't exist or is "Unknown"
+        metadata["creator"] = (
+            False if not creator or creator == "Unknown" else creator
+        )
+        return metadata
 
     def process_epub(self, session):
         try:
