@@ -592,13 +592,6 @@ class EbookAudio:
                 print('No chapter files exists!')
                 return None
             
-            # Calculate total duration of all chapters
-            chapter_durations = []
-            for file in chapter_audio_files:
-                filepath = os.path.join(proc_chapter_dir, file)
-                chapter_durations.append(self._get_audio_duration(filepath))
-            total_duration = sum(chapter_durations)
-            
             # Initialize list to track exported files
             exported_files = []
             
@@ -606,114 +599,146 @@ class EbookAudio:
             if session.get('output_split'):
                 split_mins_ = int(session['output_split_minutes'])
                 max_part_duration = split_mins_ * 60  # Max duration per part in seconds
-                # Determine if splitting is actually needed based on total duration
-                needs_split = total_duration > (split_mins_ * 2) * 60
-
-                # Initialize variables for splitting chapters into parts
-                part_files = []           # List to hold file lists for each part
-                part_chapter_indices = [] # List to hold chapter indices for each part
-                part_time_info = []         # item: [start, end, duration]
-                cur_part = []             # Current part's file list
-                cur_indices = []          # Current part's chapter indices
-                cur_duration = 0          # Current part's total duration
-
-                # subtitle_file_base = os.path.join(session['process_dir'], Path(session['final_name']).stem)
-                # Distribute chapters into parts based on duration limits
-                for idx, (file, dur) in enumerate(zip(chapter_audio_files, chapter_durations)):
-                    # Start a new part if adding this chapter would exceed the max duration
-                    if cur_part and (cur_duration + dur > max_part_duration):
-                        part_files.append(cur_part)
-                        part_chapter_indices.append(cur_indices)
-                        cur_part = []
-                        cur_indices = []
-                        cur_duration = 0
-                    # Add current chapter to the current part
-                    cur_part.append(file)
-                    cur_indices.append(idx)
-                    cur_duration += dur
                 
-                # Add the final part if it contains any chapters
-                if cur_part:
-                    part_files.append(cur_part)
-                    part_chapter_indices.append(cur_indices)
+                # Calculate total duration of all chapters
+                chapter_durations = []
+                for file in chapter_audio_files:
+                    filepath = os.path.join(proc_chapter_dir, file)
+                    chapter_durations.append(self._get_audio_duration(filepath))
+                total_duration = sum(chapter_durations)
+                
+                # Determine if splitting is actually needed based on total duration
+                total_duration = sum(chapter_durations)
+                needs_split = total_duration > (split_mins_ * 2) * 60
+                
+                if needs_split:
+                    if self.combine_to_multiple_audiobook_parts(
+                        chapter_audio_files,
+                        chapter_titles,
+                        chapter_durations,
+                        max_part_duration,
+                        session,
+                        exported_files,
+                    ) is None:
+                        return None
+                    else:
+                        return exported_files if exported_files else None
 
-                # Process each part separately
-                for part_idx, (part_file_list, indices) in enumerate(zip(part_files, part_chapter_indices)):
-                    # Create a temporary directory for processing this part
-                    with tempfile.TemporaryDirectory() as tmpdir:
-                        # Process files in batches to avoid command line length limits
-                        batch_size = 1024
-                        chunk_list = []
-                        
-                        # Split part files into batches and create ffmpeg concat files for each
-                        for i in range(0, len(part_file_list), batch_size):
-                            batch = part_file_list[i:i + batch_size]
-                            input_list_file = os.path.join(tmpdir, f'chunk_{i:04d}.txt')
-                            out = os.path.join(tmpdir, f'chunk_{i:04d}.{default_audio_proc_format}')
-                            
-                            # Create ffmpeg concat file for this batch
-                            with open(input_list_file, 'w') as f:
-                                for file in batch:
-                                    path = os.path.join(proc_chapter_dir, file).replace("\\", "/")
-                                    f.write(f"file '{path}'\n")
-                            chunk_list.append((input_list_file, out))
-                        
-                        # Process all batches in parallel using multiprocessing
-                        with Pool(cpu_count()) as pool:
-                            results = pool.starmap(self.assemble_audio_chunks_with_ffmpeg, chunk_list)
-                        
-                        # Check if all batch processing was successful
-                        if not all(results):
-                            print(f"assemble_segments() One or more chunks failed for part {part_idx+1}.")
-                            return None
-                        
-                        # Create final combined file path for this part
-                        combined_chapters_file = os.path.join(
-                            session['process_dir'],
-                            f"{util.sanitize_filename(session['metadata']['title'])}_part{part_idx + 1}.{default_audio_proc_format}" if needs_split else f"{util.sanitize_filename(session['metadata']['title'])}.{default_audio_proc_format}"
-                        )
-                        
-                        # Create final concat file listing all processed chunks
-                        final_list = os.path.join(tmpdir, f'part_{part_idx+1:03d}_final.txt')
-                        with open(final_list, 'w') as f:
-                            for _, chunk_path in chunk_list:
-                                f.write(f"file '{chunk_path.replace(os.sep, '/')}'\n")
-                        
-                        # Merge all chunks into a single file for this part
-                        if not self.assemble_audio_chunks_with_ffmpeg(final_list, combined_chapters_file):
-                            print(f"assemble_segments() Final merge failed for part {part_idx+1}.")
-                            return None
-
-                        # Generate metadata file with chapter information for this part
-                        metadata_file = os.path.join(session['process_dir'], f'metadata_part{part_idx+1}.txt')
-                        part_chapters = [(chapter_audio_files[i], chapter_titles[i]) for i in indices]
-                        self._generate_ffmpeg_metadata(part_chapters, session, metadata_file, default_audio_proc_format)
-
-                        # Determine final output file path
-                        audiobook_partl_file_base_name = os.path.join(
-                            session['audiobooks_dir'],
-                            f"{session['final_name'].rsplit('.', 1)[0]}_part{part_idx+1:03d}" if needs_split else session['final_name']
-                        )
-
-                        self.create_audiobook_part_subtitle(chapter_durations, audiobook_partl_file_base_name, indices, session)
-
-                        # Export the final file with metadata and add to exported files list
-                        final_file = os.path.join(
-                            session['audiobooks_dir'],
-                            f"{audiobook_partl_file_base_name}.{session['output_format']}"
-                        )
-                        if self._export_audiobook(combined_chapters_file, metadata_file, final_file, session):
-                            exported_files.append(final_file)
-            else:
-                # Handle single file output (no splitting)
-                if self.combine_to_single_audiobook(chapter_audio_files, chapter_titles, session, exported_files) is None:
-                    return None
-            
+            # Handle single file output (no splitting)
+            if self.combine_to_single_audiobook(chapter_audio_files, chapter_titles, session, exported_files) is None:
+                return None
             # Return list of exported files or None if no files were exported
             return exported_files if exported_files else None
         except Exception as e:
             util.print_error(e)
             return False
+
+    def combine_to_multiple_audiobook_parts(
+        self,
+        chapter_audio_files,
+        chapter_titles,
+        chapter_durations,
+        max_part_duration,
+        session,
+        exported_files,
+    ):
+
+        # Initialize variables for splitting chapters into parts
+        part_files = []           # List to hold file lists for each part
+        part_chapter_indices = [] # List to hold chapter indices for each part
+        # part_time_info = []         # item: [start, end, duration]
+        cur_part = []             # Current part's file list
+        cur_indices = []          # Current part's chapter indices
+        cur_duration = 0          # Current part's total duration
+
+        # subtitle_file_base = os.path.join(session['process_dir'], Path(session['final_name']).stem)
+        # Distribute chapters into parts based on duration limits
+        for idx, (file, dur) in enumerate(zip(chapter_audio_files, chapter_durations)):
+            # Start a new part if adding this chapter would exceed the max duration
+            if cur_part and (cur_duration + dur > max_part_duration):
+                part_files.append(cur_part)
+                part_chapter_indices.append(cur_indices)
+                cur_part = []
+                cur_indices = []
+                cur_duration = 0
+            # Add current chapter to the current part
+            cur_part.append(file)
+            cur_indices.append(idx)
+            cur_duration += dur
+        
+        # Add the final part if it contains any chapters
+        if cur_part:
+            part_files.append(cur_part)
+            part_chapter_indices.append(cur_indices)
+
+        # Process each part separately
+        for part_idx, (part_file_list, indices) in enumerate(zip(part_files, part_chapter_indices)):
+            # Create a temporary directory for processing this part
+            with tempfile.TemporaryDirectory() as tmpdir:
+                # Process files in batches to avoid command line length limits
+                batch_size = 1024
+                chunk_list = []
+                
+                # Split part files into batches and create ffmpeg concat files for each
+                for i in range(0, len(part_file_list), batch_size):
+                    batch = part_file_list[i:i + batch_size]
+                    input_list_file = os.path.join(tmpdir, f'chunk_{i:04d}.txt')
+                    out = os.path.join(tmpdir, f'chunk_{i:04d}.{default_audio_proc_format}')
+                    
+                    # Create ffmpeg concat file for this batch
+                    with open(input_list_file, 'w') as f:
+                        for file in batch:
+                            path = os.path.join(session['chapters_dir'], file).replace("\\", "/")
+                            f.write(f"file '{path}'\n")
+                    chunk_list.append((input_list_file, out))
+                
+                # Process all batches in parallel using multiprocessing
+                with Pool(cpu_count()) as pool:
+                    results = pool.starmap(self.assemble_audio_chunks_with_ffmpeg, chunk_list)
+                
+                # Check if all batch processing was successful
+                if not all(results):
+                    print(f"assemble_segments() One or more chunks failed for part {part_idx+1}.")
+                    return None
+                
+                # Create final combined file path for this part
+                combined_chapters_file = os.path.join(
+                    session['process_dir'],
+                    f"{util.sanitize_filename(session['metadata']['title'])}_part{part_idx + 1}.{default_audio_proc_format}"
+                )
+                
+                # Create final concat file listing all processed chunks
+                final_list = os.path.join(tmpdir, f'part_{part_idx+1:03d}_final.txt')
+                with open(final_list, 'w') as f:
+                    for _, chunk_path in chunk_list:
+                        f.write(f"file '{chunk_path.replace(os.sep, '/')}'\n")
+                
+                # Merge all chunks into a single file for this part
+                if not self.assemble_audio_chunks_with_ffmpeg(final_list, combined_chapters_file):
+                    print(f"assemble_segments() Final merge failed for part {part_idx+1}.")
+                    return None
+
+                # Generate metadata file with chapter information for this part
+                metadata_file = os.path.join(session['process_dir'], f'metadata_part{part_idx+1}.txt')
+                part_chapters = [(chapter_audio_files[i], chapter_titles[i]) for i in indices]
+                self._generate_ffmpeg_metadata(part_chapters, session, metadata_file, default_audio_proc_format)
+
+                # Determine final output file path
+                audiobook_partl_file_base_name = os.path.join(
+                    session['audiobooks_dir'],
+                    f"{session['final_name'].rsplit('.', 1)[0]}_part{part_idx+1:03d}"
+                )
+
+                self.create_audiobook_part_subtitle(chapter_durations, audiobook_partl_file_base_name, indices, session)
+
+                # Export the final file with metadata and add to exported files list
+                final_file = os.path.join(
+                    session['audiobooks_dir'],
+                    f"{audiobook_partl_file_base_name}.{session['output_format']}"
+                )
+                if self._export_audiobook(combined_chapters_file, metadata_file, final_file, session):
+                    exported_files.append(final_file)
+        return True
 
     def create_audiobook_part_subtitle(self, chapter_durations, final_file_base, indices, session):
         # Split subtitle file for this part
