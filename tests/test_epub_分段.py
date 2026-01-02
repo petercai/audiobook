@@ -384,6 +384,25 @@ def test_filter_chapter_Grea_Power_Politics(session_context, ebook_path: str, tm
     assert created_files == 11
     assert created_files == len(chapters_with_tn_sentences)
 
+def test_filter_chapter_jane_eyre(session_context, ebook_path: str, tmp_path: str):
+    context, session_id, session = session_context
+    args = {
+        "session": session_id,
+        "cancellation_requested": False,
+        "ebook": os.path.join(ebook_path, "charlotte-bronte_jane-eyre.epub"),
+        "device": "cpu",
+        "language_iso1": "en",
+        "tts_engine": TTS_ENGINES["COSYVOICE"],
+    }
+    # update session with args
+    session.update(args)
+    func_name = inspect.currentframe().f_code.co_name
+    set_process_dir(session, func_name)
+    chapters_with_tn_sentences, created_files = process_filter_chapter(session)
+    print(f"created_files: {created_files}")
+    # assert created_files == 48
+    # assert created_files == len(chapters_with_tn_sentences)
+
 def test_filter_chapter_4_dune(session_context, ebook_path: str, tmp_path: str):
     context, session_id, session = session_context
     args = {

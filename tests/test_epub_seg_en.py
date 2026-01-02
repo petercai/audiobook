@@ -90,6 +90,33 @@ def session_context(tmp_path: str):
     return context, session_id, session
 
 
+def test_get_chapter_sentences_jan_eyre(session_context, ebook_path: str, tmp_path: str):
+    context, session_id, session = session_context
+    args = {
+        "session": session_id,
+        "cancellation_requested": False,
+        "ebook": os.path.join(ebook_path, "charlotte-bronte_jane-eyre.epub"),
+        "device": "cpu",
+        "add_toc_title": True,
+        "language_iso1": "en",
+        "tts_engine": TTS_ENGINES["XTTSv2"],
+    }
+    # update session with args
+    session.update(args)
+    func_name = inspect.currentframe().f_code.co_name
+    set_process_dir(session, func_name)
+    ebook_ = session["ebook"]
+    epubBook = epub.read_epub(ebook_, {"ignore_ncx": True})
+    processor = EPubProcessor(session)
+    toc, chapters_with_tn_sentences = processor.get_chapters_in_sentences(
+        epubBook, session
+    )
+    transcript_dir = os.path.join(session["process_dir"], "transcript")
+    os.makedirs(transcript_dir, exist_ok=True)
+    cache_transcript_by_chapter(chapters_with_tn_sentences, transcript_dir)
+    created_files = sum(1 for entry in os.scandir(transcript_dir) if entry.is_file())
+    print(f"created_files: {created_files}")
+
 def test_get_chapter_sentences_4_dune(session_context, ebook_path: str, tmp_path: str):
     context, session_id, session = session_context
     args = {
