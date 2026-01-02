@@ -148,11 +148,7 @@ class EBookProcessor:
                             # 7. Check GPU availability and configure the processing device.
                             self.gpu_check(self.is_gui_process, session)
 
-                            # 8. Convert the source ebook to EPUB format, which is the standard for processing.
-                            # 8. onely support epub now. no need to convert
-                            # epub_processor = EPubProcessor(session)
                             session["epub_path"] = session["ebook"]
-                            # if epub_processor.convert2epub(session):
                             # 9. Process the EPUB: extract text, generate TTS, and create the audiobook.
                             progress_status, passed = self.process_ebook(session)
                             if passed:
@@ -174,8 +170,8 @@ class EBookProcessor:
             print(error)
             return error, False
         except Exception as e:
-            # print(f"convert_ebook() Exception: {e}")
-            util.print_error
+            error = f"convert_ebook() Exception: {e}"
+            util.print_error(error)
             return e, False
 
     def gpu_check(self, is_gui_process, session):
@@ -261,7 +257,6 @@ class EBookProcessor:
                 return err, False
 
             # Convert all chapters in the EPUB to audio files
-            # epub_processor = EPubProcessor(session)
             ebook_audio = EbookAudio(session)
             if not ebook_audio.transfer_chapters_to_audio_file(session):
                 return "convert_chapters2audio() failed!", False
@@ -271,8 +266,7 @@ class EBookProcessor:
             show_alert({"type": "info", "msg": msg})
 
             # Combine individual chapter audio files into final audiobook file(s)
-            self.ebook_audio = EbookAudio(session)
-            exported_files = self.ebook_audio.combine_audio_chapters(session)
+            exported_files = ebook_audio.combine_audio_chapters(session)
             if exported_files is None:
                 return (
                     "combine_audio_chapters() error: exported_files not created!",
@@ -296,7 +290,8 @@ class EBookProcessor:
             return progress_status, True
         except Exception as e:
             # Handle any unexpected errors during the process
-            print(f"processEPubChapters() Exception: {e}")
+            error = f"processEPubChapters() Exception: {e}"
+            util.print_error(error)
             return str(e), False
 
     def split_epub_by_chapter(self, session, epubBook):
@@ -417,7 +412,8 @@ class EBookProcessor:
             epubBook = epub.read_epub(session["epub_path"], {"ignore_ncx": True})
             return self.process_epub_by_chapters(epubBook, session)
         except Exception as e:
-            print(f"processEPub() Exception: {e}")
+            error = f"processEPub() Exception: {e}"
+            util.print_error(error)
             return str(e), False
 
     def _process_voice(self, session):

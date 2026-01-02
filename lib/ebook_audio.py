@@ -824,8 +824,22 @@ class EbookAudio:
             util.print_error(error)
             return False
 
-    # todo: add document for this method with docstring, type hints and detailed inline comments; explain code block "with tempfile.TemporaryDirectory() as tmpdir: ..." with all details; explain how code block "with Pool(cpu_count()) as pool: ..." pass args correctly and how the multi-pocess/thread work.
-    def combine_audio_sentences(self, chapter_audio_file, start, end, session):
+    def combine_audio_sentences(self, chapter_audio_file: str, audio_file_start: int, audio_file_end: int, session: dict) -> bool:
+        """
+        Combine per-sentence audio files into one chapter audio file.
+
+        The method slices the sentence-audio directory by numeric filename range, concatenates
+        them in order, and writes a single chapter file using ffmpeg's concat demuxer.
+
+        Args:
+            chapter_audio_file (str): Output filename for the combined chapter audio.
+            start (int): First sentence index (inclusive) to include.
+            end (int): Last sentence index (inclusive) to include.
+            session (dict): Session configuration with chapter paths and settings.
+
+        Returns:
+            bool: True if all chunks and the final merge succeed, otherwise False.
+        """
         try:
             chapter_audio_file = os.path.join(session['chapters_dir'], chapter_audio_file)
             chapters_dir_sentences = session['chapters_dir_sentences']
@@ -840,32 +854,57 @@ class EbookAudio:
             selected_files = [
                 os.path.join(chapters_dir_sentences, f)
                 for f in sentences_ordered
-                if start <= int(os.path.splitext(f)[0]) <= end
+                if audio_file_start <= int(os.path.splitext(f)[0]) <= audio_file_end
             ]
             if not selected_files:
                 print('No audio files found in the specified range.')
                 return False
+            # Use a temporary directory to store intermediate concat lists and chunk outputs.
+            # This keeps the workspace clean and ensures automatic cleanup even on exceptions.
             with tempfile.TemporaryDirectory() as tmpdir:
                 chunk_list = []
+                # Split into fixed-size batches to avoid very long concat lists and huge ffmpeg
+                # command inputs. Each batch becomes a small merged chunk file.
                 for i in range(0, len(selected_files), batch_size):
                     batch = selected_files[i:i + batch_size]
-                    txt = os.path.join(tmpdir, f'chunk_{i:04d}.txt')
-                    out = os.path.join(tmpdir, f'chunk_{i:04d}.{default_audio_proc_format}')
-                    with open(txt, 'w') as f:
+                    input_auiod_files_list_per_batch = os.path.join(tmpdir, f'chunk_{i:04d}.txt')
+                    output_audio_file_per_batch = os.path.join(tmpdir, f'chunk_{i:04d}.{default_audio_proc_format}')
+                    with open(input_auiod_files_list_per_batch, 'w') as f:
                         for file in batch:
                             f.write(f"file '{file.replace(os.sep, '/')}'\n")
-                    chunk_list.append((txt, out))
+                    chunk_list.append((input_auiod_files_list_per_batch, output_audio_file_per_batch))
+                    
                 try:
+                    # Create a worker process pool sized to the CPU count. Each worker runs
+                    # assemble_audio_chunks_with_ffmpeg(txt, out) for one tuple in chunk_list.
+                    # starmap expands each tuple to positional args, so the function receives
+                    # the correct (input_list_file, output_file) pair per chunk.
+                    #
+                    # This is multiprocessing (separate processes), not multithreading, so
+                    # ffmpeg runs in parallel without GIL contention. The pool is closed and
+                    # joined when leaving the context manager.
                     with Pool(cpu_count()) as pool:
-                        results = pool.starmap(self.assemble_audio_chunks_with_ffmpeg, chunk_list)
+                        parallel_proc_results = pool.starmap(self.assemble_audio_chunks_with_ffmpeg, chunk_list)
+                        
+                    # pool.starmap 是阻塞调用，执行到这里表示所有worker都已完成
+                    if not all(parallel_proc_results):
+                        error = "combine_audio_sentences() One or more chunks failed."
+                        print(error)
+                        return False
+                    
+                    # todo: 删除所有已经合并过的源音频文件
+                    # for file_path in selected_files:
+                    #             try:
+                    #                 if os.path.exists(file_path):
+                    #                     os.remove(file_path)
+                    #             except Exception as e:
+                    #                 util.print_error(f"Failed to delete {file_path}: {e}")
+                    
                 except Exception as e:
                     error = f"combine_audio_sentences() multiprocessing error: {e}"
                     util.print_error(error)
                     return False
-                if not all(results):
-                    error = "combine_audio_sentences() One or more chunks failed."
-                    print(error)
-                    return False
+                
                 # Final merge
                 final_list = os.path.join(tmpdir, 'sentences_final.txt')
                 with open(final_list, 'w') as f:
