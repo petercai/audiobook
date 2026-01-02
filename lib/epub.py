@@ -15,7 +15,6 @@ is_gui_process = False
 class EPubProcessor:
 
     def __init__(self, session):
-        self.ebook_audio = EbookAudio(session)
         self.lang = session.get('language_iso1', 'en')
         self.offline_mode =  session.get('offline_mode', False)
         self.heading_tags = {"h1", "h2", "h3", "h4", "h5", "h6"}

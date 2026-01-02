@@ -262,7 +262,7 @@ def test_process_epub_by_chapters_en1(session_context, ebook_path, tmp_path):
         "language_iso1": "en",
         "tts_engine": TTS_ENGINES['XTTSv2'],
         "output_format": "mp4",
-        "offline_mode": False,
+        "offline_mode": True,
     }
     # update session with args
     session.update(args)
@@ -277,7 +277,7 @@ def test_process_epub_by_chapters_en1(session_context, ebook_path, tmp_path):
 
     # Instantiate EBookProcessor
     from lib.ebook_processor import EBookProcessor
-    ebook_processor = EBookProcessor(session)
+    ebook_processor = EBookProcessor()
     epubBook = epub.read_epub(session["ebook"], {"ignore_ncx": True})
 
     # Process the EPUB

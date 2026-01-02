@@ -26,8 +26,7 @@ from .lang import language_mapping, resolve_lang_codes
 
 
 class EBookProcessor:
-    def __init__(self, session):
-        self.ebook_audio = EbookAudio(session)
+    def __init__(self):
         self.customized_model = CustomizedModel()
         self.session_management = SessionManagement()
 
@@ -272,6 +271,7 @@ class EBookProcessor:
             show_alert({"type": "info", "msg": msg})
 
             # Combine individual chapter audio files into final audiobook file(s)
+            self.ebook_audio = EbookAudio(session)
             exported_files = self.ebook_audio.combine_audio_chapters(session)
             if exported_files is None:
                 return (
