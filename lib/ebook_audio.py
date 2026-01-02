@@ -37,15 +37,14 @@ required_session_fields = [
     'output_format',
     'metadata',
     'cancellation_requested',
-    '',
 ]
+Conf = namedtuple("Conf", required_session_fields)
 
 class EbookAudio:
 
     def __init__(self, session):
         # pick only required field from session as read-only obj instance
         filtered_data = {k :session[k] for k in required_session_fields if k in session}
-        Conf = namedtuple("Conf", filtered_data.keys())
         self.conf = Conf(**filtered_data)
 
     def get_sanitized(self, str, replacement="_"):
