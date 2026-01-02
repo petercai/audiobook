@@ -108,7 +108,6 @@ class WebUI:
         self.is_gui_process = True
         self.src_label_file = 'Select a File'
         self.src_label_dir = 'Select a Directory'
-        self.ebook_audio = EbookAudio()
         self.customized_model = CustomizedModel()
         self.session_management = SessionManagement(is_gui_process=True)
         
@@ -1580,7 +1579,7 @@ class WebUI:
             else:                  
                 session = self.context.get_session(id)
                 voice_name = os.path.splitext(os.path.basename(f))[0].replace('&', 'And')
-                eaudio = EbookAudio()
+                eaudio = EbookAudio(session)
                 voice_name = eaudio.get_sanitized(voice_name)
                 final_voice_file = os.path.join(session['voice_dir'], f'{voice_name}.wav')
                 extractor = VoiceExtractor(session, f, voice_name)

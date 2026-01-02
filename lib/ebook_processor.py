@@ -26,8 +26,8 @@ from .lang import language_mapping, resolve_lang_codes
 
 
 class EBookProcessor:
-    def __init__(self):
-        self.ebook_audio = EbookAudio()
+    def __init__(self, session):
+        self.ebook_audio = EbookAudio(session)
         self.customized_model = CustomizedModel()
         self.session_management = SessionManagement()
 
@@ -263,7 +263,7 @@ class EBookProcessor:
 
             # Convert all chapters in the EPUB to audio files
             # epub_processor = EPubProcessor(session)
-            ebook_audio = EbookAudio()
+            ebook_audio = EbookAudio(session)
             if not ebook_audio.transfer_chapters_to_audio_file(session):
                 return "convert_chapters2audio() failed!", False
 

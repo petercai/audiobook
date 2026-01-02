@@ -277,7 +277,7 @@ def test_process_epub_by_chapters_en1(session_context, ebook_path, tmp_path):
 
     # Instantiate EBookProcessor
     from lib.ebook_processor import EBookProcessor
-    ebook_processor = EBookProcessor()
+    ebook_processor = EBookProcessor(session)
     epubBook = epub.read_epub(session["ebook"], {"ignore_ncx": True})
 
     # Process the EPUB
