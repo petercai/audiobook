@@ -2,6 +2,9 @@ import os
 from pathlib import Path
 
 from lib.models import TTS_ENGINES
+from lib.util import util
+from lib.conf import default_audio_proc_format
+
 
 class TTSManager:
     """
@@ -86,6 +89,7 @@ class TTSManager:
                 print('Other TTS engines coming soon!')    
         except Exception as e:
             error = f'convert_sentence2audio(): {e}'
+            util.print_error(error)
             raise ValueError(e)
         return False
 

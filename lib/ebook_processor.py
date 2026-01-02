@@ -264,7 +264,7 @@ class EBookProcessor:
             # Convert all chapters in the EPUB to audio files
             # epub_processor = EPubProcessor(session)
             ebook_audio = EbookAudio()
-            if not ebook_audio.convert_chapters2audio(session):
+            if not ebook_audio.transfer_chapters_to_audio_file(session):
                 return "convert_chapters2audio() failed!", False
 
             # Notify user that conversion is complete and combining process is starting

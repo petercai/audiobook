@@ -113,7 +113,7 @@ def test_convert_chinese2audio(test_session):
     set_process_dir(session, func_name)
     # Call the function to test
     ebook_audio = EbookAudio()
-    result = ebook_audio.convert_chapters2audio(session)
+    result = ebook_audio.transfer_chapters_to_audio_file(session)
     
     # Assert the result
     assert result == True, "Conversion of chapters to audio failed"
@@ -142,7 +142,7 @@ def test_convert_chinese_chapter2audio(test_session):
     
     # Call the function to test
     ebook_audio = EbookAudio()
-    result = ebook_audio.convert_chapters2audio(session)
+    result = ebook_audio.transfer_chapters_to_audio_file(session)
     
     # Assert the result
     assert result == True, "Conversion of chapters to audio failed"

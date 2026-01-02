@@ -6,6 +6,8 @@ import shutil
 import subprocess
 import tempfile
 import io
+from collections import namedtuple
+from types import SimpleNamespace
 
 import gradio as gr
 from tqdm import tqdm
@@ -19,10 +21,32 @@ from pydub import AudioSegment
 from lib.classes.tts_manager import TTSManager
 from lib.models import TTS_SML
 from lib.conf import default_audio_proc_format
-from lib.functions import DependencyError
 from lib.util import util
 
+
+required_session_fields = [
+    'chapters',
+    'tts_engine',
+    'final_name',
+    'output_split_minutes',
+    'chapters_dir',
+    'audiobooks_dir',
+    'process_dir',
+    'chapters_dir_sentences',
+    'cover',
+    'output_format',
+    'metadata',
+    'cancellation_requested',
+    '',
+]
+
 class EbookAudio:
+
+    def __init__(self, session):
+        # pick only required field from session as read-only obj instance
+        filtered_data = {k :session[k] for k in required_session_fields if k in session}
+        Conf = namedtuple("Conf", filtered_data.keys())
+        self.conf = Conf(**filtered_data)
 
     def get_sanitized(self, str, replacement="_"):
         str = str.replace('&', 'And')
@@ -32,7 +56,7 @@ class EbookAudio:
         sanitized = sanitized.strip("_")
         return sanitized
 
-    def convert_chapters2audio(self, session):
+    def transfer_chapters_to_audio_file(self, session):
         """
         Converts text chapters into audio files using a TTS engine.
 
@@ -58,80 +82,52 @@ class EbookAudio:
                 print('Cancel requested')
                 return False
 
-            # Initialize the TTS manager with the current session configuration.
-            tts_manager = TTSManager(session)
-            if not tts_manager:
-                error = f"TTS engine {session['tts_engine']} could not be loaded!\nPossible reason can be not enough VRAM/RAM memory.\nTry to lower max_tts_in_memory in ./lib/models.py"
-                print(error)
+            # --- Process Initialization ---
+            all_chapters_with_sentences_ = session['chapters']
+            total_chapters_num = len(all_chapters_with_sentences_)
+            if total_chapters_num == 0:
+                print('No chapters found!')
                 return False
 
             # --- Resume Logic ---
             # Determine the starting point if resuming a previous session.
-            resume_chapter = 0
-            missing_chapters = []
-            resume_sentence = 0
-            missing_sentences = []
-
-            # Check for already processed chapter audio files to find the resume point.
-            existing_chapters = sorted(
-                [f for f in os.listdir(session['chapters_dir']) if f.endswith(f'.{default_audio_proc_format}')],
-                key=lambda x: int(re.search(r'\d+', x).group())
-            )
-            if existing_chapters:
-                # Find the last successfully created chapter.
-                resume_chapter = max(int(re.search(r'\d+', f).group()) for f in existing_chapters)
-                print(f'Resuming from chapter {resume_chapter}')
-                # Identify any chapters that are missing before the resume point.
-                existing_chapter_numbers = {int(re.search(r'\d+', f).group()) for f in existing_chapters}
-                missing_chapters = [i for i in range(1, resume_chapter) if i not in existing_chapter_numbers]
-                if resume_chapter not in missing_chapters:
-                    missing_chapters.append(resume_chapter)
-
-            # Check for already processed sentence audio files.
-            existing_sentences = sorted(
-                [f for f in os.listdir(session['chapters_dir_sentences']) if f.endswith(f'.{default_audio_proc_format}')],
-                key=lambda x: int(re.search(r'\d+', x).group())
-            )
-            if existing_sentences:
-                # Find the last successfully created sentence.
-                resume_sentence = max(int(re.search(r'\d+', f).group()) for f in existing_sentences)
-                print(f"Resuming from sentence {resume_sentence}")
-                # Identify any sentences that are missing before the resume point.
-                existing_sentence_numbers = {int(re.search(r'\d+', f).group()) for f in existing_sentences}
-                missing_sentences = [i for i in range(1, resume_sentence) if i not in existing_sentence_numbers]
-                if resume_sentence not in missing_sentences:
-                    missing_sentences.append(resume_sentence)
-
-            # --- Process Initialization ---
-            total_chapters = len(session['chapters'])
-            if total_chapters == 0:
-                print('No chapters found!')
-                return False
+            missing_chapters, resume_chapter = self.calculate_chapter_resume(session['chapters_dir'])
+            missing_sentences, resume_sentence = self.calculate_sentence_resume(session['chapters_dir_sentences'])
 
             # Calculate total number of items (sentences + SML tokens) for the progress bar.
-            total_iterations = sum(len(session['chapters'][x]) for x in range(total_chapters))
+            total_iterations = sum(len(all_chapters_with_sentences_[x]) for x in range(total_chapters_num))
             # Calculate the total number of actual sentences to be converted.
-            total_sentences = sum(sum(1 for row in chapter if row.strip() not in TTS_SML.values()) for chapter in session['chapters'])
+            total_sentences = sum(sum(1 for row in chapter if row.strip() not in TTS_SML.values()) for chapter in
+                                  all_chapters_with_sentences_)
             if total_sentences == 0:
                 print('No sentences found!')
                 return False
 
+            # Initialize the TTS manager with the current session configuration.
+            tts_manager = TTSManager(session)
+            if not tts_manager:
+                error = f"TTS engine {session['tts_engine']} could not be loaded!\nPossible reason can be not enough VRAM/RAM memory.\nTry to lower max_tts_in_memory in models.py"
+                print(error)
+                return False
+
             sentence_number = 0
-            print(f"--------------------------------------------------\nA total of {total_chapters} {'chapter' if total_chapters <= 1 else 'chapters'} and {total_sentences} {'sentence' if total_sentences <= 1 else 'sentences'}.\n--------------------------------------------------")
+            print(f"--------------------------------------------------\nA total of {total_chapters_num} {'chapter' if total_chapters_num <= 1 else 'chapters'} and {total_sentences} {'sentence' if total_sentences <= 1 else 'sentences'}.\n--------------------------------------------------")
 
             # --- Main Processing Loop ---
             progress_bar = gr.Progress(track_tqdm=False)
-            with tqdm(total=total_iterations, desc='0.00%', bar_format='{desc}: {n_fmt}/{total_fmt} ', unit='step', initial=0) as t:
-                for x in range(total_chapters):
-                    chapter_num = x + 1
+            with tqdm(total=total_iterations, desc='0.00%', bar_format='{desc}: {n_fmt}/{total_fmt} ', unit='step', initial=0) as tbar:
+                # iterate each chapter
+                for chapter_num_start_with_0 in range(total_chapters_num):
+                    chapter_num = chapter_num_start_with_0 + 1
                     chapter_audio_file = f'chapter_{chapter_num}.{default_audio_proc_format}'
-                    sentences = session['chapters'][x]
-                    sentences_count = sum(1 for row in sentences if row.strip() not in TTS_SML.values())
+                    sentences_and_breaking_of_chapter = all_chapters_with_sentences_[chapter_num_start_with_0]
+                    # breaking, such as {break} {pause}, won't generate speech file. no need to count
+                    sentences_only_count = sum(1 for row in sentences_and_breaking_of_chapter if row.strip() not in TTS_SML.values())
                     start = sentence_number  # Mark the starting sentence number for this chapter.
-                    print(f'Chapter {chapter_num} containing {sentences_count} sentences...')
+                    print(f'Chapter {chapter_num} containing {sentences_only_count} sentences...')
 
                     # Iterate through each sentence/SML token in the chapter.
-                    for i, sentence in enumerate(sentences):
+                    for i, sentence in enumerate(sentences_and_breaking_of_chapter):
                         if session['cancellation_requested']:
                             print('Cancel requested')
                             return False
@@ -147,11 +143,11 @@ class EbookAudio:
                             success = tts_manager.convert_sentence2audio(sentence_number, sentence) if sentence else True
                             if success:
                                 # Update progress bar and console output.
-                                total_progress = (t.n + 1) / total_iterations
+                                total_progress = (tbar.n + 1) / total_iterations
                                 progress_bar(total_progress)
                                 is_sentence = sentence.strip() not in TTS_SML.values()
                                 percentage = total_progress * 100
-                                t.set_description(f'{percentage:.2f}%')
+                                tbar.set_description(f'{percentage:.2f}%')
                                 print(f" | {sentence}")
                             else:
                                 # If TTS fails for any sentence, abort the entire process.
@@ -161,11 +157,11 @@ class EbookAudio:
                         if sentence.strip() not in TTS_SML.values():
                             sentence_number += 1
                         
-                        t.update(1)  # Advance progress bar for every item (sentence or SML).
+                        tbar.update(1)  # Advance progress bar for every item (sentence or SML).
 
                     # --- Chapter Finalization ---
                     # Mark the ending sentence number for this chapter.
-                    end = sentence_number - 1 if sentence_number > 1 else sentence_number
+                    chapter_end = sentence_number - 1 if sentence_number > 1 else sentence_number
                     print(f"End of chapter {chapter_num}")
 
                     # Combine the generated sentence audio files into a single chapter file.
@@ -174,8 +170,8 @@ class EbookAudio:
                         if chapter_num <= resume_chapter:
                             print(f'**Recovering missing file chapter {chapter_num}')
                         
-                        if self.combine_audio_sentences(chapter_audio_file, start, end, session):
-                            print(f'Combining chapter {chapter_num} to audio, sentence {start} to {end}')
+                        if self.combine_audio_sentences(chapter_audio_file, start, chapter_end, session):
+                            print(f'Combining chapter {chapter_num} to audio, sentence {start} to {chapter_end}')
                         else:
                             print('combine_audio_sentences() failed!')
                             return False
@@ -183,6 +179,44 @@ class EbookAudio:
         except Exception as e:
             util.print_error(e)
             return False
+
+    def calculate_chapter_resume(self, chapters_dir_):
+        resume_chapter = 0
+        missing_chapters = []
+        # Check for already processed chapter audio files to find the resume point.
+        existing_chapters = sorted(
+            [f for f in os.listdir(chapters_dir_) if f.endswith(f'.{default_audio_proc_format}')],
+            key=lambda x: int(re.search(r'\d+', x).group())
+        )
+        if existing_chapters:
+            # Find the last successfully created chapter.
+            resume_chapter = max(int(re.search(r'\d+', f).group()) for f in existing_chapters)
+            print(f'Resuming from chapter {resume_chapter}')
+            # Identify any chapters that are missing before the resume point.
+            existing_chapter_numbers = {int(re.search(r'\d+', f).group()) for f in existing_chapters}
+            missing_chapters = [i for i in range(1, resume_chapter) if i not in existing_chapter_numbers]
+            if resume_chapter not in missing_chapters:
+                missing_chapters.append(resume_chapter)
+        return missing_chapters, resume_chapter
+
+    def calculate_sentence_resume(self, sentences_dir):
+        # Check for already processed sentence audio files.
+        resume_sentence = 0
+        missing_sentences = []
+        existing_sentences = sorted(
+            [f for f in os.listdir(sentences_dir) if f.endswith(f'.{default_audio_proc_format}')],
+            key=lambda x: int(re.search(r'\d+', x).group())
+        )
+        if existing_sentences:
+            # Find the last successfully created sentence.
+            resume_sentence = max(int(re.search(r'\d+', f).group()) for f in existing_sentences)
+            print(f"Resuming from sentence {resume_sentence}")
+            # Identify any sentences that are missing before the resume point.
+            existing_sentence_numbers = {int(re.search(r'\d+', f).group()) for f in existing_sentences}
+            missing_sentences = [i for i in range(1, resume_sentence) if i not in existing_sentence_numbers]
+            if resume_sentence not in missing_sentences:
+                missing_sentences.append(resume_sentence)
+        return missing_sentences, resume_sentence
 
     def _get_audio_duration(self, filepath):
         try:

@@ -106,7 +106,7 @@ def test_convert_chapters2audio(test_session):
     
     # Call the function to test
     ebook_audio = EbookAudio()
-    result = ebook_audio.convert_chapters2audio(session)
+    result = ebook_audio.transfer_chapters_to_audio_file(session)
     
     # Assert the result
     assert result == True, "Conversion of chapters to audio failed"
@@ -133,7 +133,7 @@ def  test_convert_onesentense(test_session):
 
     # Call the function to test
     ebook_audio = EbookAudio()
-    result = ebook_audio.convert_chapters2audio(session)
+    result = ebook_audio.transfer_chapters_to_audio_file(session)
     # result = convert_chapters2audio(session_id, context=context)
 
     # Assert the result
