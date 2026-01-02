@@ -352,7 +352,7 @@ class EBookProcessor:
                 session["chapters"], session["chapters_dir"]
             )
             # Set the final name of the output file
-            session["final_name"] = self.ebook_audio.get_sanitized(
+            session["final_name"] = util.sanitize_filename(
                 session["metadata"]["title"] + "." + session["output_format"]
             )
             # If the chapters don't exist, return an error
@@ -441,7 +441,7 @@ class EBookProcessor:
             )
         ]
         if session["voice"] is not None:
-            voice_name = self.ebook_audio.get_sanitized(
+            voice_name = util.sanitize_filename(
                 os.path.splitext(os.path.basename(session["voice"]))[0]
             )
             final_voice_file = os.path.join(session["voice_dir"], f"{voice_name}.wav")

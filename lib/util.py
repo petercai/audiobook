@@ -1,9 +1,19 @@
 import inspect
 import os
+import re
 import sys
 
 
 class util:
+    @staticmethod
+    def sanitize_filename(str, replacement="_"):
+        str = str.replace('&', 'And')
+        forbidden_chars = r'[<>:"/\\|?*\x00-\x1F ()]'
+        sanitized = re.sub(r'\s+', replacement, str)
+        sanitized = re.sub(forbidden_chars, replacement, sanitized)
+        sanitized = sanitized.strip("_")
+        return sanitized
+
     @staticmethod
     def save_transcript_by_chapter(chapters_in_book, chapter_dir):
         chapter_count = len(chapters_in_book)

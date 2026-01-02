@@ -1580,7 +1580,7 @@ class WebUI:
                 session = self.context.get_session(id)
                 voice_name = os.path.splitext(os.path.basename(f))[0].replace('&', 'And')
                 eaudio = EbookAudio(session)
-                voice_name = eaudio.get_sanitized(voice_name)
+                voice_name = util.sanitize_filename(voice_name)
                 final_voice_file = os.path.join(session['voice_dir'], f'{voice_name}.wav')
                 extractor = VoiceExtractor(session, f, voice_name)
                 status, msg = extractor.extract_voice()

@@ -47,14 +47,6 @@ class EbookAudio:
         filtered_data = {k :session[k] for k in required_session_fields if k in session}
         self.conf = Conf(**filtered_data)
 
-    def get_sanitized(self, str, replacement="_"):
-        str = str.replace('&', 'And')
-        forbidden_chars = r'[<>:"/\\|?*\x00-\x1F ()]'
-        sanitized = re.sub(r'\s+', replacement, str)
-        sanitized = re.sub(forbidden_chars, replacement, sanitized)
-        sanitized = sanitized.strip("_")
-        return sanitized
-
     def transfer_chapters_to_audio_file(self, session):
         """
         Converts text chapters into audio files using a TTS engine.
@@ -678,7 +670,7 @@ class EbookAudio:
                         # Create final combined file path for this part
                         combined_chapters_file = os.path.join(
                             session['process_dir'],
-                            f"{self.get_sanitized(session['metadata']['title'])}_part{part_idx+1}.{default_audio_proc_format}" if needs_split else f"{self.get_sanitized(session['metadata']['title'])}.{default_audio_proc_format}"
+                            f"{util.sanitize_filename(session['metadata']['title'])}_part{part_idx + 1}.{default_audio_proc_format}" if needs_split else f"{util.sanitize_filename(session['metadata']['title'])}.{default_audio_proc_format}"
                         )
                         
                         # Create final concat file listing all processed chunks
