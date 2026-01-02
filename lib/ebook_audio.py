@@ -582,20 +582,20 @@ class EbookAudio:
             _cdir = session['chapters_dir']
             
             # Get all chapter audio files and sort them numerically
-            chapter_files = [f for f in os.listdir(_cdir) if f.endswith(f'.{default_audio_proc_format}')]
-            chapter_files = sorted(chapter_files, key=lambda x: int(re.search(r'\d+', x).group()))
+            chapter_audio_files = [f for f in os.listdir(_cdir) if f.endswith(f'.{default_audio_proc_format}')]
+            chapter_audio_files = sorted(chapter_audio_files, key=lambda x: int(re.search(r'\d+', x).group()))
             
             # Extract chapter titles from session data
             chapter_titles = [c[0] for c in session['chapters']]
             
             # Check if any chapter files exist
-            if len(chapter_files) == 0:
+            if len(chapter_audio_files) == 0:
                 print('No chapter files exists!')
                 return None
             
             # Calculate total duration of all chapters
             chapter_durations = []
-            for file in chapter_files:
+            for file in chapter_audio_files:
                 filepath = os.path.join(session['chapters_dir'], file)
                 chapter_durations.append(self._get_audio_duration(filepath))
             total_duration = sum(chapter_durations)
@@ -620,7 +620,7 @@ class EbookAudio:
                 subtitle_file_base = os.path.join(session['process_dir'], Path(session['final_name']).stem)
 
                 # Distribute chapters into parts based on duration limits
-                for idx, (file, dur) in enumerate(zip(chapter_files, chapter_durations)):
+                for idx, (file, dur) in enumerate(zip(chapter_audio_files, chapter_durations)):
                     # Start a new part if adding this chapter would exceed the max duration
                     if cur_part and (cur_duration + dur > max_part_duration):
                         part_files.append(cur_part)
@@ -649,15 +649,15 @@ class EbookAudio:
                         # Split part files into batches and create ffmpeg concat files for each
                         for i in range(0, len(part_file_list), batch_size):
                             batch = part_file_list[i:i + batch_size]
-                            txt = os.path.join(tmpdir, f'chunk_{i:04d}.txt')
+                            input_list_file = os.path.join(tmpdir, f'chunk_{i:04d}.txt')
                             out = os.path.join(tmpdir, f'chunk_{i:04d}.{default_audio_proc_format}')
                             
                             # Create ffmpeg concat file for this batch
-                            with open(txt, 'w') as f:
+                            with open(input_list_file, 'w') as f:
                                 for file in batch:
                                     path = os.path.join(session['chapters_dir'], file).replace("\\", "/")
                                     f.write(f"file '{path}'\n")
-                            chunk_list.append((txt, out))
+                            chunk_list.append((input_list_file, out))
                         
                         # Process all batches in parallel using multiprocessing
                         with Pool(cpu_count()) as pool:
@@ -687,7 +687,7 @@ class EbookAudio:
 
                         # Generate metadata file with chapter information for this part
                         metadata_file = os.path.join(session['process_dir'], f'metadata_part{part_idx+1}.txt')
-                        part_chapters = [(chapter_files[i], chapter_titles[i]) for i in indices]
+                        part_chapters = [(chapter_audio_files[i], chapter_titles[i]) for i in indices]
                         self._generate_ffmpeg_metadata(part_chapters, session, metadata_file, default_audio_proc_format)
 
                         # Determine final output file path
@@ -730,21 +730,21 @@ class EbookAudio:
                 # Handle single file output (no splitting)
                 with tempfile.TemporaryDirectory() as tmpdir:
                     # 1) Create ffmpeg concat file listing all chapter files
-                    txt = os.path.join(tmpdir, 'all_chapters.txt')
-                    merged_tmp = os.path.join(tmpdir, f'all.{default_audio_proc_format}')
-                    with open(txt, 'w') as f:
-                        for file in chapter_files:
+                    input_list_file = os.path.join(tmpdir, 'all_chapters.txt')
+                    merged_audio_file_tmp = os.path.join(tmpdir, f'all.{default_audio_proc_format}')
+                    with open(input_list_file, 'w') as f:
+                        for file in chapter_audio_files:
                             path = os.path.join(session['chapters_dir'], file).replace("\\", "/")
                             f.write(f"file '{path}'\n")
 
                     # 2) Merge all chapters into a single temporary file
-                    if not self.assemble_audio_chunks_with_ffmpeg(txt, merged_tmp):
+                    if not self.assemble_audio_chunks_with_ffmpeg(input_list_file, merged_audio_file_tmp):
                         print("assemble_segments() Final merge failed.")
                         return None
 
                     # 3) Generate metadata file with chapter information for the entire book
                     metadata_file = os.path.join(session['process_dir'], 'metadata.txt')
-                    all_chapters = list(zip(chapter_files, chapter_titles))
+                    all_chapters = list(zip(chapter_audio_files, chapter_titles))
                     self._generate_ffmpeg_metadata(all_chapters, session, metadata_file, default_audio_proc_format)
 
                     # 4) Export the final audiobook file with metadata
@@ -752,7 +752,7 @@ class EbookAudio:
                         session['audiobooks_dir'],
                         session['final_name']
                     )
-                    if self._export_audio(merged_tmp, metadata_file, final_file, session):
+                    if self._export_audio(merged_audio_file_tmp, metadata_file, final_file, session):
                         exported_files.append(final_file)
             
             # Return list of exported files or None if no files were exported
@@ -763,7 +763,7 @@ class EbookAudio:
 
     def assemble_audio_chunks_with_ffmpeg(self, input_audio_chunks_list_file, audio_out_file):
         """
-        Assembles audio chunks using ffmpeg's concat protocol.
+        Assembles audio chunks to format default_audio_proc_format(flac by default) using ffmpeg's concat protocol.
 
         This method takes a text file containing a list of audio files to be concatenated
         and uses ffmpeg to merge them into a single output file. It's a low-level
