@@ -74,8 +74,8 @@ class EbookAudio:
                 return False
 
             # --- Process Initialization ---
-            all_chapters_with_sentences_ = session['chapters']
-            total_chapters_num = len(all_chapters_with_sentences_)
+            all_chapters_ = session['chapters']
+            total_chapters_num = len(all_chapters_)
             if total_chapters_num == 0:
                 print('No chapters found!')
                 return False
@@ -86,10 +86,10 @@ class EbookAudio:
             missing_sentences, resume_sentence = self.calculate_sentence_resume(session['chapters_dir_sentences'])
 
             # Calculate total number of items (sentences + SML tokens) for the progress bar.
-            total_iterations = sum(len(all_chapters_with_sentences_[x]) for x in range(total_chapters_num))
+            total_iterations = sum(len(all_chapters_[x]) for x in range(total_chapters_num))
             # Calculate the total number of actual sentences to be converted.
             total_sentences = sum(sum(1 for row in chapter if row.strip() not in TTS_SML.values()) for chapter in
-                                  all_chapters_with_sentences_)
+                                  all_chapters_)
             if total_sentences == 0:
                 print('No sentences found!')
                 return False
@@ -106,15 +106,16 @@ class EbookAudio:
 
             # --- Main Processing Loop ---
             progress_bar = gr.Progress(track_tqdm=False)
+            # an iteration for one sentence including breaking
             with tqdm(total=total_iterations, desc='0.00%', bar_format='{desc}: {n_fmt}/{total_fmt} ', unit='step', initial=0) as tbar:
                 # iterate each chapter
                 for chapter_num_start_with_0 in range(total_chapters_num):
                     chapter_num = chapter_num_start_with_0 + 1
                     chapter_audio_file = f'chapter_{chapter_num}.{default_audio_proc_format}'
-                    sentences_and_breaking_of_chapter = all_chapters_with_sentences_[chapter_num_start_with_0]
+                    sentences_and_breaking_of_chapter = all_chapters_[chapter_num_start_with_0]
                     # breaking, such as {break} {pause}, won't generate speech file. no need to count
                     sentences_only_count = sum(1 for row in sentences_and_breaking_of_chapter if row.strip() not in TTS_SML.values())
-                    start = sentence_number  # Mark the starting sentence number for this chapter.
+                    chapter_stences_start = sentence_number  # Mark the starting sentence number for this chapter.
                     print(f'Chapter {chapter_num} containing {sentences_only_count} sentences...')
 
                     # Iterate through each sentence/SML token in the chapter.
@@ -152,7 +153,7 @@ class EbookAudio:
 
                     # --- Chapter Finalization ---
                     # Mark the ending sentence number for this chapter.
-                    chapter_end = sentence_number - 1 if sentence_number > 1 else sentence_number
+                    chapter_sentences_end = sentence_number - 1 if sentence_number > 1 else sentence_number
                     print(f"End of chapter {chapter_num}")
 
                     # Combine the generated sentence audio files into a single chapter file.
@@ -161,8 +162,8 @@ class EbookAudio:
                         if chapter_num <= resume_chapter:
                             print(f'**Recovering missing file chapter {chapter_num}')
                         
-                        if self.combine_audio_sentences(chapter_audio_file, start, chapter_end, session):
-                            print(f'Combining chapter {chapter_num} to audio, sentence {start} to {chapter_end}')
+                        if self.combine_audio_sentences(chapter_audio_file, chapter_stences_start, chapter_sentences_end, session):
+                            print(f'Combining chapter {chapter_num} to audio, sentence {chapter_stences_start} to {chapter_sentences_end}')
                         else:
                             print('combine_audio_sentences() failed!')
                             return False
@@ -660,7 +661,7 @@ class EbookAudio:
                         
                         # Process all batches in parallel using multiprocessing
                         with Pool(cpu_count()) as pool:
-                            results = pool.starmap(self.assemble_chunks, chunk_list)
+                            results = pool.starmap(self.assemble_audio_chunks_with_ffmpeg, chunk_list)
                         
                         # Check if all batch processing was successful
                         if not all(results):
@@ -680,7 +681,7 @@ class EbookAudio:
                                 f.write(f"file '{chunk_path.replace(os.sep, '/')}'\n")
                         
                         # Merge all chunks into a single file for this part
-                        if not self.assemble_chunks(final_list, combined_chapters_file):
+                        if not self.assemble_audio_chunks_with_ffmpeg(final_list, combined_chapters_file):
                             print(f"assemble_segments() Final merge failed for part {part_idx+1}.")
                             return None
 
@@ -737,7 +738,7 @@ class EbookAudio:
                             f.write(f"file '{path}'\n")
 
                     # 2) Merge all chapters into a single temporary file
-                    if not self.assemble_chunks(txt, merged_tmp):
+                    if not self.assemble_audio_chunks_with_ffmpeg(txt, merged_tmp):
                         print("assemble_segments() Final merge failed.")
                         return None
 
@@ -760,7 +761,7 @@ class EbookAudio:
             util.print_error(e)
             return False
 
-    def assemble_chunks(self, txt_file, out_file):
+    def assemble_audio_chunks_with_ffmpeg(self, input_audio_chunks_list_file, audio_out_file):
         """
         Assembles audio chunks using ffmpeg's concat protocol.
 
@@ -770,8 +771,8 @@ class EbookAudio:
         or chapter batches, into larger audio files.
 
         Args:
-            txt_file (str): The path to a text file where each line is `file '/path/to/audio.flac'`.
-            out_file (str): The path to the output audio file.
+            input_audio_chunks_list_file (str): The path to a text file where each line is `file '/path/to/audio.flac'`.
+            audio_out_file (str): The path to the output audio file.
 
         Returns:
             bool: True if the assembly was successful, False otherwise.
@@ -788,8 +789,8 @@ class EbookAudio:
             # -threads 1: Use a single thread to avoid potential issues with multithreaded concatenation.
             ffmpeg_cmd = [
                 shutil.which('ffmpeg'), '-hide_banner', '-nostats', '-y',
-                '-safe', '0', '-f', 'concat', '-i', txt_file,
-                '-c:a', default_audio_proc_format, '-map_metadata', '-1', '-threads', '1', out_file
+                '-safe', '0', '-f', 'concat', '-i', input_audio_chunks_list_file,
+                '-c:a', default_audio_proc_format, '-map_metadata', '-1', '-threads', '1', audio_out_file
             ]
             # Execute the ffmpeg command as a subprocess.
             process = subprocess.Popen(
@@ -819,10 +820,11 @@ class EbookAudio:
             return False
         except Exception as e:
             # Handle any other exceptions that may occur.
-            error = f"assemble_chunks() Error: Failed to process {txt_file} → {out_file}: {e}"
+            error = f"assemble_chunks() Error: Failed to process {input_audio_chunks_list_file} → {audio_out_file}: {e}"
             util.print_error(error)
             return False
 
+    # todo: add document for this method with docstring, type hints and detailed inline comments; explain code block "with tempfile.TemporaryDirectory() as tmpdir: ..." with all details; explain how code block "with Pool(cpu_count()) as pool: ..." pass args correctly and how the multi-pocess/thread work.
     def combine_audio_sentences(self, chapter_audio_file, start, end, session):
         try:
             chapter_audio_file = os.path.join(session['chapters_dir'], chapter_audio_file)
@@ -855,7 +857,7 @@ class EbookAudio:
                     chunk_list.append((txt, out))
                 try:
                     with Pool(cpu_count()) as pool:
-                        results = pool.starmap(self.assemble_chunks, chunk_list)
+                        results = pool.starmap(self.assemble_audio_chunks_with_ffmpeg, chunk_list)
                 except Exception as e:
                     error = f"combine_audio_sentences() multiprocessing error: {e}"
                     util.print_error(error)
@@ -869,7 +871,7 @@ class EbookAudio:
                 with open(final_list, 'w') as f:
                     for _, chunk_path in chunk_list:
                         f.write(f"file '{chunk_path.replace(os.sep, '/')}'\n")
-                if self.assemble_chunks(final_list, chapter_audio_file):
+                if self.assemble_audio_chunks_with_ffmpeg(final_list, chapter_audio_file):
                     msg = f'********* Combined chapter audio file saved in {chapter_audio_file}'
                     print(msg)
                     return True
