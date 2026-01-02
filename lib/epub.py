@@ -399,7 +399,7 @@ class EPubProcessor:
 
         except Exception as e:
             error = f'filter_chapter() tuple_row() error: {e}'
-            util.print_error(error)
+            util.print_error(e, error)
             return None
 
     def filter_chapter(self, doc_chapter, tts_engine):

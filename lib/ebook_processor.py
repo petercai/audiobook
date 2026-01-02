@@ -171,7 +171,7 @@ class EBookProcessor:
             return error, False
         except Exception as e:
             error = f"convert_ebook() Exception: {e}"
-            util.print_error(error)
+            util.print_error(e, error)
             return e, False
 
     def gpu_check(self, is_gui_process, session):
@@ -291,7 +291,7 @@ class EBookProcessor:
         except Exception as e:
             # Handle any unexpected errors during the process
             error = f"processEPubChapters() Exception: {e}"
-            util.print_error(error)
+            util.print_error(e, error)
             return str(e), False
 
     def split_epub_by_chapter(self, session, epubBook):
@@ -413,7 +413,7 @@ class EBookProcessor:
             return self.process_epub_by_chapters(epubBook, session)
         except Exception as e:
             error = f"processEPub() Exception: {e}"
-            util.print_error(error)
+            util.print_error(e, error)
             return str(e), False
 
     def _process_voice(self, session):

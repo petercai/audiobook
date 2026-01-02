@@ -229,7 +229,7 @@ class EbookAudio:
             return 0
         except Exception as e:
             error = f"get_audio_duration() Error: Failed to process {filepath}: {e}"
-            util.print_error(error)
+            util.print_error(e, error)
             return 0
 
     def _generate_ffmpeg_metadata(self, part_chapters_audio_with_title, session, output_metadata_path, default_audio_proc_format):
@@ -329,7 +329,7 @@ class EbookAudio:
             return output_metadata_path
         except Exception as e:
             error = f"generate_ffmpeg_metadata() Error: Failed to generate metadata to {output_metadata_path}: {e}"
-            util.print_error(error)
+            util.print_error(e, error)
             return False
 
     def _export_audiobook(self, input_audio_file, ffmpeg_metadata_file, final_audiobook_output_file, session):
@@ -554,7 +554,7 @@ class EbookAudio:
             return output_file
         except Exception as e:
             error = f"Could not stamp part number on cover: {e}"
-            util.print_error(error)
+            util.print_error(e, error)
             return None
 
     def combine_audio_chapters(self, session):
@@ -854,7 +854,7 @@ class EbookAudio:
         except Exception as e:
             # Handle any other exceptions that may occur.
             error = f"assemble_chunks() Error: Failed to process {input_audio_chunks_list_file} → {audio_out_file}: {e}"
-            util.print_error(error)
+            util.print_error(e, error)
             return False
 
     def combine_audio_sentences(self, chapter_audio_file: str, audio_file_start: int, audio_file_end: int, session: dict) -> bool:
@@ -935,7 +935,7 @@ class EbookAudio:
                     
                 except Exception as e:
                     error = f"combine_audio_sentences() multiprocessing error: {e}"
-                    util.print_error(error)
+                    util.print_error(e, error)
                     return False
                 
                 # Final merge

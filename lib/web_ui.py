@@ -1394,7 +1394,7 @@ class WebUI:
 
     def alert_exception(self, error):
         gr.Error(error)
-        util.print_error(error)
+        util.print_error(err=error)
 
     def restore_interface(self, id, req: gr.Request):
         try:

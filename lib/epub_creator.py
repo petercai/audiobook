@@ -108,9 +108,9 @@ class EPubCreator:
             return True
         except subprocess.CalledProcessError as e:
             error = f"Subprocess error: {e.stderr}"
-            util.print_error(error)
+            util.print_error(e, error)
             return False
         except FileNotFoundError as e:
             error = f"Utility not found: {e}"
-            util.print_error(error)
+            util.print_error(e, error)
             return False

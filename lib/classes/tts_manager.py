@@ -89,7 +89,7 @@ class TTSManager:
                 print('Other TTS engines coming soon!')    
         except Exception as e:
             error = f'convert_sentence2audio(): {e}'
-            util.print_error(error)
+            util.print_error(e, error)
             raise ValueError(e)
         return False
 
