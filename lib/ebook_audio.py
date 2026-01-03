@@ -386,6 +386,8 @@ class EbookAudio:
                             # Use absolute path for subtitle file to be safe
                             subtitle_path_for_filter = Path(subtitle_file).resolve().as_posix().replace(":", "\\:")
                             ffmpeg_cmd += ['-vf', f"subtitles='{subtitle_path_for_filter}':force_style='Fontsize=12,PrimaryColour=&H00FFFF00,OutlineColour=&H00000000,BorderStyle=1,Outline=3,Shadow=0',scale=796:1200"]
+                        else:
+                            print(f"_export_audiobook(): cannot find subtitle file {subtitle_file}")
                         ffmpeg_cmd += ['-shortest']
                         # map the video to the output file
                         ffmpeg_cmd += ['-map', '2:v']
