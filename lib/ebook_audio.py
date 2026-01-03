@@ -111,7 +111,7 @@ class EbookAudio:
                 # iterate each chapter
                 for chapter_num_start_with_0 in range(total_chapters_num):
                     chapter_num = chapter_num_start_with_0 + 1
-                    chapter_audio_file = f'chapter_{chapter_num}.{default_audio_proc_format}'
+                    chapter_audio_file = f'chapter_{chapter_num:03d}.{default_audio_proc_format}'
                     sentences_and_breaking_of_chapter = all_chapters_[chapter_num_start_with_0]
                     # breaking, such as {break} {pause}, won't generate speech file. no need to count
                     sentences_only_count = sum(1 for row in sentences_and_breaking_of_chapter if row.strip() not in TTS_SML.values())
