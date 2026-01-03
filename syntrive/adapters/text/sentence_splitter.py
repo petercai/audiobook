@@ -68,7 +68,18 @@ _SOFT_PATTERN = re.compile(
     re.DOTALL,
 )
 _SOFT_PUNCT = tuple(punctuation_split_soft_set)
-# todo: explain _CLEAN_ALNUM_PATTERN with all details and put into inline comments. what r"[^\p{L}\p{N} ]+" means? list all final match chars in inline comments
+# r"[^\p{L}\p{N} ]+" is a raw regex string with a negated character class:
+# - ^ at the start of [...] negates the class (match anything NOT listed).
+# - \p{L} matches any Unicode letter (all scripts, e.g., Latin, Cyrillic, Han).
+# - \p{N} matches any Unicode number (digits and numeric letters like Ⅳ).
+# - A literal ASCII space " " is the only whitespace allowed in the class.
+# - + means match one or more of those disallowed characters as a run.
+# Final matched characters (everything except letters, numbers, and ASCII space):
+# - All punctuation and symbols (.,!?;: quotes, dashes, currency, math, emoji).
+# - All whitespace other than ASCII space (tabs, newlines, NBSP, thin space).
+# - All combining marks when they appear without a base letter/number.
+# - All separators other than ASCII space (e.g., line/paragraph separators).
+# - All control/format/private-use/surrogate code points.
 _CLEAN_ALNUM_PATTERN = re.compile(r"[^\p{L}\p{N} ]+")
 
 
