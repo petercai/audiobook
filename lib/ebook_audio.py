@@ -633,7 +633,7 @@ class EbookAudio:
             return exported_files if exported_files else None
         except Exception as e:
             util.print_error(e)
-            return False
+            return None
 
     def combine_to_multiple_audiobook_parts(
         self,
