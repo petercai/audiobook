@@ -37,7 +37,7 @@ def session_context(tmp_path: str):
             # "chapters_dir_sentences": os.path.join(process_dir, "chapters", "sentences"),
             "ebook_list": None,
             "device": "cpu",
-            
+            "language": "eng",
             "language_iso1": "en",
             "tts_engine": TTS_ENGINES['XTTSv2'],
             "output_format": "m4b",
@@ -57,7 +57,7 @@ def session_context(tmp_path: str):
             # "text_temp": 0.7,
             # "waveform_temp": 0.7,
             "audiobooks_dir": tmp_path,
-            "output_split": "by-chapter",
+            "output_split": True,
             "output_split_minutes": 30,
             "is_gui_process": False,
             "script_mode": "native",

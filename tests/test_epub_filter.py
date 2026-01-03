@@ -138,6 +138,7 @@ def test_filter_chapter_一句顶一万句(session_context, ebook_path: str, tmp
         "cancellation_requested": False,
         "ebook": os.path.join(ebook_path, "一句顶一万句 (刘震云).epub"),
         "device": "cpu",
+        "add_toc_title": False,
         "language_iso1": "zh",
         "tts_engine": TTS_ENGINES["COSYVOICE"],
     }

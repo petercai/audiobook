@@ -3,6 +3,7 @@ import inspect
 import os
 import pytest
 
+from lib.ebook_processor import EBookProcessor
 from lib.models import TTS_ENGINES
  
 from lib.conf import tmp_dir, voices_dir
@@ -82,6 +83,47 @@ def session_context(tmp_path):
 
 
     return context, session_id, session
+
+
+def test_transfer_chapters_to_audio_file_jane_eyre_c5(session_context, ebook_path, tmp_path):
+    """Test successful processing of an EPUB file."""
+    context, session_id, session = session_context
+    args = {
+        "ebook": os.path.join(ebook_path, "Jan-Eyre-5.epub"),
+        "ebook_list": None,
+        "device": "mps",
+        "language": "eng",
+        "language_iso1": "en",
+        "tts_engine": TTS_ENGINES['XTTSv2'],
+        "output_format": "mp4",
+        "add_toc_title": False,
+        "offline_mode": False,
+        "cover": "a_cover_file.jpg"
+    }
+    # update session with args
+    session.update(args)
+    
+    # Create necessary directories
+    func_name = inspect.currentframe().f_code.co_name
+    set_process_dir(session, func_name)
+    
+    session['epub_path'] = session['ebook']
+    basename = os.path.basename(session["ebook"])
+    name_splits = os.path.splitext(basename)
+    session["filename_noext"] = name_splits[0]
+    
+    # set chapters data
+    # util.save_transcript_by_chapter( session["chapters"], session["chapters_dir"] )
+    session["chapters"] = ...
+
+
+    # Convert all chapters in the EPUB to audio files
+    ebook_audio = EbookAudio(session)
+    assert ebook_audio.transfer_chapters_to_audio_file(session) 
+        # return "convert_chapters2audio() failed!", False
+
+    exported_files = ebook_audio.combine_audio_chapters(session)
+    assert exported_files
 
 
     
