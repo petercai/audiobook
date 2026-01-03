@@ -55,6 +55,21 @@ class SentenceSplitter:
         #     return self.split_with_pysbd(paragraph, language)
         """
         Split text into TTS-friendly sentences while preserving SML tokens.
+
+        The algorithm runs in phases to keep each output below the per-language
+        `max_chars` limit while avoiding unnatural breaks:
+        1) Preserve SML tokens: split input by SML markers so they can be kept as
+           atomic tokens and never merged into text.
+        2) Hard punctuation pass: for long text chunks, split on hard sentence
+           boundaries (e.g., "." "!" "?") while keeping the punctuation with
+           the sentence.
+        3) Soft punctuation pass: for still-long chunks, split on soft
+           punctuation (e.g., "," ";" ":") and then greedily pack parts back
+           together up to `max_chars` to avoid overly short fragments.
+        4) Language-specific handling: for ideographic languages, run word
+           segmentation and re-pack tokens by `max_chars`.
+        5) Final word-wrap pass: for alphabetic languages, split long strings by
+           spaces into `max_chars` sized chunks.
         """
         try:
             if paragraph is None:
@@ -65,14 +80,17 @@ class SentenceSplitter:
             _, lang_iso3 = resolve_lang_codes((language or default_language_code).strip())
             max_chars = self._get_max_chars(lang_iso3)
 
+            # Phase 1: split by SML tokens so they remain as standalone items.
             sml_list = _SML_PATTERN.split(paragraph)
             sml_list = [s for s in sml_list if s.strip() or s in self.sml_tokens]
 
             hard_list = []
             for s in sml_list:
+                # Keep SML tokens and already-short text as-is.
                 if s in (TTS_SML['break'], TTS_SML['pause']) or len(s) <= max_chars:
                     hard_list.append(s)
                 else:
+                    # Phase 2: split long text on hard punctuation (inclusive).
                     parts = self._split_inclusive(s, _HARD_PATTERN)
                     if parts:
                         for text_part in parts:
@@ -86,17 +104,21 @@ class SentenceSplitter:
 
             soft_list = []
             for s in hard_list:
+                # Keep SML tokens and short sentences without changes.
                 if s in (TTS_SML['break'], TTS_SML['pause']) or len(s) <= max_chars:
                     soft_list.append(s)
                 elif len(s) > max_chars:
+                    # Phase 3: split on soft punctuation, then re-pack greedily.
                     parts = [p for p in self._split_inclusive(s, _SOFT_PATTERN) if p]
                     if parts:
                         buffer = ''
                         for part in parts:
                             predicted_length = len(buffer) + (1 if buffer else 0) + len(part)
                             if predicted_length <= max_chars:
+                                # Append current part into the running buffer.
                                 buffer = (buffer + ' ' + part).strip() if buffer else part
                             else:
+                                # Buffer would overflow: try to split at last soft punct.
                                 if buffer and not buffer.rstrip().endswith(_SOFT_PUNCT):
                                     last_punct_idx = max(
                                         (buffer.rfind(p) for p in _SOFT_PUNCT if p in buffer),
@@ -113,6 +135,7 @@ class SentenceSplitter:
                                     soft_list.append(buffer.strip())
                                     buffer = part
                         if buffer:
+                            # Drop fragments that are only punctuation/whitespace.
                             cleaned = re.sub(r'[^\p{L}\p{N} ]+', '', buffer)
                             if any(ch.isalnum() for ch in cleaned):
                                 soft_list.append(buffer.strip())
@@ -126,6 +149,7 @@ class SentenceSplitter:
                         soft_list.append(s.strip())
 
             if lang_iso3 in ['zho', 'jpn', 'kor', 'tha', 'lao', 'mya', 'khm']:
+                # Phase 4: ideographic segmentation + packing by max_chars.
                 result = []
                 for s in soft_list:
                     if s in (TTS_SML['break'], TTS_SML['pause']):
@@ -140,6 +164,7 @@ class SentenceSplitter:
                                 result.append(tokens)
                 return list(self._join_ideogramms(result, max_chars))
 
+            # Phase 5: for alphabetic languages, split long items by spaces.
             sentences = []
             for s in soft_list:
                 if s in (TTS_SML['break'], TTS_SML['pause']) or len(s) <= max_chars:
