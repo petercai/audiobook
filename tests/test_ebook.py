@@ -3,7 +3,6 @@ import os
 
 import pytest
 from ebooklib import epub
-import stanza
 from lib.lang import year_to_decades_languages
 from lib.models import TTS_ENGINES
 from lib.conf import voices_dir, models_dir

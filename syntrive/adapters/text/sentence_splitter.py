@@ -62,11 +62,23 @@ _HARD_PATTERN = re.compile(
     re.DOTALL,
 )
 
+_HARD_PATTERN_CN = re.compile(
+    rf"(.*?(?:{_HARD_SPLIT})[{''.join(map(re.escape, punctuation_list_set))}]*)",
+    re.DOTALL,
+)
+
 _SOFT_SPLIT = "|".join(map(re.escape, punctuation_split_soft_set))
 _SOFT_PATTERN = re.compile(
     rf"(.*?(?:{_SOFT_SPLIT}))(?=\s|$)",
     re.DOTALL,
 )
+
+_SOFT_PATTERN_CN = re.compile(
+    rf"(.*?(?:{_SOFT_SPLIT}))",
+    re.DOTALL,
+)
+
+
 _SOFT_PUNCT = tuple(punctuation_split_soft_set)
 # r"[^\p{L}\p{N} ]+" is a raw regex string with a negated character class:
 # - ^ at the start of [...] negates the class (match anything NOT listed).
@@ -126,7 +138,7 @@ class SentenceSplitter:
         drops fragments that contain no alphanumeric characters (punctuation-only).
         """
         # Local bindings for speed inside the tight loop.
-        soft_pattern = _SOFT_PATTERN
+        soft_pattern = _SOFT_PATTERN_CN
         soft_punct = _SOFT_PUNCT
         clean_re = _CLEAN_ALNUM_PATTERN
         split_list = []
@@ -198,7 +210,7 @@ class SentenceSplitter:
 
     def hard_punctuation_split(self, paragraph):
         hard_list = []
-        parts = self._split_inclusive(paragraph, _HARD_PATTERN)
+        parts = self._split_inclusive(paragraph, _HARD_PATTERN_CN)
         if parts:
             for text_part in parts:
                 text_part = text_part.strip()
