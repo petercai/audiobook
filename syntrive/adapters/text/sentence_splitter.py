@@ -33,6 +33,31 @@ _HARD_PATTERN = re.compile(
     #   . ! ? , : ; " - \u00A1 \u00BF \u00AB \u00BB \u00B7 \u05F4 \u060C \u061B \u061F \u0964 \u0965
     #   \u0E2F \u0ECC \u0ECD \u0F0D \u0F0E \u1361 \u1362 \u1363 \u1364 \u1365 \u1366 \u1367 \u17D4 \u17D5
     #   \u2014 \u2026 \u3001 \u3002 \uFF0C \uFF1A \uFF1B \uFF01 \uFF1F
+    # 
+    # re.DOTALL is a compilation flag that modifies the behavior of the dot (.) metacharacter.
+    # What re.DOTALL Does
+    #     - Default Behavior (without flag): The dot . matches any single character except a newline (\n).
+    #     - With re.DOTALL: The dot . matches any character, including a newline.
+    #  It is also accessible via the alias re.S.
+    
+    # Explain for re.DOTALL:
+    #   the regex patterns are designed to capture sentences from a paragraph.
+    # 
+    # The pattern starts with .*?. This is a non-greedy match for "any character".
+
+    # - Multi-line Sentences: Input paragraphs often contain newlines (e.g., hard wrapping in text files). 
+    #   A single sentence might span multiple lines.
+    # - The Problem without re.DOTALL: If re.DOTALL were omitted, the . would stop matching as soon as it hit a newline character. 
+    #    The regex would fail to match the full sentence if it crossed a line break.
+    # - The Solution: By using re.DOTALL, .*? can consume text across line breaks 
+    #   until it finds the specific sentence-ending punctuation defined later in the pattern.    
+    # Example
+    #   Text:
+    #       Hello
+    #       world.
+    # Regex: (.*?\.)
+    # - Without re.DOTALL: Matches nothing (or fails), because . cannot match the newline after "Hello".
+    # - With re.DOTALL: Matches Hello\nworld.    
     rf"(.*?(?:{_HARD_SPLIT})[{''.join(map(re.escape, punctuation_list_set))}]*)(?=\s|$)",
     re.DOTALL,
 )
