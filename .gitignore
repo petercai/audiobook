@@ -4,5 +4,9 @@ models
 /voices/__sessions/
 .venv
 audiobooks/*
+ebooks/*
 .idea
 ebook2audiobook.egg-info
+tests/tanscript/*
+*.log
+*.txt
