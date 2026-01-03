@@ -22,8 +22,10 @@ _HARD_PATTERN = re.compile(
     # `f` interpolates `{_HARD_SPLIT}` and `{''.join(punctuation_list_set)}` at build time.
     # Pattern breakdown:
     # - (.*?(?:{_HARD_SPLIT})...): capture the shortest text ending with a hard-split char.
-    # - {''.join(punctuation_list_set)}: literal concatenation of all punctuation_list_set chars
-    #   (note: no [] -> this is not a character class; it matches the exact sequence produced).
+    # - [{''.join(map(re.escape, punctuation_list_set))}]*: match zero or more trailing punctuation chars.
+        # Using re.escape on each character to ensure special regex characters (like ., ?, -) are treated literally.
+        # Wrapping the result in [...] to create a character class.
+        # Adding * to allow matching zero or more of these trailing punctuation characters.    
     # - (?=\\s|$): stop only before whitespace or end-of-string.
     # Hard split chars (punctuation_split_hard_set):
     #   . ! ? \u2026 \uFF01 \uFF1F \u061F \u1367 \u203D \u1362 \u3002 \u0964 \u0965 \u0F0D \u17D4 \u17D5
@@ -31,7 +33,7 @@ _HARD_PATTERN = re.compile(
     #   . ! ? , : ; " - \u00A1 \u00BF \u00AB \u00BB \u00B7 \u05F4 \u060C \u061B \u061F \u0964 \u0965
     #   \u0E2F \u0ECC \u0ECD \u0F0D \u0F0E \u1361 \u1362 \u1363 \u1364 \u1365 \u1366 \u1367 \u17D4 \u17D5
     #   \u2014 \u2026 \u3001 \u3002 \uFF0C \uFF1A \uFF1B \uFF01 \uFF1F
-    rf"(.*?(?:{_HARD_SPLIT}){''.join(punctuation_list_set)})(?=\s|$)",
+    rf"(.*?(?:{_HARD_SPLIT})[{''.join(map(re.escape, punctuation_list_set))}]*)(?=\s|$)",
     re.DOTALL,
 )
 
@@ -41,6 +43,7 @@ _SOFT_PATTERN = re.compile(
     re.DOTALL,
 )
 _SOFT_PUNCT = tuple(punctuation_split_soft_set)
+# todo: explain _CLEAN_ALNUM_PATTERN with all details and put into inline comments. what r"[^\p{L}\p{N} ]+" means? list all final match chars in inline comments
 _CLEAN_ALNUM_PATTERN = re.compile(r"[^\p{L}\p{N} ]+")
 
 
