@@ -926,12 +926,12 @@ class EbookAudio:
                         return False
                     
                     # todo: 删除所有已经合并过的源音频文件
-                    # for file_path in selected_files:
-                    #             try:
-                    #                 if os.path.exists(file_path):
-                    #                     os.remove(file_path)
-                    #             except Exception as e:
-                    #                 util.print_error(f"Failed to delete {file_path}: {e}")
+                    for file_path in selected_files:
+                        try:
+                            if os.path.exists(file_path):
+                                os.remove(file_path)
+                        except Exception as e:
+                            util.print_error(f"Failed to delete {file_path}: {e}")
                     
                 except Exception as e:
                     error = f"combine_audio_sentences() multiprocessing error: {e}"
