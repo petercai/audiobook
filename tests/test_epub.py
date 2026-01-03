@@ -257,7 +257,7 @@ def test_process_epub_by_chapters_en1(session_context, ebook_path, tmp_path):
     args = {
         "ebook": os.path.join(ebook_path, "English-1.epub"),
         "ebook_list": None,
-        "device": "cpu",
+        "device": "mps",
         "language": "eng",
         "language_iso1": "en",
         "tts_engine": TTS_ENGINES['XTTSv2'],
@@ -294,11 +294,49 @@ def test_process_epub_by_chapters_en2(session_context, ebook_path, tmp_path):
     args = {
         "ebook": os.path.join(ebook_path, "English-2.epub"),
         "ebook_list": None,
-        "device": "cpu",
+        "device": "mps",
         "language": "eng",
         "language_iso1": "en",
         "tts_engine": TTS_ENGINES['XTTSv2'],
         "output_format": "mp4",
+        "offline_mode": True,
+    }
+    # update session with args
+    session.update(args)
+    
+    # Create necessary directories
+    func_name = inspect.currentframe().f_code.co_name
+    set_process_dir(session, func_name)
+    session['epub_path'] = session['ebook']
+    basename = os.path.basename(session["ebook"])
+    name_splits = os.path.splitext(basename)
+    session["filename_noext"] = name_splits[0]
+
+    # Instantiate EBookProcessor
+    from lib.ebook_processor import EBookProcessor
+    ebook_processor = EBookProcessor()
+    epubBook = epub.read_epub(session["ebook"], {"ignore_ncx": True})
+
+    # Process the EPUB
+    status, success = ebook_processor.process_epub_by_chapters(epubBook, session)
+
+    # Assertions
+    assert success is True
+    print(session['audiobook'])
+    assert os.path.exists(session['audiobook'])
+    
+def test_process_epub_by_chapters_jane_eyre_c5(session_context, ebook_path, tmp_path):
+    """Test successful processing of an EPUB file."""
+    context, session_id, session = session_context
+    args = {
+        "ebook": os.path.join(ebook_path, "Jan-Eyre-5.epub"),
+        "ebook_list": None,
+        "device": "mps",
+        "language": "eng",
+        "language_iso1": "en",
+        "tts_engine": TTS_ENGINES['XTTSv2'],
+        "output_format": "mp4",
+        "add_toc_title": False,
         "offline_mode": False,
     }
     # update session with args
