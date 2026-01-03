@@ -27,6 +27,7 @@ _SOFT_PATTERN = re.compile(
     re.DOTALL,
 )
 _SOFT_PUNCT = tuple(punctuation_split_soft_set)
+_CLEAN_ALNUM_PATTERN = re.compile(r"[^\p{L}\p{N} ]+")
 
 
 class SentenceSplitter:
@@ -50,9 +51,127 @@ class SentenceSplitter:
             util.print_error(e)
             return [paragraph]
 
+    def split_zh(self, paragraph, lang_iso3, max_chars):
+        try:
+            # split long text on hard/soft punctuation (inclusive).
+            segmentation_list = self.hard_punctuation_split(paragraph)
+            segmentation_list = self.soft_punctuation_split(segmentation_list, max_chars)
+            # if lang_iso3 in ['zho', 'jpn', 'kor', 'tha', 'lao', 'mya', 'khm']:
+            #     return self.split_for_ideographic(segmentation_list, lang_iso3, max_chars)
+            return segmentation_list
+        except Exception as e:
+            error = f'sentence_splitter() error: {e}'
+            util.print_error(e, error)
+            return None
+
+    def soft_punctuation_split(self, sentences_list, max_chars):
+        """
+        Split long sentences on soft punctuation and repack greedily to max_chars.
+
+        This method keeps punctuation with its preceding text, then merges pieces
+        into the largest chunks possible without exceeding max_chars. It also
+        drops fragments that contain no alphanumeric characters (punctuation-only).
+        """
+        # Local bindings for speed inside the tight loop.
+        soft_pattern = _SOFT_PATTERN
+        soft_punct = _SOFT_PUNCT
+        clean_re = _CLEAN_ALNUM_PATTERN
+        split_list = []
+        append_out = split_list.append
+
+        def _has_alnum(text):
+            # Remove punctuation, then check for any alphanumeric content.
+            cleaned = clean_re.sub("", text)
+            return any(ch.isalnum() for ch in cleaned)
+
+        for s in sentences_list:
+            # Skip the expensive split for already short sentences.
+            if len(s) <= max_chars:
+                if _has_alnum(s):
+                    append_out(s.strip())
+                continue
+
+            # Split on soft punctuation and keep the punctuation attached.
+            parts = [p for p in self._split_inclusive(s, soft_pattern) if p]
+            if not parts:
+                if _has_alnum(s):
+                    append_out(s.strip())
+                continue
+
+            # Greedily pack parts back together up to max_chars.
+            buffer = ""
+            for part in parts:
+                predicted_length = len(buffer) + (1 if buffer else 0) + len(part)
+                if predicted_length <= max_chars:
+                    # Still fits: extend the current buffer.
+                    buffer = (buffer + " " + part).strip() if buffer else part
+                    continue
+
+                # Would overflow: try to split at the last soft punctuation.
+                if buffer and not buffer.rstrip().endswith(soft_punct):
+                    last_punct_idx = max(
+                        (buffer.rfind(p) for p in soft_punct if p in buffer),
+                        default=-1,
+                    )
+                    if last_punct_idx != -1:
+                        # Emit up to the last soft punctuation and carry leftover.
+                        append_out(buffer[:last_punct_idx + 1].strip())
+                        leftover = buffer[last_punct_idx + 1:].strip()
+                        buffer = f"{leftover} {part}".strip() if leftover else part
+                        continue
+
+                # Fallback: emit the buffer as-is and start a new one with part.
+                append_out(buffer.strip())
+                buffer = part
+
+            # Flush remaining buffer if it contains alphanumeric content.
+            if buffer and _has_alnum(buffer):
+                append_out(buffer.strip())
+
+        return split_list
+
+    def split_for_ideographic(self, sentences_list, lang_iso3, max_chars):
+        result = []
+        # ideographic segmentation（表意语音句子分割） + packing by max_chars.
+        for s in sentences_list:
+            tokens = self._segment_ideogramms(s, lang_iso3)
+            if isinstance(tokens, list):
+                result.extend([t for t in tokens if t.strip()])
+            else:
+                tokens = tokens.strip()
+                if tokens:
+                    result.append(tokens)
+        return list(self._join_ideogramms(result, max_chars))
+
+    def hard_punctuation_split(self, paragraph):
+        hard_list = []
+        parts = self._split_inclusive(paragraph, _HARD_PATTERN)
+        if parts:
+            for text_part in parts:
+                text_part = text_part.strip()
+                if text_part:
+                    hard_list.append(text_part)
+        else:
+            s = paragraph.strip()
+            if s:
+                hard_list.append(s)
+        return hard_list
+
     def split(self, paragraph, language):
-        # if language == "en":
-        #     return self.split_with_pysbd(paragraph, language)
+        if paragraph is None:
+            return None
+        if not paragraph:
+            return []
+        
+        _, lang_iso3 = resolve_lang_codes((language or default_language_code).strip())
+        max_chars = self._get_max_chars(lang_iso3)
+        
+        if language == "zh":
+            return self.split_zh(paragraph, lang_iso3, max_chars)
+        
+        return self.split_en(paragraph, lang_iso3, max_chars)
+
+    def split_en(self, paragraph, lang_iso3, max_chars):
         """
         Split text into TTS-friendly sentences while preserving SML tokens.
 
@@ -72,14 +191,6 @@ class SentenceSplitter:
            spaces into `max_chars` sized chunks.
         """
         try:
-            if paragraph is None:
-                return None
-            if not paragraph:
-                return []
-
-            _, lang_iso3 = resolve_lang_codes((language or default_language_code).strip())
-            max_chars = self._get_max_chars(lang_iso3)
-
             # Phase 1: split by SML tokens so they remain as standalone items.
             sml_list = _SML_PATTERN.split(paragraph)
             sml_list = [s for s in sml_list if s.strip() or s in self.sml_tokens]
@@ -188,7 +299,7 @@ class SentenceSplitter:
             return sentences
         except Exception as e:
             error = f'sentence_splitter() error: {e}'
-            print(error)
+            util.print_error(e, error)
             return None
 
     @staticmethod
@@ -242,8 +353,30 @@ class SentenceSplitter:
         return clean_list
 
     def _segment_ideogramms(self, text, lang_iso3):
-        sml_pattern = "|".join(re.escape(token) for token in self.sml_tokens)
-        segments = re.split(f"({sml_pattern})", text)
+        """
+        DOSN'T work well - too aggresive!!
+        Segments ideographic text (e.g., Chinese, Japanese) into words or meaningful units.
+
+        This method handles SML tokens by preserving them as standalone segments.
+        For actual text content, it uses language-specific libraries for word segmentation.
+
+        Args:
+            text (str): The input text containing ideographic characters and potentially SML tokens.
+            lang_iso3 (str): The ISO 639-3 language code (e.g., 'zho' for Chinese, 'jpn' for Japanese).
+
+        Returns:
+            list[str]: A list of segmented words, phrases, or SML tokens.
+                       If an error occurs during segmentation, the original text is returned
+                       as a single-element list.
+        """
+        # Define a regex pattern to split the text by SML tokens.
+        # This ensures that SML tokens are treated as distinct segments and not
+        # processed by the language-specific segmenters.
+        sml_pattern: str = "|".join(re.escape(token) for token in self.sml_tokens)
+        # Split the text, keeping the SML tokens as part of the result.
+        segments: list[str] = re.split(f"({sml_pattern})", text)
+        result: list[str] = []
+        
         result = []
         try:
             for segment in segments:
