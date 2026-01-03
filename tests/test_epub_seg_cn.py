@@ -116,7 +116,7 @@ def test_get_chapter_sentences_思考快与慢(
     toc, chapters_with_tn_sentences = processor.get_chapters_in_sentences(
         epubBook, session
     )
-    transcript_dir = os.path.join(session["process_dir"], "transcript")
+    transcript_dir = os.path.join(session["process_dir"], "chapters")
     os.makedirs(transcript_dir, exist_ok=True)
     util.save_transcript_by_chapter(chapters_with_tn_sentences, transcript_dir)
     created_files = sum(1 for entry in os.scandir(transcript_dir) if entry.is_file())
@@ -146,7 +146,7 @@ def test_get_chapter_sentences_剑来(session_context, ebook_path: str, tmp_path
     toc, chapters_with_tn_sentences = processor.get_chapters_in_sentences(
         epubBook, session
     )
-    transcript_dir = os.path.join(session["process_dir"], "transcript")
+    transcript_dir = os.path.join(session["process_dir"], "chapters")
     os.makedirs(transcript_dir, exist_ok=True)
     util.save_transcript_by_chapter(chapters_with_tn_sentences, transcript_dir)
     created_files = sum(1 for entry in os.scandir(transcript_dir) if entry.is_file())
@@ -178,7 +178,7 @@ def test_get_chapter_sentences_一句顶一万句(
     toc, chapters_with_tn_sentences = processor.get_chapters_in_sentences(
         epubBook, session
     )
-    transcript_dir = os.path.join(session["process_dir"], "transcript")
+    transcript_dir = os.path.join(session["process_dir"], "chapters")
     os.makedirs(transcript_dir, exist_ok=True)
     util.save_transcript_by_chapter(chapters_with_tn_sentences, transcript_dir)
     created_files = sum(1 for entry in os.scandir(transcript_dir) if entry.is_file())
@@ -210,7 +210,7 @@ def test_get_chapter_sentences_纯真年代(
     toc, chapters_with_tn_sentences = processor.get_chapters_in_sentences(
         epubBook, session
     )
-    transcript_dir = os.path.join(session["process_dir"], "transcript")
+    transcript_dir = os.path.join(session["process_dir"], "chapters")
     os.makedirs(transcript_dir, exist_ok=True)
     util.save_transcript_by_chapter(chapters_with_tn_sentences, transcript_dir)
     created_files = sum(1 for entry in os.scandir(transcript_dir) if entry.is_file())
@@ -227,7 +227,7 @@ def process_filter_chapter(session):
     epub_docs, toc = processor.get_epub_chapters(epubBook)
     toc_items = list(processor.toc_items_iter(toc))
     toc_epub_docs = processor.filter_chapters_with_toc(epub_docs, toc)
-    transcript_dir = os.path.join(session["process_dir"], "transcript")
+    transcript_dir = os.path.join(session["process_dir"], "chapters")
     chapters_with_tn_sentences = process_chapters(
         processor, toc_epub_docs, transcript_dir, session
     )
