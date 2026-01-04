@@ -124,7 +124,7 @@ def test_snownlp():
     print(f"总共分割成 {len(chunks)} 个句子")
 
 
-def test_pyhanlp_StandardTokenizer():
+def test_pyhanlp_NLPTokenizer():
     func_name = inspect.currentframe().f_code.co_name
     print("=== 使用 PyHanLP 分割结果 ===\n")
     
@@ -183,18 +183,11 @@ def test_split(splitter):
 def test_first_chapter_zh(text_book, splitter):
     lan = "zh"
     paragraph_list = text_book[0]
-    
     sentences = []
-    # if self.lang == "zh":
-    #     for paragraph in paragraph_list:
-    #         sentences += sentence_splitter.split(normalized_text, self.lang)
-    # else:
-
     # Join the paragraph_list into a single text string for further processing
-    merged_chapter = ' '.join(paragraph_list)
+    merged_chapter = '\n'.join(paragraph_list)
     # If the text is empty or contains no valid characters, return None to indicate no content
     sentences = splitter.split(merged_chapter, lan) 
-    
     
     path = dump_filename(inspect.currentframe().f_code.co_name)
     with open(path, "w", encoding="utf-8") as f:

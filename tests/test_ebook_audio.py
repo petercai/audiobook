@@ -1,6 +1,7 @@
 
 import inspect
 import os
+import re
 import pytest
 
 from lib.ebook_processor import EBookProcessor
@@ -84,6 +85,65 @@ def session_context(tmp_path):
 
     return context, session_id, session
 
+
+def test_transfer_chapters_to_audio_file_一句顶一万句(session_context, ebook_path):
+    title = "一句顶一万句"
+    bookname = '一句顶一万句 (刘震云).epub'
+    pipeline = f"SYNTHRIVE-PROCESSING-{title}"
+    context, session_id, session = session_context
+    args = {
+        "ebook": os.path.join(ebook_path, bookname),
+        "ebook_list": None,
+        "device": "mps",
+        "language": "zho",
+        "language_iso1": "zh",
+        "tts_engine": TTS_ENGINES['COSYVOICE'],
+        "output_format": "mp4",
+        "add_toc_title": False,
+        "offline_mode": True,
+        "metadata": {
+            "title": {title}, 
+            "language": "zh_CN",
+        },
+        "cover": "a_cover_file.jpg"
+    }
+    # update session with args
+    session.update(args)
+    set_process_dir(session, pipeline)
+    
+    session['epub_path'] = session['ebook']
+    basename = os.path.basename(session["ebook"])
+    name_splits = os.path.splitext(basename)
+    session["filename_noext"] = name_splits[0]
+    
+    # set chapters data
+    # util.save_transcript_by_chapter( session["chapters"], session["chapters_dir"] )
+    all_chapters = book_transcript(session["chapters_dir"])
+    session["chapters"] = all_chapters[0]
+
+    # Convert all chapters in the EPUB to audio files
+    ebook_audio = EbookAudio(session)
+    result = ebook_audio.transfer_chapters_to_audio_file(session) 
+    assert result, "transfer_chapters_to_audio_file() failed!"
+
+    exported_files = ebook_audio.combine_audio_chapters(session)
+    assert exported_files, "combine_audio_chapters() failed!"
+
+
+def book_transcript(transript_dir):
+    # file_paths = sorted(
+    #     entry.path for entry in os.scandir(book_dir) if entry.is_file()
+    # )
+    file_paths = sorted(
+        [f for f in os.listdir(transript_dir) if f.startswith('chapter_') and f.endswith('.txt')],
+        key=lambda x: int(re.search(r'\d+', x).group())
+    )
+    
+    books = []
+    for path in file_paths:
+        with open(path, "r", encoding="utf-8") as handle:
+            books.append(handle.read().splitlines())
+    return books
 
 def test_transfer_chapters_to_audio_file_jane_eyre_c5(session_context, ebook_path, tmp_path):
     """Test successful processing of an EPUB file."""

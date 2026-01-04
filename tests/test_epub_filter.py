@@ -1,3 +1,4 @@
+from importlib import util
 import inspect
 import os
 
@@ -113,6 +114,9 @@ def test_filter_chapter_思考快与慢(session_context, ebook_path: str, tmp_pa
 
 def test_filter_chapter_剑来(session_context, ebook_path: str, tmp_path: str):
     context, session_id, session = session_context
+    bookname = '剑来 (烽火戏诸侯).epub'
+    title = util.sanitize_filename(bookname.split('.')[0])
+    pipeline = f"SYNTHRIVE-PROCESSING-{title}"    
     args = {
         "session": session_id,
         "cancellation_requested": False,
@@ -125,7 +129,7 @@ def test_filter_chapter_剑来(session_context, ebook_path: str, tmp_path: str):
     # update session with args
     session.update(args)
     func_name = inspect.currentframe().f_code.co_name
-    set_process_dir(session, func_name)
+    set_process_dir(session, pipeline)
     chapters_with_tn_sentences, created_files = process_filter_chapter(session)
     assert created_files >= 38
     assert created_files == len(chapters_with_tn_sentences)
@@ -133,10 +137,13 @@ def test_filter_chapter_剑来(session_context, ebook_path: str, tmp_path: str):
 
 def test_filter_chapter_一句顶一万句(session_context, ebook_path: str, tmp_path: str):
     context, session_id, session = session_context
+    bookname = '一句顶一万句 (刘震云).epub'
+    title = util.sanitize_filename(bookname.split('.')[0])
+    pipeline = f"SYNTHRIVE-PROCESSING-{title}"    
     args = {
         "session": session_id,
         "cancellation_requested": False,
-        "ebook": os.path.join(ebook_path, "一句顶一万句 (刘震云).epub"),
+        "ebook": os.path.join(ebook_path, bookname),
         "device": "cpu",
         "add_toc_title": False,
         "language_iso1": "zh",
@@ -144,8 +151,7 @@ def test_filter_chapter_一句顶一万句(session_context, ebook_path: str, tmp
     }
     # update session with args
     session.update(args)
-    func_name = inspect.currentframe().f_code.co_name
-    set_process_dir(session, func_name)
+    set_process_dir(session, pipeline)
     chapters_with_tn_sentences, created_files = process_filter_chapter(session)
     print(f"created_files: {created_files}")
 
@@ -257,7 +263,7 @@ def process_filter_chapter(session):
     epub_docs, toc = processor.get_epub_chapters(epubBook)
     toc_items = list(processor.toc_items_iter(toc))
     toc_epub_docs = processor.filter_chapters_with_toc(epub_docs, toc)
-    transcript_dir = os.path.join(session["process_dir"], "chapters")
+    transcript_dir = os.path.join(session["process_dir"], "transcript")
     chapters_with_tn_sentences = process_chapters(
         processor, toc_epub_docs, transcript_dir, session
     )
@@ -283,13 +289,13 @@ def process_chapters(processor, toc_docs, transcript_dir, session):
         )
         if not chapter_sentences:
             continue
-        if len(chapter_sentences) < 3:
-            pending_sentences.extend(chapter_sentences)
-            continue
-        chapter_sentences = [title] + chapter_sentences
-        if pending_sentences:
-            chapter_sentences = pending_sentences + chapter_sentences
-            pending_sentences = []
+        # if len(chapter_sentences) < 3:
+        #     pending_sentences.extend(chapter_sentences)
+        #     continue
+        # chapter_sentences = [title] + chapter_sentences
+        # if pending_sentences:
+        #     chapter_sentences = pending_sentences + chapter_sentences
+        #     pending_sentences = []
         processed_chapters.append(chapter_sentences)
 
     if pending_sentences:
@@ -299,7 +305,6 @@ def process_chapters(processor, toc_docs, transcript_dir, session):
             processed_chapters.append(pending_sentences)
 
     return processed_chapters
-    # return cache_transcript_by_chapter(processed_chapters, transcript_dir)
 
 
 def cache_transcript_by_chapter(chapters, transcript_dir):
