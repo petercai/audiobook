@@ -62,8 +62,9 @@ _HARD_PATTERN = re.compile(
     re.DOTALL,
 )
 
+_CLOSE_QUOTES_CN = "”’」』》〉】）"
 _HARD_PATTERN_CN = re.compile(
-    rf"(.*?(?:{_HARD_SPLIT})[{''.join(map(re.escape, punctuation_list_set))}]*)",
+    rf"(.*?(?:{_HARD_SPLIT})[{''.join(map(re.escape, punctuation_list_set))}]*(?:\s*[{''.join(map(re.escape, _CLOSE_QUOTES_CN))}]+)?)",
     re.DOTALL,
 )
 
@@ -125,7 +126,7 @@ class SentenceSplitter:
             #     return self.split_for_ideographic(segmentation_list, lang_iso3, max_chars)
             return segmentation_list
         except Exception as e:
-            error = f'sentence_splitter() error: {e}'
+            error = f'split_zh() error: {e}'
             util.print_error(e, error)
             return None
 
@@ -363,7 +364,7 @@ class SentenceSplitter:
                         sentences.append(text_part)
             return sentences
         except Exception as e:
-            error = f'sentence_splitter() error: {e}'
+            error = f'split_en() error: {e}'
             util.print_error(e, error)
             return None
 
@@ -419,7 +420,6 @@ class SentenceSplitter:
 
     def _segment_ideogramms(self, text, lang_iso3):
         """
-        DOSN'T work well - too aggresive!!
         Segments ideographic text (e.g., Chinese, Japanese) into words or meaningful units.
 
         This method handles SML tokens by preserving them as standalone segments.
@@ -440,35 +440,34 @@ class SentenceSplitter:
         sml_pattern: str = "|".join(re.escape(token) for token in self.sml_tokens)
         # Split the text, keeping the SML tokens as part of the result.
         segments: list[str] = re.split(f"({sml_pattern})", text)
-        result: list[str] = []
         
-        result = []
+        result_list = []
         try:
             for segment in segments:
                 if not segment:
                     continue
                 if re.fullmatch(sml_pattern, segment):
-                    result.append(segment)
+                    result_list.append(segment)
                 else:
                     if lang_iso3 == 'zho':
                         import jieba
-                        result.extend([t for t in jieba.cut(segment) if t.strip()])
+                        result_list.extend([t for t in jieba.cut(segment) if t.strip()])
                     elif lang_iso3 == 'jpn':
                         from sudachipy import dictionary, tokenizer
                         sudachi = dictionary.Dictionary().create()
                         mode = tokenizer.Tokenizer.SplitMode.C
-                        result.extend([m.surface() for m in sudachi.tokenize(segment, mode) if m.surface().strip()])
+                        result_list.extend([m.surface() for m in sudachi.tokenize(segment, mode) if m.surface().strip()])
                     elif lang_iso3 in ['tha', 'lao', 'mya', 'khm']:
                         from pythainlp import word_tokenize
-                        result.extend([t for t in word_tokenize(segment, engine='newmm') if t.strip()])
+                        result_list.extend([t for t in word_tokenize(segment, engine='newmm') if t.strip()])
                     else:
-                        result.append(segment.strip())
-            return result
+                        result_list.append(segment.strip())
+            return result_list
         except Exception as e:
             util.print_error(e)
             return [text]
 
-    def _join_ideogramms(self, idg_list, max_chars):
+    def _join_ideogramms(self, idg_list, max_chars=999):
         try:
             buffer = ''
             for token in idg_list:
