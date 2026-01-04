@@ -163,7 +163,7 @@ class HanLPNovelTextSplitter:
         else:
             sentences = self.split_sentences_with_hanlp(text)
         
-        print(f"HanLP 分句结果: {len(sentences)} 个原始句子")
+        # print(f"HanLP 分句结果: {len(sentences)} 个原始句子")
         
         # 合并成适当长度
         chunks = self.merge_sentences(sentences)
@@ -241,26 +241,3 @@ if __name__ == "__main__":
     
     print(f"总共分割成 {len(chunks2)} 个TTS句子")
     
-    print("\n=== TTS 集成示例 ===")
-    print("""
-# CosyVoice 示例
-import torchaudio
-from cosyvoice import CosyVoice
-
-cosyvoice = CosyVoice('pretrained_models/CosyVoice-300M')
-
-for i, text in enumerate(chunks):
-    audio = cosyvoice.inference_sft(text, '中文女')
-    torchaudio.save(f'chapter_{i:03d}.wav', audio, 22050)
-
-# Edge-TTS 示例 (免费)
-import edge_tts
-import asyncio
-
-async def generate_audio(text, filename):
-    communicate = edge_tts.Communicate(text, "zh-CN-XiaoxiaoNeural")
-    await communicate.save(filename)
-
-for i, text in enumerate(chunks):
-    asyncio.run(generate_audio(text, f'output_{i:03d}.mp3'))
-    """)
