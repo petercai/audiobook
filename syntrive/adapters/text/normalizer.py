@@ -97,6 +97,17 @@ class TextNormalizer:
         return stanza_nlp
 
     def normalize_cn(self, text):
+        if isinstance(text, list):
+            # a small speed micro‑optimization: binding
+            # self.normalize_cn_single_sentence to a local name avoids repeated
+            # attribute lookups inside the loop
+            normalize = self.normalize_cn_single_sentence
+            return [normalize(item) for item in text]
+        else:
+            return self.normalize_cn_single_sentence(text)
+
+
+    def normalize_cn_single_sentence(self, text):
         text = self.zh_tn.normalize(text)
         text = text.replace("\n", "")
         text = replace_blank(text)
