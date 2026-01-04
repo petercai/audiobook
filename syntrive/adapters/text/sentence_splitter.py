@@ -117,7 +117,7 @@ class SentenceSplitter:
             util.print_error(e)
             return [paragraph]
 
-    def split_zh(self, paragraph, lang_iso3, max_chars):
+    def split_cn(self, paragraph, lang_iso3, max_chars=9999):
         try:
             # split long text on hard/soft punctuation (inclusive).
             segmentation_list = self.hard_punctuation_split(paragraph)
@@ -126,11 +126,11 @@ class SentenceSplitter:
             #     return self.split_for_ideographic(segmentation_list, lang_iso3, max_chars)
             return segmentation_list
         except Exception as e:
-            error = f'split_zh() error: {e}'
+            error = f'split_cn() error: {e}'
             util.print_error(e, error)
             return None
 
-    def soft_punctuation_split(self, sentences_list, max_chars):
+    def soft_punctuation_split(self, sentences_list, max_chars=9999):
         """
         Split long sentences on soft punctuation and repack greedily to max_chars.
 
@@ -196,7 +196,7 @@ class SentenceSplitter:
 
         return split_list
 
-    def split_for_ideographic(self, sentences_list, lang_iso3, max_chars):
+    def split_for_ideographic(self, sentences_list, lang_iso3, max_chars=9999):
         result = []
         # ideographic segmentation（表意语音句子分割） + packing by max_chars.
         for s in sentences_list:
@@ -233,7 +233,7 @@ class SentenceSplitter:
         max_chars = self._get_max_chars(lang_iso3)
         
         if language == "zh":
-            return self.split_zh(paragraph, lang_iso3, max_chars)
+            return self.split_cn(paragraph, lang_iso3, max_chars)
         
         return self.split_en(paragraph, lang_iso3, max_chars)
 
@@ -442,6 +442,7 @@ class SentenceSplitter:
         segments: list[str] = re.split(f"({sml_pattern})", text)
         
         result_list = []
+        segmenter = self._get_idg_segmenter(lang_iso3)
         try:
             for segment in segments:
                 if not segment:
@@ -449,25 +450,40 @@ class SentenceSplitter:
                 if re.fullmatch(sml_pattern, segment):
                     result_list.append(segment)
                 else:
-                    if lang_iso3 == 'zho':
-                        import jieba
-                        result_list.extend([t for t in jieba.cut(segment) if t.strip()])
-                    elif lang_iso3 == 'jpn':
-                        from sudachipy import dictionary, tokenizer
-                        sudachi = dictionary.Dictionary().create()
-                        mode = tokenizer.Tokenizer.SplitMode.C
-                        result_list.extend([m.surface() for m in sudachi.tokenize(segment, mode) if m.surface().strip()])
-                    elif lang_iso3 in ['tha', 'lao', 'mya', 'khm']:
-                        from pythainlp import word_tokenize
-                        result_list.extend([t for t in word_tokenize(segment, engine='newmm') if t.strip()])
-                    else:
-                        result_list.append(segment.strip())
+                    result_list.extend(segmenter(segment))
             return result_list
         except Exception as e:
             util.print_error(e)
             return [text]
 
-    def _join_ideogramms(self, idg_list, max_chars=999):
+    @staticmethod
+    def _get_idg_segmenter(lang_iso3):
+        if lang_iso3 == 'zho':
+            return SentenceSplitter.cn_jieba_segmenter()
+        if lang_iso3 == 'jpn':
+            return SentenceSplitter.jpn_segmenter()
+        if lang_iso3 in ['tha', 'lao', 'mya', 'khm']:
+            return SentenceSplitter.sea_segmenter()
+        return lambda segment: [segment.strip()]
+
+    @staticmethod
+    def sea_segmenter():
+        from pythainlp import word_tokenize
+        return lambda segment: [t for t in word_tokenize(segment, engine='newmm') if t.strip()]
+
+    @staticmethod
+    def jpn_segmenter():
+        from sudachipy import dictionary, tokenizer
+        sudachi = dictionary.Dictionary().create()
+        mode = tokenizer.Tokenizer.SplitMode.C
+        return lambda segment: [m.surface() for m in sudachi.tokenize(segment, mode) if m.surface().strip()]
+
+    @staticmethod
+    def cn_jieba_segmenter():
+        import jieba
+        return lambda segment: [t for t in jieba.cut(segment) if t.strip()]
+
+    def _join_ideogramms(self, idg_list, max_chars=9999):
         try:
             buffer = ''
             for token in idg_list:
