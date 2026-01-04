@@ -5,7 +5,7 @@ import regex as re
 from PIL import Image
 from bs4 import BeautifulSoup, NavigableString, Tag
 from lib.ebook_audio import EbookAudio
-from lib.models import TOKENIZER_FREE_TTS, TTS_SML
+from lib.models import TOKENIZER_FREE_TTS, TTS_SML, TTS_SML_CN
 from lib.util import util
 from syntrive.adapters.text.normalizer import TextNormalizer
 from syntrive.adapters.text.sentence_splitter import SentenceSplitter
@@ -565,8 +565,8 @@ class EPubProcessor:
                 # Add heading text to the list after stripping whitespace
                 paragraph = paragraph.strip()
                 if self.lang == "zh":
-                    paragraph = re.sub(r"\s+", "、", paragraph)
-                    paragraph += "、"
+                    paragraph = re.sub(r"\s+", TTS_SML_CN['break'], paragraph)
+                    paragraph += TTS_SML_CN['break']
                 paragraph_text_list.append(paragraph)
             elif typ == "break":
                 # Avoid adding multiple consecutive break tokens which could cause unwanted pauses
