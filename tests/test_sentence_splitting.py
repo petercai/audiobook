@@ -4,7 +4,11 @@ import pytest
 
 import sys
 
+from syntrive.adapters.text.practice_splitter import segment_novel
+from syntrive.adapters.text.pyhanlp_text_splitter import HanLPNovelTextSplitter
 from syntrive.adapters.text.sentence_splitter import SentenceSplitter
+from syntrive.adapters.text.simple_splitter import SimpleNovelTextSplitter
+from syntrive.adapters.text.snownlp_text_splitter import split_novel_for_tts
 sys.stdout.reconfigure(encoding='utf-8')
 
 test_text= \
@@ -58,8 +62,119 @@ def text_book(book_dir):
             books.append(handle.read().splitlines())
     return books
 
+def test_split_hard(splitter):
+    segmentation_list = splitter.hard_punctuation_split(test_text)
+    func_name = inspect.currentframe().f_code.co_name
+    print("")
+    for line in segmentation_list:
+        print(line)
+    with open(dump_filename(func_name), "w", encoding="utf-8") as f:
+        f.write("\n".join(segmentation_list))
+        
+def test_split_hard_soft(splitter):
+    func_name = inspect.currentframe().f_code.co_name
+    
+    segmentation_list = splitter.hard_punctuation_split(test_text)
+    segmentation_list = splitter.soft_punctuation_split(segmentation_list, 50)
+    
+    print("")
+    for line in segmentation_list:
+        print(line)
+    with open(dump_filename(func_name), "w", encoding="utf-8") as f:
+        f.write("\n".join(segmentation_list))
+        
+        
+def test_split_hard_soft_idg_jieba(splitter):
+    func_name = inspect.currentframe().f_code.co_name
+    
+    segmentation_list = splitter.hard_punctuation_split(test_text)
+    segmentation_list = splitter.soft_punctuation_split(segmentation_list, 50)
+    segmentation_list = splitter.split_for_ideographic(segmentation_list, "zho", 50)
+    
+    print("")
+    for line in segmentation_list:
+        print(line)
+    with open(dump_filename(func_name), "w", encoding="utf-8") as f:
+        f.write("\n".join(segmentation_list))
+        
+def test_segment_novel(splitter):
+    func_name = inspect.currentframe().f_code.co_name
+    
+    seg_list = segment_novel(test_text)
+    segmentation_list = [s.text for s in seg_list]
+    
+    print("")
+    for line in segmentation_list:
+        print(line)
+    with open(dump_filename(func_name), "w", encoding="utf-8") as f:
+        f.write("\n".join(segmentation_list))
+
+def test_snownlp():
+    func_name = inspect.currentframe().f_code.co_name
+    print("=== 使用 SnowNLP 分割结果 ===\n")
+    
+    chunks = split_novel_for_tts(test_text, min_length=50, max_length=70)
+    
+    for i, chunk in enumerate(chunks, 1):
+        print(f"[句子 {i}] (长度: {len(chunk)})")
+        print(chunk)
+    with open(dump_filename(func_name), "w", encoding="utf-8") as f:
+        f.write("\n".join(chunks))
+    
+    print(f"总共分割成 {len(chunks)} 个句子")
+
+
+def test_pyhanlp_StandardTokenizer():
+    func_name = inspect.currentframe().f_code.co_name
+    print("=== 使用 PyHanLP 分割结果 ===\n")
+    
+    splitter = HanLPNovelTextSplitter(min_length=40, max_length=60)
+    chunks = splitter.split_for_tts(test_text)
+    
+    for i, chunk in enumerate(chunks, 1):
+        print(f"[句子 {i}] (长度: {len(chunk)})")
+        print(chunk)
+        print()
+    with open(dump_filename(func_name), "w", encoding="utf-8") as f:
+        f.write("\n".join(chunks))
+    
+    print(f"总共分割成 {len(chunks)} 个句子")        
+
+def test_pyhanlp_HanLP():
+    func_name = inspect.currentframe().f_code.co_name
+    print("=== 使用 PyHanLP 分割结果 ===\n")
+    
+    splitter = HanLPNovelTextSplitter(min_length=40, max_length=60)
+    chunks = splitter.split_for_tts(test_text,use_simple=True)
+    
+    for i, chunk in enumerate(chunks, 1):
+        print(f"[句子 {i}] (长度: {len(chunk)})")
+        print(chunk)
+        print()
+    with open(dump_filename(func_name), "w", encoding="utf-8") as f:
+        f.write("\n".join(chunks))
+    
+    print(f"总共分割成 {len(chunks)} 个句子")        
+        
+
+def test_SimpleNovelTextSplitter():
+    func_name = inspect.currentframe().f_code.co_name
+    print("=== 使用 SimpleNovelTextSplitter 分割结果 ===\n")
+    
+    splitter = SimpleNovelTextSplitter(min_length=40, max_length=60)
+    chunks = splitter.split_for_tts(test_text)
+    
+    for i, chunk in enumerate(chunks, 1):
+        print(f"[句子 {i}] (长度: {len(chunk)})")
+        print(chunk)
+        print()
+    with open(dump_filename(func_name), "w", encoding="utf-8") as f:
+        f.write("\n".join(chunks))
+    
+    print(f"总共分割成 {len(chunks)} 个句子")        
+        
 def test_split(splitter):
-    result = splitter.split(test_text, "zh")
+    result = splitter.split_cn(test_text, "zho")
     print("")
     for line in result:
         print(line)
@@ -81,8 +196,12 @@ def test_first_chapter_zh(text_book, splitter):
     sentences = splitter.split(merged_chapter, lan) 
     
     
-    filename = inspect.currentframe().f_code.co_name + ".txt"
-    path = os.path.abspath(os.path.join('tests',filename))
+    path = dump_filename(inspect.currentframe().f_code.co_name)
     with open(path, "w", encoding="utf-8") as f:
         f.write("\n".join(sentences))
+
+def dump_filename(base_name):
+    filename = base_name + ".txt"
+    path = os.path.abspath(os.path.join('tests',filename))
+    return path
                                
