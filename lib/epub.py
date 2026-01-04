@@ -433,19 +433,15 @@ class EPubProcessor:
                 is_tokenizer_tts,
             )
             sentences = []
-            sentence_splitter = SentenceSplitter()
+            sentence_splitter = SentenceSplitter(self.lang)
+            # Join the paragraph_list into a single text string for further processing
+            merged_chapter = ' '.join(paragraph_list)          
             if self.lang == "zh":
-                for paragraph in paragraph_list:
-                    normalized_text = self.text_normalizer.normalize_text_4_tts(paragraph, tts_engine)
-                    sentences += sentence_splitter.split(normalized_text, self.lang)
+                cn_sentences = sentence_splitter.split(merged_chapter, self.lang)
+                for cn_sentence in cn_sentences:
+                    normalized_text = self.text_normalizer.normalize_text_4_tts(cn_sentence, tts_engine)
+                    sentences.append(normalized_text)
             else:
-                # Join the paragraph_list into a single text string for further processing
-                merged_chapter = ' '.join(paragraph_list)
-                # If the text is empty or contains no valid characters, return None to indicate no content
-                if not re.search(r"[^\W_]", merged_chapter):
-                    error = 'No valid text found!'
-                    print(error)
-                    return None            
                 normalized_text = self.text_normalizer.normalize_text_4_tts(merged_chapter, tts_engine)
                 sentences = sentence_splitter.split(normalized_text, self.lang)
 
@@ -567,7 +563,11 @@ class EPubProcessor:
         for typ, paragraph in tuples_tagged_paragraph_list:
             if typ == "heading":
                 # Add heading text to the list after stripping whitespace
-                paragraph_text_list.append(paragraph.strip())
+                paragraph = paragraph.strip()
+                if self.lang == "zh":
+                    paragraph = re.sub(r"\s+", "、", paragraph)
+                    paragraph += "、"
+                paragraph_text_list.append(paragraph)
             elif typ == "break":
                 # Avoid adding multiple consecutive break tokens which could cause unwanted pauses
                 if is_tokenizer_tts and prev_typ != 'break':
@@ -612,4 +612,3 @@ class EPubProcessor:
                     paragraph_text_list.append(text)
             prev_typ = typ
         return paragraph_text_list 
-

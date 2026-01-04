@@ -24,7 +24,7 @@ class HanLPNovelTextSplitter:
         """
         # 预处理
         text = re.sub(r'\n+', '\n', text)
-        # text = re.sub(r'[ \t]+', '', text)
+        text = re.sub(r'[ \t]+', '', text)
         
         sentences = []
         paragraphs = text.split('\n')

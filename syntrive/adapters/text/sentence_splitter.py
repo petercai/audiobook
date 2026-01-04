@@ -12,6 +12,7 @@ from lib.lang import (
 )
 from lib.models import TTS_SML
 from lib.util import util
+from syntrive.adapters.text.pyhanlp_text_splitter import HanLPNovelTextSplitter
 
 _SML_TOKENS = set(TTS_SML.values())
 _SML_PATTERN = re.compile(rf"({'|'.join(map(re.escape, _SML_TOKENS))})")
@@ -97,9 +98,12 @@ _CLEAN_ALNUM_PATTERN = re.compile(r"[^\p{L}\p{N} ]+")
 
 
 class SentenceSplitter:
-    def __init__(self, rules=None):
+    def __init__(self, language="zh", rules=None):
         self.rules = rules
         self.sml_tokens = _SML_TOKENS
+        self.language, self.lang_iso3 = resolve_lang_codes((language or default_language_code).strip())
+        self.best_chars, self.max_chars = self.get_segment_len(self.lang_iso3)
+        self.splitter = HanLPNovelTextSplitter(self.best_chars, self.max_chars)
         
     def split_with_pysbd(self, paragraph, language):
         if paragraph is None:
@@ -117,7 +121,10 @@ class SentenceSplitter:
             util.print_error(e)
             return [paragraph]
 
-    def split_cn(self, paragraph, lang_iso3, max_chars=9999):
+    def split_cn(self, paragraph):
+        return self.splitter.split_for_tts(paragraph)
+    
+    def split_cn_with_internal(self, paragraph, lang_iso3,max_chars=9999):
         try:
             # split long text on hard/soft punctuation (inclusive).
             segmentation_list = self.hard_punctuation_split(paragraph)
@@ -230,12 +237,12 @@ class SentenceSplitter:
             return []
         
         _, lang_iso3 = resolve_lang_codes((language or default_language_code).strip())
-        max_chars = self._get_max_chars(lang_iso3)
+        # best, max_chars = self.get_segment_len(lang_iso3)
         
         if language == "zh":
-            return self.split_cn(paragraph, lang_iso3, max_chars)
+            return self.split_cn(paragraph)
         
-        return self.split_en(paragraph, lang_iso3, max_chars)
+        return self.split_en(paragraph, lang_iso3, self.max_chars)
 
     def split_en(self, paragraph, lang_iso3, max_chars):
         """
@@ -369,9 +376,9 @@ class SentenceSplitter:
             return None
 
     @staticmethod
-    def _get_max_chars(lang_iso3):
+    def get_segment_len(lang_iso3):
         lang_key = lang_iso3 if lang_iso3 in language_mapping else default_language_code
-        return language_mapping[lang_key]['max_chars'] - 4
+        return language_mapping[lang_key]['segment_len']['best'], language_mapping[lang_key]['segment_len']['max']
 
     @staticmethod
     def _split_inclusive(text, pattern):
