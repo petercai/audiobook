@@ -1,5 +1,5 @@
 """
-使用 SnowNLP 将小说章节分割成适合 TTS 的句子
+使用 SnowNLP 将小说章节分割成适合 TTS 的句子（保留标点版本）
 安装: pip install snownlp
 """
 
@@ -30,11 +30,39 @@ def split_novel_for_tts(text, min_length=50, max_length=70):
     for paragraph in paragraphs:
         if not paragraph.strip():
             continue
-            
+        
         # 使用 SnowNLP 进行句子分割
         s = SnowNLP(paragraph)
-        sentences = s.sentences
+        sentences_no_punct = s.sentences  # 这些句子没有标点
         
+        # 从原文中找回标点符号
+        sentences = []
+        search_start = 0
+        
+        for sentence in sentences_no_punct:
+            if not sentence.strip():
+                continue
+            
+            # 在原文中查找这个句子的位置
+            idx = paragraph.find(sentence, search_start)
+            
+            if idx != -1:
+                # 找到句子结束位置
+                end_idx = idx + len(sentence)
+                
+                # 检查后面的标点符号
+                while end_idx < len(paragraph) and paragraph[end_idx] in '。！？；…""''':
+                    end_idx += 1
+                
+                # 提取带标点的完整句子
+                sentence_with_punct = paragraph[idx:end_idx]
+                sentences.append(sentence_with_punct)
+                search_start = end_idx
+            else:
+                # 找不到位置，使用原句子
+                sentences.append(sentence)
+        
+        # 合并句子到适当长度
         current_chunk = ""
         
         for sentence in sentences:
@@ -110,7 +138,7 @@ if __name__ == "__main__":
     夜风吹过，院中的竹叶沙沙作响，仿佛在低声附和着这番教诲。
     """
     
-    print("=== 使用 SnowNLP 分割结果 ===\n")
+    print("=== 使用 SnowNLP 分割结果（保留标点版本）===\n")
     
     chunks = split_novel_for_tts(sample_text, min_length=50, max_length=70)
     
@@ -120,3 +148,20 @@ if __name__ == "__main__":
         print()
     
     print(f"总共分割成 {len(chunks)} 个句子")
+    
+    # 验证标点保留情况
+    print("\n=== 标点符号保留验证 ===")
+    punct_count = sum(1 for chunk in chunks if any(p in chunk for p in '。！？；'))
+    print(f"包含句末标点的句子: {punct_count}/{len(chunks)}")
+    
+    # 显示对比
+    print("\n=== 对比：原版 vs 修复版 ===")
+    print("原版 SnowNLP:")
+    s = SnowNLP(sample_text.split('\n')[1])
+    print("  示例句子:", s.sentences[0] if s.sentences else "无")
+    print("  ❌ 丢失标点符号")
+    
+    print("\n修复版:")
+    fixed_chunks = split_novel_for_tts(sample_text.split('\n')[1])
+    print("  示例句子:", fixed_chunks[0] if fixed_chunks else "无")
+    print("  ✅ 保留标点符号")
