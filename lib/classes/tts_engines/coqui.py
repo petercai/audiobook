@@ -95,7 +95,7 @@ class Coqui:
             self._build()
         except Exception as e:
             error = f'__init__() error: {e}'
-            print(error)
+            util.print_error(e, error)
             return None
 
     def _build(self):
@@ -137,7 +137,8 @@ class Coqui:
             
             return tts_loaded
         except Exception as e:
-            print(f'build() error: {e}')
+            error = f'Coqui._build() error: {e}'
+            util.print_error(e, error)
             return False
 
     def _engine_handlers(self, fine_tuned_, tuned_files_, custom_model_, xtt_sv_files_):
@@ -193,7 +194,7 @@ class Coqui:
 
                 self._prepare_cosyvoice_zero_shot(tts, voice_path)
         except Exception as e:
-            print(f"{TTS_ENGINES['COSYVOICE']} load error: {e}")
+            util.print_error(e, f"{TTS_ENGINES['COSYVOICE']} load error: {e}")
             return True
 
         if tts:
@@ -239,7 +240,9 @@ class Coqui:
             )
         except Exception as e:
             if self.session['offline_mode']:
-                print(f"Offline mode: Failed to load XTTSv2 speakers file. Expected in '{self.cache_dir}'.")
+                util.print_error(e, f"Offline mode: Failed to load XTTSv2 speakers file. Expected in '{self.cache_dir}'.")
+            else:
+                util.print_error(e, f"Failed to load XTTSv2 speakers file from '{repo_}'.")
             raise e
 
     def _handle_xttsv2(self, fine_tuned_, tuned_files_, custom_model_, xtt_sv_files_):
@@ -276,7 +279,9 @@ class Coqui:
                 local_files_only=self.session['offline_mode'])
         except Exception as e:
             if self.session['offline_mode']:
-                print(f"Offline mode: Failed to load XTTSv2 model files from '{hf_repo}'. Expected in '{self.cache_dir}'.")
+                util.print_error(e, f"Offline mode: Failed to load XTTSv2 model files from '{hf_repo}'. Expected in '{self.cache_dir}'.")
+            else:
+                util.print_error(e, f"Failed to load XTTSv2 model files from '{hf_repo}'.")
             raise e
         self._load_checkpoint(tts_engine=TTS_ENGINES['XTTSv2'], key=self.tts_key, checkpoint_path=checkpoint_path, config_path=config_path, vocab_path=vocab_path, device=self.session['device'])
         return True
@@ -295,7 +300,9 @@ class Coqui:
             text_model_path = hf_hub_download(repo_id=hf_repo, filename=f"{hf_sub}{tuned_files_[0]}", cache_dir=self.cache_dir, local_files_only=self.session['offline_mode'])
         except Exception as e:
             if self.session['offline_mode']:
-                print(f"Offline mode: Failed to load BARK model file from '{hf_repo}'. Expected in '{self.cache_dir}'.")
+                util.print_error(e, f"Offline mode: Failed to load BARK model file from '{hf_repo}'. Expected in '{self.cache_dir}'.")
+            else:
+                util.print_error(e, f"Failed to load BARK model file from '{hf_repo}'.")
             raise e
         checkpoint_dir = os.path.dirname(text_model_path)
         self._load_checkpoint(tts_engine=TTS_ENGINES['BARK'], key=self.tts_key, checkpoint_dir=checkpoint_dir, device=self.session['device'])
@@ -426,7 +433,7 @@ class Coqui:
         except Exception as e:
             # Catch and report any exceptions during the loading process.
             error = f'_load_api() error: {e}'
-            print(error)
+            util.print_error(e, error)
         
         # Return False if the model could not be loaded.
         return False
@@ -537,7 +544,7 @@ class Coqui:
         except Exception as e:
             # Catch and report any exceptions during the loading process.
             error = f'_load_checkpoint() error: {e}'
-            print(error)
+            util.print_error(e, error)
         
         # Return False if loading fails.
         return False
@@ -606,7 +613,9 @@ class Coqui:
                                     local_files_only=self.session['offline_mode'])
                             except Exception as e:
                                 if self.session['offline_mode']:
-                                    print(f"Offline mode: Failed to load internal XTTSv2 model files from '{hf_repo}'. Expected in '{self.cache_dir}'.")
+                                    util.print_error(e, f"Offline mode: Failed to load internal XTTSv2 model files from '{hf_repo}'. Expected in '{self.cache_dir}'.")
+                                else: 
+                                    util.print_error(e, f"Failed to load internal XTTSv2 model files from '{hf_repo}'.")
                                 raise e
                             tts = self._load_checkpoint(tts_engine=TTS_ENGINES['XTTSv2'], key=tts_internal_key, checkpoint_path=checkpoint_path, config_path=config_path, vocab_path=vocab_path, device=device)
                         
@@ -690,7 +699,7 @@ class Coqui:
                 return voice_path
         except Exception as e:
             error = f'_check_xtts_builtin_speakers() error: {e}'
-            print(error)
+            util.print_error(e, error)
         return False
 
     def _check_bark_npz(self, voice_path, bark_dir, speaker, device):
@@ -727,7 +736,9 @@ class Coqui:
                                 local_files_only=self.session['offline_mode'])
                         except Exception as e:
                             if self.session['offline_mode']:
-                                print(f"Offline mode: Failed to load internal BARK model files from '{hf_repo}'. Expected in '{self.cache_dir}'.")
+                                util.print_error(e, f"Offline mode: Failed to load internal BARK model files from '{hf_repo}'. Expected in '{self.cache_dir}'.")
+                            else: 
+                                util.print_error(e, f"Failed to load internal BARK model files from '{hf_repo}'.")
                             raise e
                         checkpoint_dir = os.path.dirname(text_model_path)
                         tts = self._load_checkpoint(tts_engine=TTS_ENGINES['BARK'], key=tts_internal_key, checkpoint_dir=checkpoint_dir, device=device)
@@ -769,7 +780,7 @@ class Coqui:
                 return True
         except Exception as e:
             error = f'_check_bark_npz() error: {e}'
-            print(error)
+            util.print_error(e, error)
         return False
         
     def _tensor_type(self, audio_data):
@@ -996,7 +1007,7 @@ class Coqui:
             speech = torch.cat(audio_chunks, dim=1)
             return speech.squeeze(0), trim_audio_buffer
         except Exception as e:
-            print(f"_synthesize_cosyvoice() error: {e}")
+            util.print_error(e, f"_synthesize_cosyvoice() error: {e}")
             return None, trim_audio_buffer
 
     def convert(self, s_n, s):
@@ -1152,6 +1163,7 @@ class Coqui:
             else:
                 print(f"convert() error: {self.session['tts_engine']} is None")
         except Exception as e:
+            util.print_error(e, f'convert() error: {e}')
             raise ValueError(f'Coqui.convert(): {e}')
         
         return False
