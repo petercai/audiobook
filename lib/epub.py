@@ -565,9 +565,9 @@ class EPubProcessor:
                 # Add heading text to the list after stripping whitespace
                 paragraph = paragraph.strip()
                 if self.lang == "zh":
+                    # 如果中文在强调和加重部分(heading),那么要把里面的空格都转化成句号，因为你在之后的分句中会把所有的空格都移掉。
                     paragraph = re.sub(r"\s+", TTS_SML_CN['break'], paragraph)
-                    paragraph += TTS_SML_CN['break']
-                paragraph_text_list.append(paragraph)
+                paragraph_text_list.append(self.end_with_punctuation(paragraph))
             elif typ == "break":
                 # Avoid adding multiple consecutive break tokens which could cause unwanted pauses
                 if is_tokenizer_tts and prev_typ != 'break':
@@ -604,11 +604,52 @@ class EPubProcessor:
                         # Otherwise, just join the cells with separators
                         line = " - ".join(cells)
                     if line:
-                        paragraph_text_list.append(line.strip())
+                        paragraph_text_list.append(self.end_with_punctuation(line))
             else:
                 # Handle regular text content
-                text = paragraph.strip()
+                text = self.end_with_punctuation(paragraph)
                 if text:
                     paragraph_text_list.append(text)
             prev_typ = typ
         return paragraph_text_list 
+    
+    @staticmethod
+    def end_with_punctuation(text, language='zh'):
+        """
+        检测文本末尾是否有标点符号,如果没有则根据语言添加相应句号
+        标点符号必须加全。以免影响之后的准确断句。
+        
+        参数:
+            text: 要检测的文本字符串
+            language: 语言类型, 'zh' 表示中文, 'en' 表示英文
+        
+        返回:
+            添加标点后的文本
+        """
+        if not text:
+            return text
+        
+        # 去除末尾空白字符
+        text = text.rstrip()
+        
+        if not text:
+            return text
+        
+        # 定义中文标点符号
+        chinese_punctuation = '。！？；：，、…—·「」『』【】《》〈〉""''（）'
+        
+        # 定义英文标点符号
+        english_punctuation = '.!?;:,…-"\'()'
+        
+        # 合并所有标点符号
+        all_punctuation = chinese_punctuation + english_punctuation
+        
+        # 检查最后一个字符是否为标点
+        if text[-1] not in all_punctuation:
+            # 根据语言参数添加相应的句号
+            if language == 'zh':
+                text += '。'
+            else:
+                text += '.'
+        
+        return text
