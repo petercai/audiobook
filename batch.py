@@ -1,13 +1,8 @@
 import argparse
 import os
-import socket
-import subprocess
 import sys
-import tempfile
 
-from lib import *
 from lib.conf import (
-    FULL_DOCKER,
     NATIVE,
     audiobooks_cli_dir,
     default_device,
@@ -17,17 +12,15 @@ from lib.conf import (
     device_list,
     ebook_formats,
     interface_port,
-    max_python_version,
-    min_python_version,
     prog_version,
 )
 from lib.ebook_processor import EBookProcessor
 from lib.functions import (
     SessionContext,
 )
-from lib.lang import default_language_code, install_info
+from lib.lang import default_language_code
 from lib.models import TTS_ENGINES, default_engine_settings, default_fine_tuned
-from lib.web_ui import WebUI
+from syntrive.ui.main import WebUI
 
 
 def build_arg_parser():
@@ -241,18 +234,7 @@ def parse_cli_args():
 def main():
     args = parse_cli_args()
 
-    if not 'help' in args:
-        if not check_virtual_env(args['script_mode']):
-            sys.exit(1)
-
-        if not check_python_version():
-            sys.exit(1)
-
-        # Check if the port is already in use to prevent multiple launches
-        if not args['headless'] and is_port_in_use(interface_port):
-            error = f'Error: Port {interface_port} is already in use. The web interface may already be running.'
-            print(error)
-            sys.exit(1)
+    if 'help' not in args:
 
         args['script_mode'] = args.get('script_mode', NATIVE)
         # Set session ID to default if workflow mode is enabled
