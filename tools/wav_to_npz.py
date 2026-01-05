@@ -2,6 +2,8 @@
 
 import os
 
+from lib.util import util
+
 os.environ['PYTHONUTF8'] = '1'
 os.environ['PYTHONIOENCODING'] = 'utf-8'
 os.environ['COQUI_TOS_AGREED'] = '1'
@@ -82,6 +84,7 @@ def load_checkpoint(**kwargs):
             print(error)
     except Exception as e:
         error = f'_load_checkpoint() error: {e}'
+        util.print_error(e, error)
     return False
 
 def wav_to_npz(bark_dir, wav_dir):
