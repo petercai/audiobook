@@ -28,7 +28,7 @@ class util:
 
     @staticmethod
     def print_error(e=None, err=""):
-        if not e and isinstance(e, Exception):
+        if e and isinstance(e, Exception):
             # Get where exception was raised
             exc_type, exc_obj, exc_tb = sys.exc_info()
             raised_fname = exc_tb.tb_frame.f_code.co_filename
