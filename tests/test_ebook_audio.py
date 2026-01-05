@@ -4,7 +4,6 @@ import os
 import re
 import pytest
 
-from lib.ebook_processor import EBookProcessor
 from lib.models import TTS_ENGINES
  
 from lib.conf import tmp_dir, voices_dir
@@ -90,7 +89,7 @@ def session_context(tmp_path):
 def book_context(bookname):
     title = util.sanitize_filename(bookname.split('.')[0])
     pipeline = f"PROCESSING-{title}"
-    return bookname,title,pipeline
+    return bookname, title, pipeline
 
 @pytest.fixture
 def process_context():
@@ -102,9 +101,9 @@ def process_context():
 
 
 
-def test_transfer_chapters_to_audio_一句顶一万句(session_context, ebook_path, process_context):
-    bookname, title, pipeline = process_context()
+def test_transfer_chapters_to_cn_audio(session_context, ebook_path, process_context):
     context, session_id, session = session_context
+    bookname, title, pipeline = process_context
     args = {
         "ebook": os.path.join(ebook_path, bookname),
         "ebook_list": None,
@@ -131,8 +130,6 @@ def test_transfer_chapters_to_audio_一句顶一万句(session_context, ebook_pa
     session["filename_noext"] = name_splits[0]
     session["final_name"] = name_splits[0] + '.' + session['output_format']
     
-    # set chapters data
-    # util.save_transcript_by_chapter( session["chapters"], session["chapters_dir"] )
     all_chapters = book_transcript(session["chapters_dir"])
     session["chapters"] = [all_chapters[0]]
 
@@ -146,22 +143,7 @@ def test_transfer_chapters_to_audio_一句顶一万句(session_context, ebook_pa
 
 
 
-def book_transcript(transript_dir):
-    # file_paths = sorted(
-    #     entry.path for entry in os.scandir(book_dir) if entry.is_file()
-    # )
-    file_paths = sorted(
-        [f for f in os.listdir(transript_dir) if f.startswith('chapter_') and f.endswith('.txt')],
-        key=lambda x: int(re.search(r'\d+', x).group())
-    )
-    
-    books = []
-    for txt_file in file_paths:
-        with open(os.path.join(transript_dir, txt_file), "r", encoding="utf-8") as handle:
-            books.append(handle.read().splitlines())
-    return books
-
-def test_transfer_chapters_to_audio_file_jane_eyre_c5(session_context, ebook_path, tmp_path):
+def test_transfer_chapters_to_en_audio(session_context, ebook_path, tmp_path):
     """Test successful processing of an EPUB file."""
     context, session_id, session = session_context
     args = {
@@ -203,73 +185,40 @@ def test_transfer_chapters_to_audio_file_jane_eyre_c5(session_context, ebook_pat
 
 
     
-def test_combine_audio_chapters(session_context, ebook_path, tmp_path):
+def test_combine_audio_chapters(session_context, ebook_path, process_context):
     """Test successful processing of an EPUB file."""
     context, session_id, session = session_context
-
+    bookname, title, pipeline = process_context
+    
     args = {
-        "session": "34580d40b4f8e9a591f0ee19dc51a4f4",
-        "ebook": os.path.join(ebook_path, "jane-eyre-c12.epub"),
-        "device": "cpu",
-        "language": "eng",
-        "language_iso1": "en",
-        "tts_engine": TTS_ENGINES['XTTSv2'],
+        # "session": "34580d40b4f8e9a591f0ee19dc51a4f4",
+        "ebook": os.path.join(ebook_path, bookname),
+        "device": "mps",
+        "language": "zho",
+        "language_iso1": "zh",
+        "tts_engine": TTS_ENGINES['COSYVOICE'],
         "output_format": "mp4",
-        "chapters": [
-                        ["chapter_1.flac"],
-                        ["chapter_2.flac"],
-                        ["chapter_3.flac"],
-                        ["chapter_4.flac"],
-                        ["chapter_5.flac"],
-                        ["chapter_6.flac"],
-                        ["chapter_7.flac"],
-                        ["chapter_8.flac"],
-                        ["chapter_9.flac"],
-                        ["chapter_10.flac"],
-                        ["chapter_11.flac"],
-                        ["chapter_12.flac"],
-                        ["chapter_13.flac"],
-                        ["chapter_14.flac"],
-                        ["chapter_15.flac"],
-                        ["chapter_16.flac"],
-                        ["chapter_17.flac"],
-                        ["chapter_18.flac"],
-                        ["chapter_19.flac"],
-                        ["chapter_20.flac"],
-                        ["chapter_21.flac"],
-                        ["chapter_22.flac"],
-                        ["chapter_23.flac"],
-                        ["chapter_24.flac"],
-                        ["chapter_25.flac"],
-                        ["chapter_26.flac"],
-                        ["chapter_27.flac"],
-                        ["chapter_28.flac"],
-                        ["chapter_29.flac"],
-                        ["chapter_30.flac"],
-                ],
-        "output_split": True,
+        "output_split": False,
         "output_split_minutes": 30,
-        "final_name": "Hunger_Games_01_-_The_Hunger_Games",
         "offline_mode": True
     }
     # update session with args
     session.update(args)
     # Create necessary directories
-    func_name = inspect.currentframe().f_code.co_name
-    set_process_dir(session, "Hunger_Games_01_-_The_Hunger_Games/Hunger_Games_01_-_The_Hunger_Games")
+    set_process_dir(session, pipeline)
     session['epub_path'] = session['ebook']
-    session['cover'] = os.path.join(session['process_dir'], 'The Hunger Games-2008 - The Hunger Games Suzanne Collins .jpg')
+    session['cover'] = os.path.join(session['process_dir'], title+'.jpg')
+    all_chapters = book_transcript(session["chapters_dir"])
+    session["chapters"] = [all_chapters[0]]
 
     basename = os.path.basename(session["ebook"])
     name_splits = os.path.splitext(basename)
     session["filename_noext"] = name_splits[0]
+    session["final_name"] = name_splits[0]+"."+session['output_format']
 
-    processor = EbookAudio()
-    # Process the EPUB
+    processor = EbookAudio(session)
     audio_files = processor.combine_audio_chapters(session)
-
-    # Assertions
-    # assert audio_files
+    assert audio_files
     for file in audio_files:
         print(file)
 
@@ -310,3 +259,30 @@ def test_stamp_on_image(session_context, ebook_path, tmp_path):
         with open(new_cover, "wb") as wf:
             wf.write(cover_data)
 
+
+def chapters_flac_audio(process_dir):
+    file_paths = sorted(
+        [f for f in os.listdir(process_dir) if f.startswith('chapter_') and f.endswith('.flac')],
+        key=lambda x: int(re.search(r'\d+', x).group())
+    )
+    
+    # books = []
+    # for txt_file in file_paths:
+    #     with open(os.path.join(process_dir, txt_file), "r", encoding="utf-8") as handle:
+    #         books.append(handle.read().splitlines())
+    return file_paths
+
+def book_transcript(transript_dir):
+    # file_paths = sorted(
+    #     entry.path for entry in os.scandir(book_dir) if entry.is_file()
+    # )
+    file_paths = sorted(
+        [f for f in os.listdir(transript_dir) if f.startswith('chapter_') and f.endswith('.txt')],
+        key=lambda x: int(re.search(r'\d+', x).group())
+    )
+    
+    books = []
+    for txt_file in file_paths:
+        with open(os.path.join(transript_dir, txt_file), "r", encoding="utf-8") as handle:
+            books.append(handle.read().splitlines())
+    return books

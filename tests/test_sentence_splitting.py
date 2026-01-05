@@ -5,10 +5,8 @@ import pytest
 import sys
 
 from syntrive.adapters.text.practice_splitter import segment_novel
-from syntrive.adapters.text.pyhanlp_text_splitter import HanLPNovelTextSplitter
 from syntrive.adapters.text.sentence_splitter import SentenceSplitter
 from syntrive.adapters.text.simple_splitter import SimpleNovelTextSplitter
-from syntrive.adapters.text.snownlp_text_splitter import split_novel_for_tts
 sys.stdout.reconfigure(encoding='utf-8')
 
 test_text= \
@@ -112,7 +110,7 @@ def test_segment_novel(splitter):
 def test_snownlp():
     func_name = inspect.currentframe().f_code.co_name
     print("=== 使用 SnowNLP 分割结果 ===\n")
-    
+    from syntrive.adapters.text.snownlp_text_splitter import split_novel_for_tts
     chunks = split_novel_for_tts(test_text, min_length=50, max_length=70)
     
     for i, chunk in enumerate(chunks, 1):
@@ -127,7 +125,7 @@ def test_snownlp():
 def test_pyhanlp_NLPTokenizer():
     func_name = inspect.currentframe().f_code.co_name
     print("=== 使用 PyHanLP 分割结果 ===\n")
-    
+    from syntrive.adapters.text.pyhanlp_text_splitter import HanLPNovelTextSplitter
     splitter = HanLPNovelTextSplitter(min_length=40, max_length=60)
     chunks = splitter.split_for_tts(test_text)
     
@@ -143,7 +141,7 @@ def test_pyhanlp_NLPTokenizer():
 def test_pyhanlp_HanLP():
     func_name = inspect.currentframe().f_code.co_name
     print("=== 使用 PyHanLP 分割结果 ===\n")
-    
+    from syntrive.adapters.text.pyhanlp_text_splitter import HanLPNovelTextSplitter
     splitter = HanLPNovelTextSplitter(min_length=40, max_length=60)
     chunks = splitter.split_for_tts(test_text,use_simple=True)
     

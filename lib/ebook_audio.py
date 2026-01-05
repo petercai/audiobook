@@ -373,7 +373,8 @@ class EbookAudio:
                 # For formats that support metadata chapters, add the metadata file
                 ffmpeg_cmd += ['-f', 'ffmetadata', '-i', ffmpeg_metadata_file]
                 if session['output_format'] in ['m4a', 'm4b', 'mp4', 'mov']:
-                    subtitle_file = Path(final_audiobook_output_file).with_suffix(".vtt")
+                    subtitle_filename = f"{Path(final_audiobook_output_file).stem}.vtt"
+                    subtitle_file = os.path.join(session['process_dir'], subtitle_filename)
                     if cover_path and os.path.exists(cover_path):
                         # Extract part number from ffmpeg_final_file (e.g., xxx_part01.mp4)
                         part_match = re.search(r'_part(\d+)', final_audiobook_output_file, re.IGNORECASE)
@@ -388,6 +389,7 @@ class EbookAudio:
                             ffmpeg_cmd += ['-vf', f"subtitles='{subtitle_path_for_filter}':force_style='Fontsize=12,PrimaryColour=&H00FFFF00,OutlineColour=&H00000000,BorderStyle=1,Outline=3,Shadow=0',scale=796:1200"]
                         else:
                             print(f"_export_audiobook(): cannot find subtitle file {subtitle_file}")
+                            ffmpeg_cmd += ['-vf', "scale=trunc(iw/2)*2:trunc(ih/2)*2"]
                         ffmpeg_cmd += ['-shortest']
                         # map the video to the output file
                         ffmpeg_cmd += ['-map', '2:v']
@@ -956,4 +958,3 @@ class EbookAudio:
         except Exception as e:
             util.print_error(e)
             return False                    
-
