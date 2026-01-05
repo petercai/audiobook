@@ -30,7 +30,7 @@ def book_context():
     bookname = '剑来 (烽火戏诸侯).epub'
     bookname = '一句顶一万句 (刘震云).epub'
     title = util.sanitize_filename(bookname.split('.')[0])
-    pipeline = f"SYNTHRIVE-PROCESSING-{title}"  
+    pipeline = f"PROCESSING-{title}"  
     return bookname, title, pipeline
 
 
@@ -222,7 +222,36 @@ def test_get_chapters_cn(session_context, ebook_path, tmp_path):
             print(f"{i}: {sentence}")
 
 
-def test_get_cover(session_context, ebook_path, book_context):
+def test_get_book_cover(session_context, ebook_path, book_context):
+    context, session_id, session = session_context
+    bookname, title, pipeline = book_context
+    args = {
+        "session": session_id,
+        'cancellation_requested': False,
+        "ebook": os.path.join(ebook_path, bookname),
+        "filename_noext": title,
+        "device": "cpu",
+        "language": "zho",
+        "language_iso1": 'zh',
+        "tts_engine": TTS_ENGINES['XTTSv2'],
+    }
+
+    # update session with args
+    session.update(args)
+    # Create necessary directories
+    set_process_dir(session, pipeline)
+    
+    ebook_ = session["ebook"]
+    epubBook = epub.read_epub(ebook_, {"ignore_ncx": True})
+    path = session['process_dir']
+    cover_name = session['filename_noext']
+    processor = EPubProcessor(session)
+    result = processor.extract_book_cover(epubBook, path, cover_name)
+    # Assertions
+    assert result
+    print(result)
+    
+def test_retrieve_book_image(session_context, ebook_path, book_context):
     context, session_id, session = session_context
     bookname, title, pipeline = book_context
     # Setup arguments for EBookProcessor
@@ -240,18 +269,16 @@ def test_get_cover(session_context, ebook_path, book_context):
     # update session with args
     session.update(args)
     # Create necessary directories
-    func_name = inspect.currentframe().f_code.co_name
     set_process_dir(session, pipeline)
     
     ebook_ = session["ebook"]
     epubBook = epub.read_epub(ebook_, {"ignore_ncx": True})
     path = session['process_dir']
-    cover_name = session['filename_noext']
     processor = EPubProcessor(session)
-    result = processor.extract_book_cover(epubBook, path, cover_name)
-    # Assertions
+    result = processor.extract_book_images(epubBook, path)
     assert result
-    print(result)
+    for file in result:
+        print(file)
 
 
 def test_split_epub_by_chapter(session_context, ebook_path):

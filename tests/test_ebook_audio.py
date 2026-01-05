@@ -89,7 +89,7 @@ def session_context(tmp_path):
 
 def book_context(bookname):
     title = util.sanitize_filename(bookname.split('.')[0])
-    pipeline = f"SYNTHRIVE-PROCESSING-{title}"
+    pipeline = f"PROCESSING-{title}"
     return bookname,title,pipeline
 
 @pytest.fixture

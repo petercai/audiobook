@@ -116,7 +116,7 @@ def test_filter_chapter_剑来(session_context, ebook_path: str, tmp_path: str):
     context, session_id, session = session_context
     bookname = '剑来 (烽火戏诸侯).epub'
     title = util.sanitize_filename(bookname.split('.')[0])
-    pipeline = f"SYNTHRIVE-PROCESSING-{title}"    
+    pipeline = f"PROCESSING-{title}"    
     args = {
         "session": session_id,
         "cancellation_requested": False,
@@ -139,7 +139,7 @@ def test_filter_chapter_一句顶一万句(session_context, ebook_path: str, tmp
     context, session_id, session = session_context
     bookname = '一句顶一万句 (刘震云).epub'
     title = util.sanitize_filename(bookname.split('.')[0])
-    pipeline = f"SYNTHRIVE-PROCESSING-{title}"    
+    pipeline = f"PROCESSING-{title}"    
     args = {
         "session": session_id,
         "cancellation_requested": False,

@@ -55,7 +55,7 @@ class SessionManagement:
             The updated session dictionary with the cache prepared.
         """
         old_session_dir = os.path.join(tmp_dir, f"ebook-{session['id']}")
-        session["session_dir"] = os.path.join(tmp_dir, f"SYNTHRIVE-PROCESSING-{session['id']}")
+        session["session_dir"] = os.path.join(tmp_dir, f"PROCESSING-{session['id']}")
         if os.path.isdir(old_session_dir):
             os.rename(old_session_dir, session["session_dir"])
         session["process_dir"] = os.path.join( session["session_dir"], f"{hashlib.md5(session['ebook'].encode()).hexdigest()}", )
