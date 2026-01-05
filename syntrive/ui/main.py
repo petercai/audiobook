@@ -97,7 +97,7 @@ def get_all_ip_addresses():
                 ip_addresses.append(address.address)  
     return ip_addresses
 
-# todo: split class WebUI in this file into a few decouple components toward a pipline process. 1. move gr_ebook_file and gr_language parts and their related logic code to a new class EBookManagment in file ebook_man.py; 2. move gr_voice_file, gr_row_voice_player,gr_device, gr_tts_engine_list, gr_fine_tuned_list, gr_custom_model_file parts and their related logic code into class TTSCofiguration in fle tts_conf.py; 3. move gr_output_format_list,gr_output_split, gr_output_split_minutes parts and their logic code into class Artifact in artifact.py; 4. move gr_session part and its logic code to class FlowManagment in file flow.py. keep existing structe, ui layout and don't change any existing logic
+# todo: split class WebUI in this file into a few decouple components toward a pipline process. 1. move gr_ebook_file and gr_language parts and their related logic code to a new class EBookManagment in file ebook_man.py; 2. move gr_voice_file, gr_row_voice_player,gr_device, gr_tts_engine_list, gr_fine_tuned_list, gr_custom_model_file parts and their related logic code into class TTSCofiguration in fle tts_conf.py; 3. move gr_output_format_list,gr_output_split, gr_output_split_minutes parts and their logic code into class Artifact in artifact.py; 4. move gr_session part and its logic code to class FlowManagment in file flow.py. try best to split UI components and their logic into separate file to decouple. don't consider or change file lib\web_ui.py.
 class WebUI:
     def __init__(self):
         self.context = None
