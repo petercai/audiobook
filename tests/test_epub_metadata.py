@@ -11,6 +11,7 @@ from lib.mock_session import SessionContextMock, set_process_dir
 
 import sys
 
+from lib.util import util
 from syntrive.adapters.text.normalizer import TextNormalizer
 sys.stdout.reconfigure(encoding="utf-8")
 
@@ -21,6 +22,18 @@ def tmp_path():
 @pytest.fixture
 def ebook_path():
     return os.path.abspath('ebooks')
+
+@pytest.fixture
+def book_context():
+    bookname = '剑来 (烽火戏诸侯).epub'
+    bookname = '纯真年代(伊迪丝华顿) .epub'
+    bookname = '思考,快与慢.epub'
+    bookname = '一句顶一万句 (刘震云).epub'
+    title = util.sanitize_filename(bookname.split('.')[0])
+    pipeline = f"SYNTHRIVE-PROCESSING-{title}"  
+    return bookname, title, pipeline
+
+
 
 @pytest.fixture
 def session_context(tmp_path: str):
@@ -209,14 +222,15 @@ def test_get_chapters_cn(session_context, ebook_path, tmp_path):
             print(f"{i}: {sentence}")
 
 
-def test_get_cover(session_context, ebook_path, tmp_path):
+def test_get_cover(session_context, ebook_path, book_context):
     context, session_id, session = session_context
+    bookname, title, pipeline = book_context
     # Setup arguments for EBookProcessor
     args = {
         "session": session_id,
         'cancellation_requested': False,
-        "ebook": os.path.join(ebook_path, "思考,快与慢.epub"),
-        "filename_noext": "思考-快与慢",
+        "ebook": os.path.join(ebook_path, bookname),
+        "filename_noext": title,
         "device": "cpu",
         "language": "zho",
         "language_iso1": 'zh',
@@ -227,7 +241,7 @@ def test_get_cover(session_context, ebook_path, tmp_path):
     session.update(args)
     # Create necessary directories
     func_name = inspect.currentframe().f_code.co_name
-    set_process_dir(session, func_name)
+    set_process_dir(session, pipeline)
     
     ebook_ = session["ebook"]
     epubBook = epub.read_epub(ebook_, {"ignore_ncx": True})

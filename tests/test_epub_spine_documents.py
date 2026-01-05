@@ -1,3 +1,4 @@
+import inspect
 import os
 
 import pytest
@@ -108,7 +109,7 @@ def test_extract_chapter_剑来(session_context, ebook_path: str, tmp_path: str)
         "ebook": os.path.join(ebook_path, "剑来 (烽火戏诸侯).epub"),
         "device": "cpu",
         "language_iso1": 'zh',
-        "tts_engine": TTS_ENGINES['XTTSv2'],
+        "tts_engine": TTS_ENGINES['COSYVOICE'],
 
     }
     # update session with args
@@ -204,7 +205,7 @@ def handle_epub_chapters_in_test(session):
     ebook_ = session["ebook"]
     epubBook = epub.read_epub(ebook_, {"ignore_ncx": True})   
     processor = EPubProcessor(session)
-    processor.text_normalizer = TextNormalizer(session['language_iso1'])
+    # processor.text_normalizer = TextNormalizer(session['language_iso1'])
     epub_chapter_docs, toc = processor.get_epub_chapters(epubBook)
     print(f"epub_chapter_docs#: {len(epub_chapter_docs)}")
     cache_dir = os.path.join(session["process_dir"], "extracted")
