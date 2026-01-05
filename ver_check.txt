@@ -17,6 +17,8 @@ Reinstall torchcodec from the same channel/build as torch (CPU vs CUDA) so the v
 - CPU: `python -m pip install --force-reinstall --index-url https://download.pytorch.org/whl/cpu torchcodec==0.7.*`
 - CUDA: `python -m pip install --force-reinstall --index-url https://download.pytorch.org/whl/cu121 torchcodec==0.7.*` (swap `cu121` to match your torch build, e.g. `cu118`, `cu124`)
 
+uv pip install --force-reinstall --index-url https://download.pytorch.org/whl/cpu torchcodec==0.7.*
+
 pyannote/audio warning cause:
 - pyannote uses torchcodec for decoding; the warning is torchcodec failing to load FFmpeg DLLs.
 - Fix by installing FFmpeg 4-7 on PATH and reinstalling torchcodec from the same torch channel/build (CPU vs CUDA).
@@ -31,6 +33,10 @@ C:\workspace\github\audiobook\ebook2audiobook\.venv\Lib\site-packages\pyannote\a
 torchcodec is not installed correctly so built-in audio decoding will fail. Solutions are:
 * use audio preloaded in-memory as a {'waveform': (channel, time) torch.Tensor, 'sample_rate': int} dictionary;
 * fix torchcodec installation. Error message was:
+
+# Load audio this way instead
+waveform, sample_rate = torchaudio.load("audio.wav")
+audio = {"waveform": waveform, "sample_rate": sample_rate}
 
 Could not load libtorchcodec. Likely causes:
           1. FFmpeg is not properly installed in your environment. We support
