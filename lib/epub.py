@@ -46,7 +46,24 @@ class EPubProcessor:
                     return alt
         return None
 
-    def extract_book_cover(self, epubBook, path, cover_name):        
+    def extract_book_images(self, epubBook, process_path):
+        """
+        Extracts all images from an EPUB book into the given process path.
+        """
+        img_path = os.path.join(process_path, 'images')
+        os.makedirs(img_path, exist_ok=True)
+        saved_paths = []
+        for item in epubBook.get_items_of_type(ebooklib.ITEM_IMAGE):
+            file_name = os.path.basename(item.file_name or "")
+            if not file_name:
+                file_name = f"image_{len(saved_paths)}.jpg"
+            out_path = os.path.join(img_path, file_name)
+            with open(out_path, "wb") as out_file:
+                out_file.write(item.get_content())
+            saved_paths.append(out_path)
+        return saved_paths
+
+    def extract_book_cover(self, epubBook, process_path, cover_name):        
         """
         Extracts the cover image from an EPUB book and saves it as a JPEG file.
 
@@ -68,7 +85,7 @@ class EPubProcessor:
 
         try:
             cover_image = None
-            cover_path = os.path.join(path, cover_name + '.jpg')
+            cover_path = os.path.join(process_path, cover_name + '.jpg')
             cover_items = epubBook.get_items_of_type(ebooklib.ITEM_COVER)
             for item in cover_items:
                 cover_image = item.get_content()
