@@ -12,6 +12,8 @@ from lib.ebook_audio import EbookAudio
 from lib.mock_session import SessionContextMock, set_process_dir
 
 import sys
+
+from lib.util import util
 sys.stdout.reconfigure(encoding="utf-8")
 
 @pytest.fixture
@@ -86,9 +88,9 @@ def session_context(tmp_path):
     return context, session_id, session
 
 
-def test_transfer_chapters_to_audio_file_一句顶一万句(session_context, ebook_path):
-    title = "一句顶一万句"
+def test_transfer_chapters_to_audio_一句顶一万句(session_context, ebook_path):
     bookname = '一句顶一万句 (刘震云).epub'
+    title = util.sanitize_filename(bookname.split('.')[0])
     pipeline = f"SYNTHRIVE-PROCESSING-{title}"
     context, session_id, session = session_context
     args = {
@@ -115,11 +117,12 @@ def test_transfer_chapters_to_audio_file_一句顶一万句(session_context, ebo
     basename = os.path.basename(session["ebook"])
     name_splits = os.path.splitext(basename)
     session["filename_noext"] = name_splits[0]
+    session["final_name"] = name_splits[0] + '.' + session['output_format']
     
     # set chapters data
     # util.save_transcript_by_chapter( session["chapters"], session["chapters_dir"] )
     all_chapters = book_transcript(session["chapters_dir"])
-    session["chapters"] = all_chapters[0]
+    session["chapters"] = [all_chapters[0]]
 
     # Convert all chapters in the EPUB to audio files
     ebook_audio = EbookAudio(session)
@@ -140,8 +143,8 @@ def book_transcript(transript_dir):
     )
     
     books = []
-    for path in file_paths:
-        with open(path, "r", encoding="utf-8") as handle:
+    for txt_file in file_paths:
+        with open(os.path.join(transript_dir, txt_file), "r", encoding="utf-8") as handle:
             books.append(handle.read().splitlines())
     return books
 
