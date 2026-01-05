@@ -235,7 +235,7 @@ class Coqui:
                 local_files_only=self.session['offline_mode'])
             self.xtts_builtin_speakers_list = torch.load(
                 self.speakers_path,
-                map_location=self.session['device'],
+                map_location='cpu',
                 weights_only=False
             )
         except Exception as e:
