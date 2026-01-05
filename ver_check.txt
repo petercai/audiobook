@@ -1,0 +1,381 @@
+Use pyproject.toml as the source of truth. Keep only the required pins for torch/torchaudio and align the torch stack around them.
+
+Best alignment for torch 2.8:
+- torch==2.8.*
+- torchaudio==2.8.*
+- torchvision==0.23.* (matches torch 2.8)
+- torchcodec==0.7.* (matches torch 2.8; requires FFmpeg 4-7 on PATH)
+pyannote version alignment (with torch 2.8):
+- pyannote-audio==4.* (current 4.0.3)
+- pyannote-core==6.*, pyannote-metrics==4.*, pyannote-pipeline==4.* (these match pyannote-audio 4.x)
+
+Why the error happened:
+torchcodec failed to load its FFmpeg-backed DLLs, which usually means FFmpeg is missing/not on PATH or the torchcodec build does not match the installed torch build.
+
+
+Reinstall torchcodec from the same channel/build as torch (CPU vs CUDA) so the versions match:
+- CPU: `python -m pip install --force-reinstall --index-url https://download.pytorch.org/whl/cpu torchcodec==0.7.*`
+- CUDA: `python -m pip install --force-reinstall --index-url https://download.pytorch.org/whl/cu121 torchcodec==0.7.*` (swap `cu121` to match your torch build, e.g. `cu118`, `cu124`)
+
+pyannote/audio warning cause:
+- pyannote uses torchcodec for decoding; the warning is torchcodec failing to load FFmpeg DLLs.
+- Fix by installing FFmpeg 4-7 on PATH and reinstalling torchcodec from the same torch channel/build (CPU vs CUDA).
+- Alternative: pass preloaded audio dicts to pyannote to bypass torchcodec.
+
+Chocolatey downgrade to FFmpeg 7:
+- choco list ffmpeg --all-versions
+- choco uninstall ffmpeg -y
+- choco install ffmpeg --version=7.1.1 -y
+
+C:\workspace\github\audiobook\ebook2audiobook\.venv\Lib\site-packages\pyannote\audio\core\io.py:47: UserWarning: 
+torchcodec is not installed correctly so built-in audio decoding will fail. Solutions are:
+* use audio preloaded in-memory as a {'waveform': (channel, time) torch.Tensor, 'sample_rate': int} dictionary;
+* fix torchcodec installation. Error message was:
+
+Could not load libtorchcodec. Likely causes:
+          1. FFmpeg is not properly installed in your environment. We support
+             versions 4, 5, 6 and 7.
+          2. The PyTorch version (2.8.0+cpu) is not compatible with
+             this version of TorchCodec. Refer to the version compatibility
+             table:
+             https://github.com/pytorch/torchcodec?tab=readme-ov-file#installing-torchcodec.
+          3. Another runtime dependency; see exceptions below.
+        The following exceptions were raised as we tried to load libtorchcodec:
+
+[start of libtorchcodec loading traceback]
+FFmpeg version 7: Could not find module 'C:\workspace\github\audiobook\ebook2audiobook\.venv\Lib\site-packages\torchcodec\libtorchcodec_core7.dll' (or one of its dependencies). Try using the full path with constructor syntax.
+FFmpeg version 6: Could not find module 'C:\workspace\github\audiobook\ebook2audiobook\.venv\Lib\site-packages\torchcodec\libtorchcodec_core6.dll' (or one of its dependencies). Try using the full path with constructor syntax.
+FFmpeg version 5: Could not find module 'C:\workspace\github\audiobook\ebook2audiobook\.venv\Lib\site-packages\torchcodec\libtorchcodec_core5.dll' (or one of its dependencies). Try using the full path with constructor syntax.
+FFmpeg version 4: Could not find module 'C:\workspace\github\audiobook\ebook2audiobook\.venv\Lib\site-packages\torchcodec\libtorchcodec_core4.dll' (or one of its dependencies). Try using the full path with constructor syntax.
+[end of libtorchcodec loading traceback].
+
+Package                                  Version      Editable project location
+---------------------------------------- ------------ ---------------------------------------------
+absl-py                                  2.3.1
+addict                                   2.4.0
+aiofiles                                 24.1.0
+aiohappyeyeballs                         2.6.1
+aiohttp                                  3.13.2
+aiosignal                                1.4.0
+alabaster                                1.0.0
+alembic                                  1.17.2
+aliyun-python-sdk-core                   2.16.0
+aliyun-python-sdk-kms                    2.16.5
+annotated-doc                            0.0.4
+annotated-types                          0.7.0
+antlr4-python3-runtime                   4.9.3
+anyascii                                 0.3.3
+anyio                                    4.12.0
+argostranslate                           1.10.0
+asteroid-filterbanks                     0.4.0
+attrs                                    25.4.0
+audioread                                3.1.0
+babel                                    2.17.0
+beautifulsoup4                           4.14.3
+blis                                     1.3.3
+brotli                                   1.2.0
+cachetools                               6.2.4
+catalogue                                2.0.10
+certifi                                  2025.11.12
+cffi                                     2.0.0
+charset-normalizer                       3.4.4
+click                                    8.2.1
+cloudpathlib                             0.23.0
+cloudpickle                              3.1.2
+colorama                                 0.4.6
+coloredlogs                              15.0.1
+colorlog                                 6.10.1
+confection                               0.1.5
+conformer                                0.3.2
+contourpy                                1.3.3
+contractions                             0.1.73
+coqpit-config                            0.2.2
+coqui-tts                                0.27.0
+coqui-tts-trainer                        0.3.2
+cosyvoice                                2.0          C:\workspace\github\audiobook\CosyVoice
+crcmod                                   1.7
+cryptography                             46.0.3
+ctranslate2                              4.6.2
+cutlet                                   0.5.0
+cycler                                   0.12.1
+cymem                                    2.0.13
+cython                                   3.2.2
+datasets                                 2.14.4
+dateparser                               1.1.8
+decorator                                5.2.1
+deep-translator                          1.11.4
+demucs                                   4.0.1
+diffusers                                0.29.0
+dill                                     0.3.7
+docker                                   7.1.0
+docopt                                   0.6.2
+docutils                                 0.21.2
+dora-search                              0.1.12
+ebook2audiobook                          0.0.0        C:\workspace\github\audiobook\ebook2audiobook
+ebooklib                                 0.20
+editdistance                             0.8.1
+einops                                   0.8.1
+emoji                                    2.15.0
+encodec                                  0.1.1
+fastapi                                  0.124.4
+fastapi-cli                              0.0.4
+ffmpy                                    1.0.0
+filelock                                 3.20.0
+flatbuffers                              25.12.19
+fonttools                                4.61.1
+frozenlist                               1.8.0
+fsspec                                   2025.12.0
+fugashi                                  1.5.2
+funasr                                   1.2.7
+gdown                                    5.1.0
+google-auth                              2.45.0
+google-auth-oauthlib                     1.0.0
+googleapis-common-protos                 1.72.0
+gradio                                   5.42.0
+gradio-client                            1.11.1
+greenlet                                 3.3.0
+groovy                                   0.1.2
+grpcio                                   1.76.0
+grpcio-tools                             1.57.0
+gruut                                    2.4.0
+gruut-ipa                                0.13.0
+gruut-lang-de                            2.0.1
+gruut-lang-en                            2.0.1
+gruut-lang-es                            2.0.1
+gruut-lang-fr                            2.0.2
+h11                                      0.16.0
+hangul-romanize                          0.1.0
+hanlp-downloader                         0.0.25
+hf-xet                                   1.2.0
+httpcore                                 1.0.9
+httpx                                    0.28.1
+huggingface-hub                          0.36.0
+humanfriendly                            10.0
+hydra-core                               1.3.2
+hyperpyyaml                              1.2.2
+idna                                     3.11
+imagesize                                1.4.1
+importlib-metadata                       8.7.0
+indic-nlp-library                        0.92
+inflect                                  7.5.0
+iniconfig                                2.3.0
+iso-639                                  0.4.5
+jaconv                                   0.4.1
+jamo                                     0.4.1
+jieba                                    0.42.1
+jinja2                                   3.1.6
+jmespath                                 0.10.0
+joblib                                   1.5.2
+jpype1                                   1.6.0
+jsonlines                                1.2.0
+jsonschema                               4.25.1
+jsonschema-specifications                2025.9.1
+julius                                   0.2.7
+kaldifst                                 1.7.17
+kaldiio                                  2.18.1
+kiwisolver                               1.4.9
+lameenc                                  1.8.1
+lazy-loader                              0.4
+libretranslatepy                         2.1.1
+librosa                                  0.11.0
+lightning                                2.6.0
+lightning-utilities                      0.15.2
+llvmlite                                 0.46.0
+lxml                                     6.0.2
+mako                                     1.3.10
+markdown                                 3.10
+markdown-it-py                           4.0.0
+markupsafe                               3.0.3
+matcha-tts                               0.0.7.2
+matplotlib                               3.10.8
+mdurl                                    0.1.2
+modelscope                               1.33.0
+mojimoji                                 0.0.13
+monotonic-alignment-search               0.2.1
+more-itertools                           10.8.0
+morfessor                                2.0.6
+mpmath                                   1.3.0
+msgpack                                  1.1.2
+multidict                                6.7.0
+multiprocess                             0.70.15
+murmurhash                               1.0.15
+mutagen                                  1.47.0
+networkx                                 3.6.1
+nose                                     1.3.7
+num2words                                0.5.14
+numba                                    0.63.1
+numpy                                    2.3.5
+numpy-typing-compat                      20251206.2.3
+nvidia-ml-py                             13.590.44
+oauthlib                                 3.3.1
+omegaconf                                2.3.0
+onnx                                     1.16.0
+onnxruntime                              1.23.2
+openai-whisper                           20231117
+opentelemetry-api                        1.39.1
+opentelemetry-exporter-otlp              1.39.1
+opentelemetry-exporter-otlp-proto-common 1.39.1
+opentelemetry-exporter-otlp-proto-grpc   1.39.1
+opentelemetry-exporter-otlp-proto-http   1.39.1
+opentelemetry-proto                      1.39.1
+opentelemetry-sdk                        1.39.1
+opentelemetry-semantic-conventions       0.60b1
+openunmix                                1.3.0
+optuna                                   4.6.0
+optype                                   0.15.0
+orjson                                   3.11.5
+oss2                                     2.19.1
+packaging                                25.0
+pandas                                   2.3.3
+pillow                                   11.3.0
+pip                                      25.3
+pipdeptree                               2.30.0
+platformdirs                             4.5.1
+pluggy                                   1.6.0
+pooch                                    1.8.2
+preshed                                  3.0.12
+primepy                                  1.3
+propcache                                0.4.1
+protobuf                                 6.33.2
+psutil                                   7.1.3
+pyahocorasick                            2.2.0
+pyannote-audio                           4.0.3
+pyannote-core                            6.0.1
+pyannote-database                        6.1.1
+pyannote-metrics                         4.0.0
+pyannote-pipeline                        4.0.0
+pyannoteai-sdk                           0.3.0
+pyarrow                                  22.0.0
+pyasn1                                   0.6.1
+pyasn1-modules                           0.4.2
+pycparser                                2.23
+pycryptodome                             3.23.0
+pydantic                                 2.11.10
+pydantic-core                            2.33.2
+pydub                                    0.25.1
+pygments                                 2.19.2
+pyhanlp                                  0.1.89
+pymupdf                                  1.26.7
+pymupdf4llm                              0.2.7
+pynndescent                              0.5.13
+pyopengl                                 3.1.10
+pyparsing                                3.2.5
+pypinyin                                 0.55.0
+pyreadline3                              3.5.4
+pysbd                                    0.3.4
+pysocks                                  1.7.1
+pytest                                   9.0.2
+pythainlp                                5.1.2
+python-crfsuite                          0.9.11
+python-dateutil                          2.9.0.post0
+python-multipart                         0.0.20
+pytorch-lightning                        2.6.0
+pytorch-metric-learning                  2.9.0
+pytorch-wpe                              0.0.1
+pytz                                     2025.2
+pywin32                                  311
+pyworld                                  0.3.4
+pyyaml                                   6.0.3
+ray                                      2.52.1
+referencing                              0.37.0
+regex                                    2025.11.3
+requests                                 2.32.5
+requests-oauthlib                        2.0.0
+resampy                                  0.4.3
+retrying                                 1.4.2
+rich                                     14.2.0
+roman-numerals-py                        3.1.0
+rpds-py                                  0.30.0
+rsa                                      4.9.1
+ruamel-yaml                              0.18.17
+ruamel-yaml-clib                         0.2.15
+ruff                                     0.14.9
+sacremoses                               0.1.1
+safehttpx                                0.1.7
+safetensors                              0.7.0
+scikit-learn                             1.8.0
+scipy                                    1.16.3
+scipy-stubs                              1.16.3.3
+semantic-version                         2.10.0
+sentencepiece                            0.2.1
+setuptools                               80.9.0
+shellingham                              1.5.4
+simplejson                               3.20.2
+six                                      1.17.0
+smart-open                               7.5.0
+snowballstemmer                          3.0.1
+snownlp                                  0.12.3
+sortedcontainers                         2.4.0
+soundfile                                0.13.1
+soupsieve                                2.8
+soxr                                     1.0.0
+soynlp                                   0.0.493
+spaces                                   0.26.0
+spacy                                    3.8.11
+spacy-legacy                             3.0.12
+spacy-loggers                            1.0.5
+sphinx                                   8.2.3
+sphinx-argparse                          0.5.2
+sphinx-rtd-theme                         3.0.2
+sphinxcontrib-applehelp                  2.0.0
+sphinxcontrib-devhelp                    2.0.0
+sphinxcontrib-htmlhelp                   2.1.0
+sphinxcontrib-jquery                     4.1
+sphinxcontrib-jsmath                     1.0.1
+sphinxcontrib-qthelp                     2.0.0
+sphinxcontrib-serializinghtml            2.0.0
+sqlalchemy                               2.0.45
+srsly                                    2.5.2
+stanza                                   1.10.1
+starlette                                0.50.0
+submitit                                 1.5.3
+sudachidict-core                         20251022
+sudachipy                                0.6.10
+sympy                                    1.14.0
+tabulate                                 0.9.0
+tensorboard                              2.20.0
+tensorboard-data-server                  0.7.2
+tensorboardx                             2.6.4
+textsearch                               0.0.24
+textsplit                                0.5
+thinc                                    8.3.10
+threadpoolctl                            3.6.0
+tiktoken                                 0.12.0
+tokenizers                               0.22.1
+tomlkit                                  0.13.3
+torch                                    2.8.0
+torch-audiomentations                    0.12.0
+torch-complex                            0.4.4
+torch-pitch-shift                        1.2.5
+torchaudio                               2.8.0
+torchcodec                               0.7.0
+torchmetrics                             1.8.2
+torchvggish                              0.2
+torchvision                              0.23.0
+tqdm                                     4.67.1
+transformers                             4.57.3
+translate                                3.8.0
+treetable                                0.2.6
+typeguard                                4.4.4
+typer                                    0.20.0
+typer-slim                               0.20.0
+typing-extensions                        4.15.0
+typing-inspection                        0.4.2
+tzdata                                   2025.2
+tzlocal                                  5.3.1
+umap-learn                               0.5.9.post2
+unidic-lite                              1.0.8
+urllib3                                  2.6.2
+uvicorn                                  0.38.0
+voxcpm                                   1.0.2
+wasabi                                   1.1.3
+weasel                                   0.4.3
+websockets                               12.0
+werkzeug                                 3.1.4
+wetext                                   0.1.2
+wget                                     3.2
+wheel                                    0.45.1
+wrapt                                    2.0.1
+xxhash                                   3.6.0
+yarl                                     1.22.0
+zipp                                     3.23.0

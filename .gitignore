@@ -9,4 +9,3 @@ ebooks/*
 ebook2audiobook.egg-info
 tests/tanscript/*
 *.log
-*.txt
