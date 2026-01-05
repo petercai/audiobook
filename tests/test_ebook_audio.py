@@ -87,11 +87,23 @@ def session_context(tmp_path):
 
     return context, session_id, session
 
-
-def test_transfer_chapters_to_audio_一句顶一万句(session_context, ebook_path):
-    bookname = '一句顶一万句 (刘震云).epub'
+def book_context(bookname):
     title = util.sanitize_filename(bookname.split('.')[0])
     pipeline = f"SYNTHRIVE-PROCESSING-{title}"
+    return bookname,title,pipeline
+
+@pytest.fixture
+def process_context():
+    bookname = '剑来 (烽火戏诸侯).epub'
+    bookname = '纯真年代(伊迪丝华顿) .epub'
+    bookname = '思考,快与慢.epub'
+    bookname = '一句顶一万句 (刘震云).epub'
+    return book_context(bookname)
+
+
+
+def test_transfer_chapters_to_audio_一句顶一万句(session_context, ebook_path, process_context):
+    bookname, title, pipeline = process_context()
     context, session_id, session = session_context
     args = {
         "ebook": os.path.join(ebook_path, bookname),
@@ -131,6 +143,7 @@ def test_transfer_chapters_to_audio_一句顶一万句(session_context, ebook_pa
 
     exported_files = ebook_audio.combine_audio_chapters(session)
     assert exported_files, "combine_audio_chapters() failed!"
+
 
 
 def book_transcript(transript_dir):

@@ -91,15 +91,31 @@ def session_context(tmp_path: str):
     session = context.get_session(session_id)
     return context, session_id, session
 
+def book_context(bookname):
+    title = util.sanitize_filename(bookname.split('.')[0])
+    pipeline = f"SYNTHRIVE-PROCESSING-{title}"
+    return bookname,title,pipeline
 
-def test_get_chapter_sentences_思考快与慢(
-    session_context, ebook_path: str, tmp_path: str
-):
+@pytest.fixture
+def process_context():
+    bookname = '剑来 (烽火戏诸侯).epub'
+    bookname = '纯真年代(伊迪丝华顿) .epub'
+    bookname = '思考,快与慢.epub'
+    bookname = '一句顶一万句 (刘震云).epub'
+    return book_context(bookname)
+
+
+def test_get_chapter_sentences_思考快与慢( session_context, ebook_path: str ):
     context, session_id, session = session_context
+    bookname = '剑来 (烽火戏诸侯).epub'
+    bookname = '纯真年代(伊迪丝华顿) .epub'
+    bookname = '一句顶一万句 (刘震云).epub'
+    bookname = '思考,快与慢.epub'
+    bookname, title, pipeline = book_context(bookname)
     args = {
         "session": session_id,
         "cancellation_requested": False,
-        "ebook": os.path.join(ebook_path, "思考,快与慢.epub"),
+        "ebook": os.path.join(ebook_path, bookname),
         "device": "cpu",
         "add_toc_title": False,
         "language_iso1": "zh",
@@ -107,8 +123,7 @@ def test_get_chapter_sentences_思考快与慢(
     }
     # update session with args
     session.update(args)
-    func_name = inspect.currentframe().f_code.co_name
-    set_process_dir(session, func_name)
+    set_process_dir(session, pipeline)
     ebook_ = session["ebook"]
     epubBook = epub.read_epub(ebook_, {"ignore_ncx": True})
 
@@ -133,7 +148,7 @@ def test_get_chapter_sentences_剑来(session_context, ebook_path: str, tmp_path
     args = {
         "session": session_id,
         "cancellation_requested": False,
-        "ebook": os.path.join(ebook_path, "剑来 (烽火戏诸侯).epub"),
+        "ebook": os.path.join(ebook_path, bookname),
         "device": "cpu",
         "add_toc_title": False,
         "language_iso1": "zh",
@@ -197,10 +212,12 @@ def test_get_chapter_sentences_纯真年代(
     session_context, ebook_path: str, tmp_path: str
 ):
     context, session_id, session = session_context
+    bookname = '纯真年代(伊迪丝华顿) .epub'
+    bookname, title, pipeline = book_context(bookname)
     args = {
         "session": session_id,
         "cancellation_requested": False,
-        "ebook": os.path.join(ebook_path, "纯真年代(伊迪丝华顿) .epub"),
+        "ebook": os.path.join(ebook_path, bookname),
         "device": "cpu",
         "add_toc_title": False,
         "language_iso1": "zh",
@@ -208,8 +225,7 @@ def test_get_chapter_sentences_纯真年代(
     }
     # update session with args
     session.update(args)
-    func_name = inspect.currentframe().f_code.co_name
-    set_process_dir(session, func_name)
+    set_process_dir(session, pipeline)
     ebook_ = session["ebook"]
     epubBook = epub.read_epub(ebook_, {"ignore_ncx": True})
 

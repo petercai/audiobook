@@ -25,9 +25,9 @@ def ebook_path():
 
 @pytest.fixture
 def book_context():
-    bookname = '剑来 (烽火戏诸侯).epub'
     bookname = '纯真年代(伊迪丝华顿) .epub'
     bookname = '思考,快与慢.epub'
+    bookname = '剑来 (烽火戏诸侯).epub'
     bookname = '一句顶一万句 (刘震云).epub'
     title = util.sanitize_filename(bookname.split('.')[0])
     pipeline = f"SYNTHRIVE-PROCESSING-{title}"  
